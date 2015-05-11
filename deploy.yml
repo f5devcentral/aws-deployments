@@ -1,0 +1,10 @@
+# This playbook deploys a new configuration, given an ID, and a corrosponding set of inventory files and templates. 
+---
+
+#Deploy the infrastructure (vpc, subnets, route tables, bigips, docker hosts, etc)
+- hosts: localhost
+  vars_files:
+    - ~/vars/aws-deployments/main.yml
+    - ~/vars/{{ env_name }}//main.yml
+  roles:
+  - infra

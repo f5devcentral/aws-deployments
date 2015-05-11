@@ -1,0 +1,6 @@
+---
+# For remote connections 
+ansible_connection: local
+excutable: bash
+ansible_python_interpreter: /usr/bin/env python
+

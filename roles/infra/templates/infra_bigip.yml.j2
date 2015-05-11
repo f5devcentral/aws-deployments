@@ -1,0 +1,16 @@
+---
+bigips:
+{% for result in bigip_deploy_results['results'] %}
+-  stackname: "{{ env_name }}-bigip-{{ result['item']['name'] }}"
+   instanceId: "{{ result['stack_outputs']['BigipInstance'] }}"
+   availabilityZone: "{{ result['item']['availabilityZone'] }}"
+   managementSubnet: "{{ result['item']['managementSubnet'] }}"
+   privateSubnet: "{{ result['item']['privateSubnet'] }}"
+   publicSubnet: "{{ result['item']['publicSubnet'] }}"
+   ExternalInterfacePrivateIp: "{{ result['stack_outputs']['ExternalInterfacePrivateIp'] }}"
+   ExternalInterfacePublicIp: "{{ result['stack_outputs']['ExternalInterfacePublicIp'] }}" 
+   InternalInterfacePrivateIp: "{{ result['stack_outputs']['InternalInterfacePrivateIp'] }}"
+   ManagementInterfacePrivateIp: "{{ result['stack_outputs']['ManagementInterfacePrivateIp'] }}"
+   ManagementInterfacePublicIp: "{{ result['stack_outputs']['ManagementInterfacePublicIp'] }}"
+   
+{% endfor %}

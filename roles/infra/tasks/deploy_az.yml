@@ -1,0 +1,24 @@
+---  
+- name: Create subnets in all availability zones
+  cloudformation:
+    stack_name="{{ env_name }}-az-{{ item.name }}"
+    state=present
+    region="{{ region }}"
+    template={{ project_path }}/roles/infra/files/az.json
+  args:
+    template_parameters:
+      vpc: "{{ vpc_deploy_results['stack_outputs']['vpcId'] }}"
+      internetGateway: "{{ vpc_deploy_results['stack_outputs']['internetGatewayId'] }}"
+      availabilityZone: "{{ item.az }}"
+      managementSubnetCidr: "{{ item.management_cidr }}"
+      privateSubnetCidr: "{{ item.private_cidr }}"
+      publicSubnetCidr: "{{ item.public_cidr }}"
+  register: az_deploy_results
+  with_items: availability_zone_def
+  when: availability_zones is not defined or (force is defined and force|bool == True)
+
+- debug: var=az_deploy_results
+  #when: debug is defined and debug|bool == True and force is defined and force|bool ==True
+
+- template: src=infra_az.yml.j2 dest=~/vars/{{ env_name }}/infra_az.yml
+  #when: availability_zones is not defined or (force is defined and force|bool == True)

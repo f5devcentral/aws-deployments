@@ -1,0 +1,51 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS VPC",
+  "Parameters": {
+    "cidrBlock": {
+        "Type": "String",
+        "Description": "CIDR block for the VPC"
+      }
+    },
+  "Resources": {
+    "Vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": { "Ref": "cidrBlock" },
+        "EnableDnsSupport": "false",
+        "EnableDnsHostnames": "false",
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "topology",
+            "Value": "big-ip-vpc"
+          }
+        ]
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway"
+    },
+    "InternetGateWayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        },
+        "VpcId": {
+          "Ref": "Vpc"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "vpcId": {
+      "Description": "Id of VPC",
+      "Value": { "Ref": "Vpc" }
+    },
+    "internetGatewayId": {
+      "Description": "Id of internet gateway attachment",
+      "Value": { "Ref": "InternetGateway" }
+    }
+  }
+}

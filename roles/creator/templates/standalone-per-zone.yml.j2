@@ -1,0 +1,21 @@
+---
+env_name: "{{ env_name }}"
+deployment_model: standalone-per-zone
+region: "{{ region }}"
+vpc_cidr: "172.16.0.0/16"
+availability_zone_def:
+{% for zones in zones %}
+    - name: "{{ loop.index }}"
+      az: "{{ zones }}"
+      management_cidr: "172.16.{{ loop.index }}1.0/24"
+      private_cidr: "172.16.{{ loop.index }}2.0/24"
+      public_cidr: "172.16.{{ loop.index }}3.0/24"
+{% endfor %}
+bigip_version: "{{ bigip_version }}"
+bigip_license_throughput: "{{ bigip_license_throughput }}"
+bigip_license_model: "{{ bigip_license_model }}"
+bigip_license_package: "{{ bigip_license_package }}"
+bigip_instance_type: "{{ bigip_instance_type }}"
+docker_ami_id: ami-123456 
+key_name: "{{ key_name }}"
+

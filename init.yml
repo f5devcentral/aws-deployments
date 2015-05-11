@@ -1,0 +1,27 @@
+# This playbook creates a deployment ID, and creates the necessary template and variable files.
+
+#inputs:
+# -- required
+#   env_name
+#   deployment_model
+#   region
+#   zones
+# 	docker_image_id
+#   key_name
+
+# -- defualts for this provided in ./roles/creator/defaults.yml
+#   vipr_cidr
+#   bigip_version: "11.6"
+#   bigip_license_throughput: "25mbps"
+#   bigip_license_model: "hourly"
+#   bigip_license_package: "good"
+#   bigip_instance_type: "m3.xlarge"
+
+# --Run as 
+# ansible-playbook ./playbooks/init.yml -i ./inventory/hosts --extra-vars '{"env_name":"footest", "deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'
+
+---
+- hosts: localhost
+  gather_facts: False
+  roles: 
+  - creator
