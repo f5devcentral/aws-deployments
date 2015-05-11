@@ -4,6 +4,9 @@ deployment_model: standalone-per-zone
 region: "{{ region }}"
 vpc_cidr: "172.16.0.0/16"
 availability_zone_def:
+key_name: "{{ key_name }}"
+
+# availability zone definitions
 {% for zones in zones %}
     - name: "{{ loop.index }}"
       az: "{{ zones }}"
@@ -16,6 +19,12 @@ bigip_license_throughput: "{{ bigip_license_throughput }}"
 bigip_license_model: "{{ bigip_license_model }}"
 bigip_license_package: "{{ bigip_license_package }}"
 bigip_instance_type: "{{ bigip_instance_type }}"
-docker_ami_id: ami-123456 
-key_name: "{{ key_name }}"
+
+# application details
+app_host_ami_id: "{{ app_host_ami_id }}"
+app_host_instance_type: "{{ app_host_instance_type }}"
+number_app_hosts: "{{ number_app_hosts }}"
+containers_per_hosts: "{{ containers_per_host }}"
+
+
 

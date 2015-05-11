@@ -4,3 +4,9 @@ bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
 bigip_license_package: "good"
 bigip_instance_type: "m3.xlarge"
+
+app_host_instance_type: "t2.micro"
+# Docker optimized in US-EAST-1
+base_image:  "ami-ae6559c6"
+containers_per_hosts: 2
+number_app_hosts: 1

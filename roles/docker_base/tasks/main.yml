@@ -1,0 +1,16 @@
+---
+# if using Amazon ECS instance, docker should already be installed
+# otherwise install docker manually:
+# - apt: update_cache=yes
+# 
+# - name: Install list of packages
+#   apt: pkg={{item}} state=installed
+#   with_items:
+#      - docker
+#      - docker.io
+#      - python-setuptools
+# 
+# Install few dependences for ansible
+- easy_install: name=pip #  puts it nicely in /usr/local/bin/pip
+- pip: name=pip state=present extra_args='--upgrade' executable=/usr/local/bin/pip
+- pip: name=docker-py state=present executable=/usr/local/bin/pip
