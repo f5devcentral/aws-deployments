@@ -6,25 +6,27 @@ vpc_cidr: "172.16.0.0/16"
 availability_zone_def:
 key_name: "{{ key_name }}"
 
-# availability zone definitions
+# availability zone definitions, allow configuration of all deployed elements (BIG-IP, app version) on a per-zone basis
 {% for zones in zones %}
     - name: "{{ loop.index }}"
       az: "{{ zones }}"
       management_cidr: "172.16.{{ loop.index }}1.0/24"
       private_cidr: "172.16.{{ loop.index }}2.0/24"
       public_cidr: "172.16.{{ loop.index }}3.0/24"
-{% endfor %}
-bigip_version: "{{ bigip_version }}"
-bigip_license_throughput: "{{ bigip_license_throughput }}"
-bigip_license_model: "{{ bigip_license_model }}"
-bigip_license_package: "{{ bigip_license_package }}"
-bigip_instance_type: "{{ bigip_instance_type }}"
+      
+      app_hosts_per_zone: "{{ app_hosts_per_zone }}"
+      app_host_ami_id: "{{ app_host_ami_id }}"
+      app_host_instance_type: "{{ app_host_instance_type }}"
+      containers_per_host: "{{ containers_per_host }}"
 
-# application details
-app_host_ami_id: "{{ app_host_ami_id }}"
-app_host_instance_type: "{{ app_host_instance_type }}"
-number_app_hosts: "{{ number_app_hosts }}"
-containers_per_hosts: "{{ containers_per_host }}"
+      bigip_version: "{{ bigip_version }}"
+	  bigip_license_throughput: "{{ bigip_license_throughput }}"
+	  bigip_license_model: "{{ bigip_license_model }}"
+	  bigip_license_package: "{{ bigip_license_package }}"
+	  bigip_instance_type: "{{ bigip_instance_type }}"
+
+{% endfor %}
+
 
 
 
