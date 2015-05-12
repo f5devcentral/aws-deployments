@@ -39,7 +39,7 @@ The specific number of applications are deployed on a per-AZ basis.  Based on pa
 This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/<b>env_name</b>/'
  ```ansible-playbook ./playbooks/init.yml -i ./inventory/hosts --extra-vars '{"env_name":"<env_name>", "deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
 
-2) Deploy and manage the environment from step 1, this time, specificy the inventory that is environment specific: 
+2) Deploy and manage the environment from step 1, this time, specify the inventory by env_name: 
 ```ansible-playbook ./playbooks/deploy.yml -i ~/vars/<env_name>```
 
 
