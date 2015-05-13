@@ -1,4 +1,6 @@
 ---
+vipr_cidr_prefix: "172.16"
+
 bigip_version: "11.6"
 bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
@@ -7,6 +9,6 @@ bigip_instance_type: "m3.xlarge"
 
 app_host_instance_type: "t2.micro"
 # Docker optimized in US-EAST-1
-base_image:  "ami-ae6559c6"
+app_host_ami_id:  "ami-ae6559c6"
 containers_per_host: 2
 app_hosts_per_zone: 1
