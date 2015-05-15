@@ -8,11 +8,8 @@
   args:
     template_parameters:
       cidrBlock: "{{ vpc_cidr }}"
-  register: vpc_deploy_results 
-  when: vpcId is not defined or (force is defined and force|bool == True)
+  register: vpc_deploy_results
 
-- debug: var=vpc_deploy_results
-  #when: debug is defined and debug|bool == True and force is defined and force|bool ==True
+- name: persist vpc deploy results
+  template: src='az-managers.j2' dest='~/vars/{{ env_name }}/inventory/group_vars/az-managers'
 
-- template: src=infra_vpc.yml.j2 dest=~/vars/{{ env_name }}/infra_vpc.yml
-  #when: vpcId is not defined or (force is defined and force|bool == True)

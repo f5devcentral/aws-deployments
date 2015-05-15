@@ -1,0 +1,8 @@
+---
+- hosts: bigip-managers
+  gather_facts: no
+  vars_files: 
+   - ~/vars/aws-deployments/main.yml
+  tasks:
+    - name: deploy bigips
+      include: "{{ project_path }}/roles/infra/tasks/deploy_bigip.yml"

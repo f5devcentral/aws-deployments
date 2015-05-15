@@ -1,0 +1,8 @@
+---
+- hosts: vpc-manager
+  gather_facts: no
+  vars_files: 
+   - ~/vars/aws-deployments/main.yml
+  tasks:
+    - name: deploy vpc
+      include: "{{ project_path }}/roles/infra/tasks/deploy_vpc.yml"

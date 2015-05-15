@@ -2,18 +2,18 @@
 
 - name: Launch a big-ip in each AZ
   action: cloudformation
-    stack_name="{{ env_name }}-bigip-{{ item['item']['name'] }}"
+    stack_name="{{ env_name }}-bigip-{{ zone_id }}"
     state=present
     region="{{ region }}"
     template={{ project_path }}/roles/infra/files/bigip.json
   args:
     template_parameters:
       region: "{{ region }}"
-      vpc: "{{ vpc_deploy_results['stack_outputs']['vpcId'] }}"
-      availabilityZone: "{{ item['item']['az'] }}"
-      managementSubnet: "{{ item['stack_outputs']['ManagementSubnet'] }}"
-      privateSubnet: "{{ item['stack_outputs']['PrivateSubnet'] }}"
-      publicSubnet: "{{ item['stack_outputs']['PublicSubnet'] }}"
+      vpc: "{{ vpc_id }}"
+      availabilityZone: "{{ availability_zone }}"
+      managementSubnet: "{{ management_subnet }}"
+      privateSubnet: "{{ private_subnet }}"
+      publicSubnet: "{{ public_subnet }}"
       licenseThroughput: "{{ bigip_license_throughput }}"
       licenseModel: "{{ bigip_license_model }}"
       licensePackage: "{{ bigip_license_package }}"
@@ -22,9 +22,6 @@
       version: "{{ bigip_version }}"
       keyName: "{{ key_name }}"
   register: bigip_deploy_results
-  with_items: az_deploy_results['results']
-
-- template: src=infra_bigip.yml.j2 dest=~/vars/{{ env_name }}/infra_bigip.yml
 
 - name: debug bigip_deploy_results var 
   debug: var=bigip_deploy_results  
