@@ -5,4 +5,4 @@
    - ~/vars/aws-deployments/main.yml
   tasks:
     - name: deploy availability zones
-      include: "{{ project_path }}/roles/infra/tasks/deploy_bigip.yml"
+      include: "{{ project_path }}/roles/infra/tasks/deploy_az.yml"
