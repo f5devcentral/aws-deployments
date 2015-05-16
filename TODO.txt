@@ -1,0 +1,6 @@
+TODO:
+-need a way to teardown and delete a deployment
+-cannot init an environment with the same name as one which already exists
+--other syntax and symantic analysis of deployments
+-all command line execution goes through ./bin/f5-wizard
+-add a requirements.txt and use virtualenv like our consumers will
