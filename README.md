@@ -47,8 +47,8 @@ install_path: '<path to your install>'
 ### Usage:
 
 1) To create a new environment, use the init.yml playbook with the inventory provided as part of this repository. 
-This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/<b>env_name</b>/'
- ```./bin/f5aws deploy <environment> --extra-vars '{"env_name":"<env_name>", "deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
+This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/f5/aws/<b>env_name</b>/'
+ ```./bin/f5aws init <environment> --extra-vars '{"env_name":"<env_name>", "deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
 
 2) Deploy and manage the environment from step 1, this time, specify the inventory by env_name: 
 ```./bin/f5aws deploy <environment>```
