@@ -6,6 +6,8 @@
 import sys
 import os
 import stat
+import argparse
+import yaml
 
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
@@ -24,8 +26,9 @@ from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
 
-def version():
-    return "0.0.1"
+
+__version__ = "0.0.1"
+__prog__ = "f5aws"
 
 def colorize(lead, num, color):
     """ Print 'lead' = 'num' in 'color' """
@@ -44,268 +47,303 @@ def hostcolor(host, stats, color=True):
             return "%-37s" % stringc(host, 'green')
     return "%-26s" % host
 
-def parse(args):
-    '''parser for all command line options'''
+class VerbosityCallback(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError('nargs not allowed')
 
+        super(VerbosityCallback, self).__init__(option_strings, dest, **kwargs)
 
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        utils.increment_debug(parser, namespace, values, None)
 
-    # really like that ansible already sorts the options for us
-    usage = "%prog playbook.yml"
-    parser = utils.SortedOptParser(usage, version=version())
-    parser.add_option('-v','--verbose', default=False, action="callback",
-        callback=utils.increment_debug, help="verbose mode (-vvv for more, -vvvv to enable connection debugging)")
-    #parser.add_option('-f','--forks', dest='forks', default=constants.DEFAULT_FORKS, type='int',
-    #    help="specify number of parallel processes to use (default=%s)" % constants.DEFAULT_FORKS)
-    parser.add_option('-i', '--inventory-file', dest='inventory',
-        help="specify inventory host file (default=%s)" % constants.DEFAULT_HOST_LIST,
-        default=constants.DEFAULT_HOST_LIST)
-    #parser.add_option('-k', '--ask-pass', default=False, dest='ask_pass', action='store_true',
-    #    help='ask for SSH password')
-    #parser.add_option('--private-key', default=C.DEFAULT_PRIVATE_KEY_FILE, dest='private_key_file',
-    #    help='use this file to authenticate the connection')
-    #parser.add_option('-K', '--ask-sudo-pass', default=False, dest='ask_sudo_pass', action='store_true',
-    #    help='ask for sudo password')
-    #parser.add_option('--ask-su-pass', default=False, dest='ask_su_pass', action='store_true',
-    #    help='ask for su password')
-    #parser.add_option('--ask-vault-pass', default=False, dest='ask_vault_pass', action='store_true',
-    #    help='ask for vault password')
-    #parser.add_option('--vault-password-file', default=constants.DEFAULT_VAULT_PASSWORD_FILE,
-    #    dest='vault_password_file', help="vault password file")
-    #parser.add_option('--list-hosts', dest='listhosts', action='store_true',
-    #    help='outputs a list of matching hosts; does not execute anything else')
-    #parser.add_option('-M', '--module-path', dest='module_path',
-    #    help="specify path(s) to module library (default=%s)" % constants.DEFAULT_MODULE_PATH,
-    #    default=None)
-
- #    parser = utils.base_parser(
-    #   constants=C,
-    #   usage = "%prog playbook.yml",
-    #   connect_opts=True,
-    #   runas_opts=True,
-    #   subset_opts=True,
-    #   check_opts=True,
-    #   diff_opts=True
-    # )
-
-    parser.add_option('-e', '--extra-vars', dest="extra_vars", action="append",
-        help="set additional variables as key=value or YAML/JSON", default=[])
-    #parser.add_option('-t', '--tags', dest='tags', default='all',
-    #   help="only run plays and tasks tagged with these values")
-    #parser.add_option('--skip-tags', dest='skip_tags',
-#       help="only run plays and tasks whose tags do not match these values")
-    # parser.add_option('--syntax-check', dest='syntax', action='store_true',
-    #   help="perform a syntax check on the playbook, but do not execute it")
-    # parser.add_option('--list-tasks', dest='listtasks', action='store_true',
-    #   help="list all tasks that would be executed")
-    # parser.add_option('--step', dest='step', action='store_true',
-    #   help="one-step-at-a-time: confirm each task before running")
-    # parser.add_option('--start-at-task', dest='start_at',
-    #   help="start the playbook at the task matching this name")
-    # parser.add_option('--force-handlers', dest='force_handlers', action='store_true',
-    #   help="run handlers even if a task fails")
-    # parser.add_option('--flush-cache', dest='flush_cache', action='store_true',
-    #   help="clear the fact cache")
-
-    options, args = parser.parse_args(args)
-    options.forks = constants.DEFAULT_FORKS
-    options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
-    options.module_path = constants.DEFAULT_MODULE_PATH
-    options.remote_user = constants.DEFAULT_REMOTE_USER
-    options.timeout = constants.DEFAULT_TIMEOUT
-    options.connection = constants.DEFAULT_TRANSPORT
-    options.sudo = constants.DEFAULT_SUDO
-    options.sudo_user = None
-    options.su = constants.DEFAULT_SU
-    options.su_user = constants.DEFAULT_SU_USER
-    options.check = False #TODO: can we make this work for some scenarios?
-    options.diff = False #TODO: can we make this work for some scenarios?
-    options.force_handlers = False
-    options.flush_cache = False
-    options.listhosts = False  #TODO: can we make this work for some scenarios?
-    options.listtasks = False  #TODO: can we make this work for some scenarios?
-    options.syntax = False  #TODO: can we make this work for some scenarios?
-
-    return options, args
-
-
-def main(args, playsbooks):
-    ''' run ansible-playbook operations '''
-
-    options, args = parse(args)
-
-    sshpass = None
-    sudopass = None
-    su_pass = None
-    vault_pass = None
-
-
-    for playbook in playbooks:
-        if not os.path.exists(playbook):
-            raise errors.AnsibleError("the playbook: %s could not be found" % playbook)
-        if not (os.path.isfile(playbook) or stat.S_ISFIFO(os.stat(playbook).st_mode)):
-            raise errors.AnsibleError("the playbook: %s does not appear to be a file" % playbook)
-
-
-    for playbook in playbooks:
-
-        stats = callbacks.AggregateStats()
-        playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
-        runner_cb = callbacks.PlaybookRunnerCallbacks(stats, verbose=utils.VERBOSITY)
-
-        #reload the inventory before running each playbook
-        inventory = ansible.inventory.Inventory(options.inventory, vault_password=vault_pass)
-
-        if len(inventory.list_hosts()) == 0:
-            raise errors.AnsibleError("provided hosts list is empty")
-
-        pb = ansible.playbook.PlayBook(
-            playbook=playbook,
-            module_path=options.module_path,
-            inventory=inventory,
-            forks=options.forks,
-            remote_user=options.remote_user,
-            remote_pass=sshpass,
-            callbacks=playbook_cb,
-            runner_callbacks=runner_cb,
-            stats=stats,
-            timeout=options.timeout,
-            transport=options.connection,
-            sudo=options.sudo,
-            sudo_user=options.sudo_user,
-            sudo_pass=sudopass,
-            #extra_vars=extra_vars,
-            private_key_file=options.private_key_file,
-            #only_tags=only_tags,
-            #skip_tags=skip_tags,
-            check=options.check,
-            diff=options.diff,
-            su=options.su,
-            su_pass=su_pass,
-            su_user=options.su_user,
-            vault_password=vault_pass,
-            force_handlers=options.force_handlers
-        )
-
-        if options.flush_cache:
-            display(callbacks.banner("FLUSHING FACT CACHE"))
-            pb.SETUP_CACHE.flush()
-
-        if options.listhosts or options.listtasks or options.syntax:
-            print ''
-            print 'playbook: %s' % playbook
-            print ''
-            playnum = 0
-            for (play_ds, play_basedir) in zip(pb.playbook, pb.play_basedirs):
-                playnum += 1
-                play = ansible.playbook.Play(pb, play_ds, play_basedir,
-                                              vault_password=pb.vault_password)
-                label = play.name
-                hosts = pb.inventory.list_hosts(play.hosts)
-
-                # Filter all tasks by given tags
-                if pb.only_tags != 'all':
-                    if options.subset and not hosts:
-                        continue
-                    matched_tags, unmatched_tags = play.compare_tags(pb.only_tags)
-
-                    # Remove skipped tasks
-                    matched_tags = matched_tags - set(pb.skip_tags)
-
-                    unmatched_tags.discard('all')
-                    unknown_tags = ((set(pb.only_tags) | set(pb.skip_tags)) -
-                                    (matched_tags | unmatched_tags))
-
-                    if unknown_tags:
-                        continue
-
-                if options.listhosts:
-                    print '  play #%d (%s): host count=%d' % (playnum, label, len(hosts))
-                    for host in hosts:
-                        print '    %s' % host
-
-                if options.listtasks:
-                    print '  play #%d (%s):' % (playnum, label)
-
-                    for task in play.tasks():
-                        if (set(task.tags).intersection(pb.only_tags) and not
-                            set(task.tags).intersection(pb.skip_tags)):
-                            if getattr(task, 'name', None) is not None:
-                                # meta tasks have no names
-                                print '    %s' % task.name
-                if options.listhosts or options.listtasks:
-                    print ''
-            continue
-
-        if options.syntax:
-            # if we've not exited by now then we are fine.
-            print 'Playbook Syntax is fine'
-            return 0
-
-        failed_hosts = []
-        unreachable_hosts = []
-
+class F5Aws(object):
+    def __init__(self):
         try:
+            global_vars_path = '~/.{}'.format(__prog__)
+            fd = open(os.path.expanduser(global_vars_path), 'r')
+            self.settings = yaml.load(fd)
+            if self.settings.get('install_path', None) is None:
+                raise Exception('Required variable "install_path" not found in {}'.format(global_vars_path))
 
-            pb.run()
+            self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
+            self.settings['env_path'] = self.settings['vars_path'] + '/env'
+            self.settings['bin_path'] = self.settings['install_path'] + '/bin' #~/workspace/f5aws/bin
 
-            hosts = sorted(pb.stats.processed.keys())
-            display(callbacks.banner("PLAY RECAP"))
-            playbook_cb.on_stats(pb.stats)
+        except OSError:
+            pass
 
-            for h in hosts:
-                t = pb.stats.summarize(h)
-                if t['failures'] > 0:
-                    failed_hosts.append(h)
-                if t['unreachable'] > 0:
-                    unreachable_hosts.append(h)
+        #make the /env/ directory if it does not exist
+        try:
+            os.makedirs(self.settings['env_path'])
+        except OSError:
+            pass
+            
+    def run_playbooks(self, playbooks, inventory, options, extra_vars):
+        #defaults - are these used still?
+        sshpass = None
+        sudopass = None
+        su_pass = None
+        vault_pass = None
 
-            retries = failed_hosts + unreachable_hosts
+        for playbook in playbooks:
+            if not os.path.exists(playbook):
+                raise errors.AnsibleError("the playbook: %s could not be found" % playbook)
+            if not (os.path.isfile(playbook) or stat.S_ISFIFO(os.stat(playbook).st_mode)):
+                raise errors.AnsibleError("the playbook: %s does not appear to be a file" % playbook)
 
-            if len(retries) > 0:
-                filename = pb.generate_retry_inventory(retries)
-                if filename:
-                    display("           to retry, use: --limit @%s\n" % filename)
+        for playbook in playbooks:
 
-            for h in hosts:
-                t = pb.stats.summarize(h)
+            stats = callbacks.AggregateStats()
+            playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
+            runner_cb = callbacks.PlaybookRunnerCallbacks(stats, verbose=utils.VERBOSITY)
+            inventory = ansible.inventory.Inventory(inventory, vault_password=vault_pass)
 
-                display("%s : %s %s %s %s" % (
-                    hostcolor(h, t),
-                    colorize('ok', t['ok'], 'green'),
-                    colorize('changed', t['changed'], 'yellow'),
-                    colorize('unreachable', t['unreachable'], 'red'),
-                    colorize('failed', t['failures'], 'red')),
-                    screen_only=True
-                )
+            if len(inventory.list_hosts()) == 0:
+                raise errors.AnsibleError("provided hosts list is empty")
 
-                display("%s : %s %s %s %s" % (
-                    hostcolor(h, t, False),
-                    colorize('ok', t['ok'], None),
-                    colorize('changed', t['changed'], None),
-                    colorize('unreachable', t['unreachable'], None),
-                    colorize('failed', t['failures'], None)),
-                    log_only=True
-                )
+            pb = ansible.playbook.PlayBook(
+                playbook=playbook,
+                module_path=options.module_path,
+                inventory=inventory,
+                forks=options.forks,
+                remote_user=options.remote_user,
+                remote_pass=sshpass,
+                callbacks=playbook_cb,
+                runner_callbacks=runner_cb,
+                stats=stats,
+                timeout=options.timeout,
+                transport=options.connection,
+                sudo=options.sudo,
+                sudo_user=options.sudo_user,
+                sudo_pass=sudopass,
+                extra_vars=extra_vars,
+                private_key_file=options.private_key_file,
+                #only_tags=only_tags,
+                #skip_tags=skip_tags,
+                check=options.check,
+                diff=options.diff,
+                su=options.su,
+                su_pass=su_pass,
+                su_user=options.su_user,
+                vault_password=vault_pass,
+                force_handlers=options.force_handlers
+            )
 
-            print ""
-            if len(failed_hosts) > 0:
-                return 2
-            if len(unreachable_hosts) > 0:
-                return 3
+            if options.flush_cache:
+                display(callbacks.banner("FLUSHING FACT CACHE"))
+                pb.SETUP_CACHE.flush()
 
-        except errors.AnsibleError, e:
-            display("ERROR: %s" % e, color='red')
-            return 1
+            if options.listhosts or options.listtasks or options.syntax:
+                print ''
+                print 'playbook: %s' % playbook
+                print ''
+                playnum = 0
+                for (play_ds, play_basedir) in zip(pb.playbook, pb.play_basedirs):
+                    playnum += 1
+                    play = ansible.playbook.Play(pb, play_ds, play_basedir,
+                                                  vault_password=pb.vault_password)
+                    label = play.name
+                    hosts = pb.inventory.list_hosts(play.hosts)
 
-    return 0
+                    # Filter all tasks by given tags
+                    if pb.only_tags != 'all':
+                        if options.subset and not hosts:
+                            continue
+                        matched_tags, unmatched_tags = play.compare_tags(pb.only_tags)
+
+                        # Remove skipped tasks
+                        matched_tags = matched_tags - set(pb.skip_tags)
+
+                        unmatched_tags.discard('all')
+                        unknown_tags = ((set(pb.only_tags) | set(pb.skip_tags)) -
+                                        (matched_tags | unmatched_tags))
+
+                        if unknown_tags:
+                            continue
+
+                    if options.listhosts:
+                        print '  play #%d (%s): host count=%d' % (playnum, label, len(hosts))
+                        for host in hosts:
+                            print '    %s' % host
+
+                    if options.listtasks:
+                        print '  play #%d (%s):' % (playnum, label)
+
+                        for task in play.tasks():
+                            if (set(task.tags).intersection(pb.only_tags) and not
+                                set(task.tags).intersection(pb.skip_tags)):
+                                if getattr(task, 'name', None) is not None:
+                                    # meta tasks have no names
+                                    print '    %s' % task.name
+                    if options.listhosts or options.listtasks:
+                        print ''
+                continue
+
+            if options.syntax:
+                # if we've not exited by now then we are fine.
+                print 'Playbook Syntax is fine'
+                return 0
+
+            failed_hosts = []
+            unreachable_hosts = []
+
+            try:
+
+                pb.run()
+
+                hosts = sorted(pb.stats.processed.keys())
+                display(callbacks.banner("PLAY RECAP"))
+                playbook_cb.on_stats(pb.stats)
+
+                for h in hosts:
+                    t = pb.stats.summarize(h)
+                    if t['failures'] > 0:
+                        failed_hosts.append(h)
+                    if t['unreachable'] > 0:
+                        unreachable_hosts.append(h)
+
+                retries = failed_hosts + unreachable_hosts
+
+                if len(retries) > 0:
+                    filename = pb.generate_retry_inventory(retries)
+                    if filename:
+                        display("           to retry, use: --limit @%s\n" % filename)
+
+                for h in hosts:
+                    t = pb.stats.summarize(h)
+
+                    display("%s : %s %s %s %s" % (
+                        hostcolor(h, t),
+                        colorize('ok', t['ok'], 'green'),
+                        colorize('changed', t['changed'], 'yellow'),
+                        colorize('unreachable', t['unreachable'], 'red'),
+                        colorize('failed', t['failures'], 'red')),
+                        screen_only=True
+                    )
+
+                    display("%s : %s %s %s %s" % (
+                        hostcolor(h, t, False),
+                        colorize('ok', t['ok'], None),
+                        colorize('changed', t['changed'], None),
+                        colorize('unreachable', t['unreachable'], None),
+                        colorize('failed', t['failures'], None)),
+                        log_only=True
+                    )
+
+                print ""
+                if len(failed_hosts) > 0:
+                    return 2
+                if len(unreachable_hosts) > 0:
+                    return 3
+
+            except errors.AnsibleError, e:
+                display("ERROR: %s" % e, color='red')
+                return 1
+
+        return 0
+
+    def cmd_init(self, options, extra_vars):
+        #make sure the environment does not already exist
+        # all variables for the deployment should be available 
+        #  in extra_vars
+        playbooks = ['./init.yml']
+        inventory = self.settings['install_path']+'/inventory/hosts'
+        self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+    def cmd_deploy(self, options, extra_vars):
+        raise NotImplementedError()
+
+    def cmd_teardown(self, options, extra_vars):
+        raise NotImplementedError()
+
+    def cmd_listall(self, options, extra_vars):
+        display("Installed environments (%s):" % self.settings['env_path'], color='green', stderr=False) 
+        envs = self.get_envs()
+        if len(envs) == 0:
+            display("(none)", color='red', stderr=False) 
+        else:
+            for i in self.get_envs():
+                display(" - %s" % i, color='green', stderr=False) 
+
+    def get_envs(self):
+        return os.listdir(self.settings['env_path'])
+
+    def raise_not_implemented():
+        raise NotImplementedError()
+
+    def run(self):
+        parser = argparse.ArgumentParser(prog='f5aws')
+        parser.add_argument('-v', '--verbose', action=VerbosityCallback,
+            help='verbose mode (-vvv for more, -vvvv to enable connection debugging')
+        subparsers = parser.add_subparsers(dest='cmd', help='sub-command help')
+        
+        parser_init = subparsers.add_parser('init', help='Create a new AWS deployment with F5 services.')
+        parser_init.set_defaults(cmd='init')
+        parser_init.add_argument('env_name', help='name of the new environment')
+        parser_init.add_argument('-e', '--extra-vars', required=True,
+            dest="extra_vars", action="append",
+            help="set additional variables as key=value or YAML/JSON", default=[])
+        # TODO: cleanup the variable passing for extravars so we don't need to 
+        #   pass the extra-vars argument -- allow users to pass variables directly
+
+        parser_deploy = subparsers.add_parser('deploy', help='deploy help msg')
+        parser_deploy.add_argument('env_name', metavar='ENVIRONMENT', type=str, help='name help message')
+
+        parser_deploy = subparsers.add_parser('teardown', help='deploy help msg')
+        parser_deploy.add_argument('env_name', metavar='ENVIRONMENT', type=str, help='name help message')
+
+        parser_deploy = subparsers.add_parser('listall', help='List all deployments and corrosponding status.')
+
+        options = parser.parse_args()
+        
+        # think of a deployment as a set of immutable parameters defined when launched using init
+        #  at time of init, the environment is given a name, i.e. env_name 
+        extra_vars = {}
+        if options.cmd == 'init':
+            for extra_vars_opt in options.extra_vars:
+                if extra_vars_opt.startswith("@"):
+                    # Argument is a YAML file (JSON is a subset of YAML)
+                    extra_vars = utils.combine_vars(extra_vars, utils.parse_yaml_from_file(extra_vars_opt[1:], vault_password=vault_pass))
+                elif extra_vars_opt and extra_vars_opt[0] in '[{':
+                    # Arguments as YAML
+                    extra_vars = utils.combine_vars(extra_vars, utils.parse_yaml(extra_vars_opt))
+                else:
+                    # Arguments as Key-value
+                    extra_vars = utils.combine_vars(extra_vars, utils.parse_kv(extra_vars_opt))
+
+        if getattr(options, 'env_name', None) is not None:
+            extra_vars['env_name'] = options.env_name
+
+        options.forks = constants.DEFAULT_FORKS
+        options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
+        options.module_path = constants.DEFAULT_MODULE_PATH
+        options.remote_user = constants.DEFAULT_REMOTE_USER
+        options.timeout = constants.DEFAULT_TIMEOUT
+        options.connection = constants.DEFAULT_TRANSPORT
+        options.sudo = constants.DEFAULT_SUDO
+        options.sudo_user = None
+        options.su = constants.DEFAULT_SU
+        options.su_user = constants.DEFAULT_SU_USER
+        options.check = False #TODO: can we make this work for some scenarios?
+        options.diff = False #TODO: can we make this work for some scenarios?
+        options.force_handlers = False
+        options.flush_cache = False
+        options.listhosts = False  #TODO: can we make this work for some scenarios?
+        options.listtasks = False  #TODO: can we make this work for some scenarios?
+        options.syntax = False  #TODO: can we make this work for some scenarios?
+
+        # how about a common set of return values by all cmd functions
+        getattr(self, 'cmd_'+options.cmd, self.raise_not_implemented)(options, extra_vars)
 
 if __name__ == "__main__":
     display(" ", log_only=True)
     display(" ".join(sys.argv), log_only=True)
     display(" ", log_only=True)
+
     try:
-        playbooks = ['./bin/deploy_vpc.yml', './bin/deploy_az.yml', './bin/deploy_bigip.yml']
-        sys.exit(main(sys.argv[1:], playbooks))
+        F5Aws().run()
     except errors.AnsibleError, e:
         display("ERROR: %s" % e, color='red', stderr=True)
         sys.exit(1)

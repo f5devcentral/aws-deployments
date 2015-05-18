@@ -1,17 +1,17 @@
 ---
 # make a directory for this new deployment
-- file: path="~/vars/{{ env_name }}" state="directory"
-- file: path="~/vars/{{ env_name }}/inventory" state="directory"
-- file: path="~/vars/{{ env_name }}/inventory/group_vars" state="directory"
-- file: path="~/vars/{{ env_name }}/inventory/group_vars/bigips" state="touch"
-- file: path="~/vars/{{ env_name }}/inventory/group_vars/docker_hosts" state="touch"
-- file: path="~/vars/{{ env_name }}/inventory/hosts_vars" state="directory"
+- file: path="~/vars/f5aws/env/{{ env_name }}" state="directory"
+- file: path="~/vars/f5aws/env/{{ env_name }}/inventory" state="directory"
+- file: path="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars" state="directory"
+- file: path="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/bigips" state="touch"
+- file: path="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/docker_hosts" state="touch"
+- file: path="~/vars/f5aws/env/{{ env_name }}/inventory/hosts_vars" state="directory"
 
 # create some files for the roles/hosts we know we need
-- template: src="localhost.yml.j2" dest="~/vars/{{ env_name }}/inventory/hosts_vars/localhost"
+- template: src="localhost.yml.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/hosts_vars/localhost"
 
 # add a template to be used when we deploy the amazon infrstructure (vpc, subnets, bigips, etcs)
-- template: src="{{ deployment_model }}-hosts.j2" dest="~/vars/{{ env_name }}/inventory/hosts"
+- template: src="{{ deployment_model }}-hosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/hosts"
 
 
 

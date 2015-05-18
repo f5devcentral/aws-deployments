@@ -33,13 +33,24 @@ README.md
 This role deploys a simple application we have developed for traffic testing. 
 The specific number of applications are deployed on a per-AZ basis.  Based on parameters, these application instances are either provisioned as pool member resources for BIG-IP devices in each availability zone, or only for device in the zone in which they are deployed. 
 
+### Setup:
+1) Download this code somewhere to your system
+2) Create ~/.f5aws with the following contents:
+````
+---
+# Location of the aws-deployments project
+install_path: '<path to your install>'
+````
+3) Install the project requirements, i.e.:
+```pip install requirements.txt```
+
 ### Usage:
 
 1) To create a new environment, use the init.yml playbook with the inventory provided as part of this repository. 
 This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/<b>env_name</b>/'
- ```ansible-playbook init.yml -i ./inventory/hosts --extra-vars '{"env_name":"<env_name>", "deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
+ ```./bin/f5aws deploy <environment> --extra-vars '{"env_name":"<env_name>", "deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
 
 2) Deploy and manage the environment from step 1, this time, specify the inventory by env_name: 
-```ansible-playbook deploy.yml -i ~/vars/<env_name>```
+```./bin/f5aws deploy <environment>```
 
 
