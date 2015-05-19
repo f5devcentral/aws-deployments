@@ -1,0 +1,18 @@
+---
+- hosts: bigip-managers
+  gather_facts: no
+  tasks:
+    - name: teardown bigips
+      include: "{{ install_path }}/roles/infra/tasks/teardown_bigip.yml"
+
+- hosts: az-managers
+  gather_facts: no
+  tasks:
+    - name: teardown az
+      include: "{{ install_path }}/roles/infra/tasks/teardown_az.yml"
+
+- hosts: vpc-manager
+  gather_facts: no
+  tasks:
+    - name: teardown vpc
+      include: "{{ install_path }}/roles/infra/tasks/teardown_vpc.yml"

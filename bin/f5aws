@@ -8,6 +8,7 @@ import os
 import stat
 import argparse
 import yaml
+import shutil
 
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
@@ -79,8 +80,8 @@ class F5Aws(object):
             os.makedirs(self.settings['env_path'])
         except OSError:
             pass
-            
-    def run_playbooks(self, playbooks, inventory, options, extra_vars):
+
+    def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
         #defaults - are these used still?
         sshpass = None
         sudopass = None
@@ -94,11 +95,12 @@ class F5Aws(object):
                 raise errors.AnsibleError("the playbook: %s does not appear to be a file" % playbook)
 
         for playbook in playbooks:
+            display("Running playbook: %s" % playbook, color='green', stderr=False)
 
             stats = callbacks.AggregateStats()
             playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
             runner_cb = callbacks.PlaybookRunnerCallbacks(stats, verbose=utils.VERBOSITY)
-            inventory = ansible.inventory.Inventory(inventory, vault_password=vault_pass)
+            inventory = ansible.inventory.Inventory(inventory_path, vault_password=vault_pass)
 
             if len(inventory.list_hosts()) == 0:
                 raise errors.AnsibleError("provided hosts list is empty")
@@ -248,15 +250,23 @@ class F5Aws(object):
         #make sure the environment does not already exist
         # all variables for the deployment should be available 
         #  in extra_vars
-        playbooks = ['./init.yml']
+        playbooks = ['./bin/init.yml']
         inventory = self.settings['install_path']+'/inventory/hosts'
         self.run_playbooks(playbooks, inventory, options, extra_vars)
 
     def cmd_deploy(self, options, extra_vars):
-        raise NotImplementedError()
+        playbooks = ['./bin/deploy_vpc.yml',]#'./bin/deploy_az.yml','./bin/deploy_bigip.yml']
+        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+        self.run_playbooks(playbooks, inventory, options, extra_vars)
 
     def cmd_teardown(self, options, extra_vars):
-        raise NotImplementedError()
+        playbooks = ['./bin/teardown_all.yml']
+        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+        self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+        # TODO: should we use a playbook here instead of python utility functions
+        #    would probably help to make it a bit more idempotent
+        #shutil.rmtree('%s/%s' % (self.settings['env_path'], options.env_name))
 
     def cmd_listall(self, options, extra_vars):
         display("Installed environments (%s):" % self.settings['env_path'], color='green', stderr=False) 
@@ -315,6 +325,8 @@ class F5Aws(object):
 
         if getattr(options, 'env_name', None) is not None:
             extra_vars['env_name'] = options.env_name
+
+        extra_vars['install_path'] = self.settings['install_path']
 
         options.forks = constants.DEFAULT_FORKS
         options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE

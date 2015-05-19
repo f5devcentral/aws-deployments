@@ -1,0 +1,14 @@
+---
+
+- name: Teardown BIG-IP
+  action: cloudformation
+    stack_name="{{ env_name }}-bigip-{{ zone_id }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/bigip.json
+  register: bigip_teardown_results
+  ignore_errors: yes
+
+- name: debug bigip_teardown_results var 
+  debug: var=bigip_teardown_results  
+

@@ -5,7 +5,7 @@
     stack_name="{{ env_name }}-bigip-{{ zone_id }}"
     state=present
     region="{{ region }}"
-    template={{ project_path }}/roles/infra/files/bigip.json
+    template={{ install_path }}/roles/infra/files/bigip.json
   args:
     template_parameters:
       region: "{{ region }}"

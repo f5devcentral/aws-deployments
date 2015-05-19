@@ -4,7 +4,7 @@
     stack_name="{{ env_name }}-az-{{ availability_zone }}"
     state=present
     region="{{ region }}"
-    template={{ project_path }}/roles/infra/files/az.json
+    template={{ install_path }}/roles/infra/files/az.json
   args:
     template_parameters:
       vpc: "{{ vpc_id }}"
@@ -18,4 +18,4 @@
 - debug: var=az_deploy_results
 
 - name: create a file in which to persist results
-  template: src='bigip-managers.j2' dest=~/vars/{{ env_name }}/inventory/host_vars/{{zone_id}}-bigip1-manager
+  template: src='bigip-managers.j2' dest=~/vars/f5aws/env/{{ env_name }}/inventory/host_vars/{{zone_id}}-bigip1-manager

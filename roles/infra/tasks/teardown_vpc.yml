@@ -1,0 +1,13 @@
+---
+- name: Teardown vpc
+  cloudformation:
+    stack_name="{{ env_name }}-vpc"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/vpc.json
+  register: vpc_teardown_results
+  ignore_errors: yes
+
+- name: debug vpc_teardown_results var 
+  debug: var=vpc_teardown_results  
+
