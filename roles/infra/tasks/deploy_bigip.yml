@@ -5,7 +5,7 @@
     stack_name="{{ env_name }}-bigip-{{ zone_id }}"
     state=present
     region="{{ region }}"
-    template={{ project_path }}/roles/infra/files/bigip.json
+    template={{ install_path }}/roles/infra/files/bigip.json
   args:
     template_parameters:
       region: "{{ region }}"
@@ -25,4 +25,6 @@
 
 - name: debug bigip_deploy_results var 
   debug: var=bigip_deploy_results  
+
+- copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/bigip-{{ zone_id }}.yml
 

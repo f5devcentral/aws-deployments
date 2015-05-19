@@ -8,6 +8,9 @@ import os
 import stat
 import argparse
 import yaml
+import shutil
+import itertools
+import re
 
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
@@ -47,6 +50,17 @@ def hostcolor(host, stats, color=True):
             return "%-37s" % stringc(host, 'green')
     return "%-26s" % host
 
+#The cloudformation module outputs a yaml blob
+# for the key 'invocation' in this blob, we get back a string like the below
+# which has a format that is totally beyond me....
+# I guess one of the quirks of ansible is that they couldn't decide on
+#  one type of object notation...
+# a='stack_name="foo3-vpc" state=absent region="eu-west-1" template=/Users/mutzel/workspace/aws-deployments/roles/infra/files/vpc.json'
+def get_dict_from_junk_str(inStr):
+    l = [i.split('=') for i in inStr.split(' ')]
+    res_arr = [i.replace('"','') for i in list(itertools.chain(*l))]
+    return dict(zip(res_arr[::2], res_arr[1::2]))
+
 class VerbosityCallback(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         if nargs is not None:
@@ -79,8 +93,8 @@ class F5Aws(object):
             os.makedirs(self.settings['env_path'])
         except OSError:
             pass
-            
-    def run_playbooks(self, playbooks, inventory, options, extra_vars):
+
+    def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
         #defaults - are these used still?
         sshpass = None
         sudopass = None
@@ -94,11 +108,12 @@ class F5Aws(object):
                 raise errors.AnsibleError("the playbook: %s does not appear to be a file" % playbook)
 
         for playbook in playbooks:
+            display("Running playbook: %s" % playbook, color='green', stderr=False)
 
             stats = callbacks.AggregateStats()
             playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
             runner_cb = callbacks.PlaybookRunnerCallbacks(stats, verbose=utils.VERBOSITY)
-            inventory = ansible.inventory.Inventory(inventory, vault_password=vault_pass)
+            inventory = ansible.inventory.Inventory(inventory_path, vault_password=vault_pass)
 
             if len(inventory.list_hosts()) == 0:
                 raise errors.AnsibleError("provided hosts list is empty")
@@ -248,29 +263,116 @@ class F5Aws(object):
         #make sure the environment does not already exist
         # all variables for the deployment should be available 
         #  in extra_vars
-        playbooks = ['./init.yml']
+        playbooks = ['./bin/init.yml']
         inventory = self.settings['install_path']+'/inventory/hosts'
         self.run_playbooks(playbooks, inventory, options, extra_vars)
 
     def cmd_deploy(self, options, extra_vars):
-        raise NotImplementedError()
+        playbooks = ['./bin/deploy_vpc.yml', './bin/deploy_az.yml','./bin/deploy_bigip.yml']
+        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+        self.run_playbooks(playbooks, inventory, options, extra_vars)
 
     def cmd_teardown(self, options, extra_vars):
-        raise NotImplementedError()
+        playbooks = ['./bin/teardown_all.yml']
+        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+        self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+    def cmd_remove(self, options, extra_vars):
+        # TODO: should we use a playbook here instead of python utility functions
+        #    would probably help to make it a bit more idempotent
+        playbooks = ['./bin/remove.yml']
+        inventory = self.settings['install_path']+'/inventory/hosts'
+        self.run_playbooks(playbooks, inventory, options, extra_vars)
 
     def cmd_listall(self, options, extra_vars):
-        display("Installed environments (%s):" % self.settings['env_path'], color='green', stderr=False) 
+        display("Installed environments (%s):" %
+            self.settings['env_path'], color='green', stderr=False) 
         envs = self.get_envs()
         if len(envs) == 0:
             display("(none)", color='red', stderr=False) 
         else:
-            for i in self.get_envs():
-                display(" - %s" % i, color='green', stderr=False) 
+            for env in self.get_envs():
+                display(" - %s" % env,
+                    color='green', stderr=False)
+                display("    info: ", color='green', stderr=False)
+                for k, v in self.get_env_info(env).iteritems():
+                    display("      %s: %s" % (k,v),
+                    color='green', stderr=False)
+                display("    resources: ", color='green', stderr=False)
+                resource_status = self.get_env_status(env)
+                for key, value in resource_status.iteritems():
+                    if 'error' in value['state']:
+                        color='red'
+                    else: 
+                        color='green'
+                    display("      %s: %s" % (key, value), color=color, stderr=False)
 
     def get_envs(self):
         return os.listdir(self.settings['env_path'])
 
-    def raise_not_implemented():
+    def get_env_info(self, env):
+
+        env_info = {}
+        # hack to get some useful information about the deployment
+        f = open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r')
+        foundVars = False
+        for l in f.readlines():
+            if foundVars is False:
+                if 'all:vars' not in l:
+                    continue
+                else:
+                    foundVars = True
+            else:
+                # break on the first blank line
+                if l.rstrip().lstrip() == '':
+                    break
+                else:
+                    result = re.match('^([a-z0-9_\-\.]+)=([a-z0-9_\-\.\/]+)', l)
+                    if result:
+                        env_info[result.group(1)] = result.group(2)
+        del env_info['env_name']
+
+        return env_info
+
+    def get_env_status(self, env):
+        
+        # get the resources we are managing
+        path = self.settings['env_path']+'/'+env
+        env_resources = [ f for f in os.listdir(path)]
+        env_resources.remove('inventory')         
+
+        res = {}
+        for r in env_resources:
+            # for each resource, we will get the results from
+            #  most recent manager execution for that resource
+            latest = yaml.load(open(path+'/'+r))
+            res[r[0:-4]] = getattr(self,
+                'state_'+latest['invocation']['module_name'],
+                self.raise_not_implemented)(latest)
+
+        return res
+
+    def state_cloudformation(self, latest_result):
+        res_state = {}
+        cf = get_dict_from_junk_str(latest_result['invocation']['module_args'])
+        # we need to handle 'present' and 'absent' situations differently
+        if cf['state'] == 'present':
+            res_state['stack_name'] = cf['stack_name']
+            if (latest_result['output'] == 'Stack CREATE complete' or
+            latest_result['output'] == 'Stack is already up-to-date.'):
+                res_state['state'] = 'deployed'
+            else:
+                res_state['state']='deploy-error'
+        else: # state == 'absent'...
+            if (latest_result.get('output','') == 'Stack Deleted' or
+                'does not exist' in latest_result.get('msg','')):
+                res_state['state'] = 'absent'
+            else:
+                res_state['state'] = 'teardown-error'
+
+        return res_state
+
+    def raise_not_implemented(*args):
         raise NotImplementedError()
 
     def run(self):
@@ -315,6 +417,8 @@ class F5Aws(object):
 
         if getattr(options, 'env_name', None) is not None:
             extra_vars['env_name'] = options.env_name
+
+        extra_vars['install_path'] = self.settings['install_path']
 
         options.forks = constants.DEFAULT_FORKS
         options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE

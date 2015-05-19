@@ -1,4 +1,4 @@
-# This playbook creates a deployment ID, and creates the necessary template and variable files.
+# This playbook creates a inventory for a new deployment, and creates the necessary template and variable files.
 
 #inputs:
 # -- required
@@ -24,4 +24,4 @@
 - hosts: localhosts
   gather_facts: False
   roles: 
-  - creator
+  - inventory_manager

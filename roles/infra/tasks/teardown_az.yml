@@ -1,0 +1,15 @@
+---
+
+- name: Teardown all subnets in AZ
+  cloudformation:
+    stack_name="{{ env_name }}-az-{{ availability_zone }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/az.json
+  register: az_teardown_results
+  ignore_errors: yes
+
+- name: debug az_teardown_results var 
+  debug: var=az_teardown_results  
+
+- copy: content="{{ az_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/az-{{ zone_id }}.yml
