@@ -21,6 +21,8 @@ import yaml
 import shutil
 import itertools
 import re
+#import pprint
+import json
 
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
@@ -106,12 +108,7 @@ class F5Aws(object):
       self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
       self.settings['env_path'] = self.settings['vars_path'] + '/env'
       self.settings['bin_path'] = self.settings['install_path'] + '/bin' #~/workspace/f5aws/bin
-
-    except OSError:
-      pass
-
     #make the /env/ directory if it does not exist
-    try:
       os.makedirs(self.settings['env_path'])
     except OSError:
       pass
@@ -327,7 +324,7 @@ class F5Aws(object):
     inventory = self.settings['install_path']+'/inventory/hosts'
     self.run_playbooks(playbooks, inventory, options, extra_vars)
       
-  def cmd_listall(self, options, extra_vars):
+  def cmd_list(self, options, extra_vars):
     display("Installed environments (%s):" %
       self.settings['env_path'], color='green', stderr=False) 
     envs = self.get_envs()
@@ -335,23 +332,34 @@ class F5Aws(object):
       display("(none)", color='red', stderr=False) 
     else:
       for env in self.get_envs():
-        display(" - %s" % env,
-          color='green', stderr=False)
+        display(" - %s" % env, color='green', stderr=False)
+        self.display_env_info(env)
+        self.display_env_resources(env, False)
         
-        for k, v in self.get_env_info(env).iteritems():
-          display("    %s: %s" % (k,v),
-          color='green', stderr=False)
-        display("    resources: ", color='green', stderr=False)
-        resources, statuses = self.get_env_status(env)
-        for r in resources:
+  def cmd_describe(self, options, extra_vars):
+    env = extra_vars['env_name']
+    display(" - %s" % env, color='green', stderr=False)
+    self.display_env_info(env)
+    self.display_env_resources(env, True)
+
+  def get_envs(self):
+    return os.listdir(self.settings['env_path'])
+
+  def display_env_info(self, env):
+    for k, v in self.get_env_info(env).iteritems():
+          display("    %s: %s" % (k,v), color='green', stderr=False)
+
+  def display_env_resources(self, env, show_resource_vars):
+    display("    resources: ", color='green', stderr=False)
+    resources, statuses = self.get_env_status(env, show_resource_vars)
+    for r in resources:
           if 'error' in statuses[r]['state']:
               color='red'
           else: 
               color='green'
-          display("      %s: %s" % (r, statuses[r]['state']), color=color, stderr=False)
-
-  def get_envs(self):
-    return os.listdir(self.settings['env_path'])
+          if show_resource_vars:
+            display("      %s:" % r, color=color, stderr=False)
+            display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
 
   def get_env_info(self, env):
     """Read some information about this @env from the inventory/hosts 
@@ -380,7 +388,7 @@ class F5Aws(object):
 
     return env_info
 
-  def get_env_status(self, env):
+  def get_env_status(self, env, show_resource_vars):
       
     managers = self.get_managers(env)
 
@@ -396,7 +404,7 @@ class F5Aws(object):
           latest = yaml.load(f)
           statuses[resource_name] = getattr(self,
               'state_'+latest['invocation']['module_name'],
-              self.raise_not_implemented)(latest)
+              self.raise_not_implemented)(latest, show_resource_vars)
       except:
         statuses[resource_name] = {'state': 'error'}
 
@@ -429,12 +437,14 @@ class F5Aws(object):
 
     return managers   
 
-  def state_cloudformation(self, latest_result):
+  def state_cloudformation(self, latest_result, show_resource_vars):
     res_state = {}
     cf = get_dict_from_junk_str(latest_result['invocation']['module_args'])
     # we need to handle 'present' and 'absent' situations differently
     if cf['state'] == 'present':
       res_state['stack_name'] = cf['stack_name']
+      if show_resource_vars:
+        res_state['resource_vars'] = latest_result['stack_outputs']
       if (latest_result['output'] == 'Stack CREATE complete' or
         latest_result['output'] == 'Stack is already up-to-date.'):
         res_state['state'] = 'deployed'
@@ -461,7 +471,8 @@ class F5Aws(object):
     parser_init = subparsers.add_parser('init',
       help='Create a new AWS deployment with F5 services.')
     parser_init.set_defaults(cmd='init')
-    parser_init.add_argument('env_name', help='name of the new environment')
+    parser_init.add_argument('env_name',
+      help='Name of the new environment to be created')
     parser_init.add_argument('-e', '--extra-vars', required=True,
       dest="extra_vars", action="append",
       help="set additional variables as key=value or YAML/JSON", default=[])
@@ -471,19 +482,24 @@ class F5Aws(object):
     parser_deploy = subparsers.add_parser('deploy',
       help='Deploy EC2 resource and application services based on inventory files. ')
     parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
-      type=str, help='name help message')
+      type=str, help='Name of environment to be deployed/updated')
     
     parser_deploy = subparsers.add_parser('teardown',
       help='De-provision all resources in AWS EC2 for this environment.')
     parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
-      type=str, help='name help message')
+      type=str, help='Name of environment to be de-provisioned. ')
 
     parser_deploy = subparsers.add_parser('remove',
       help='Remove all inventory files for this environment.')
     parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
-      type=str, help='name help message')
+      type=str, help='Name of environment to be deleted')
+
+    parser_describe = subparsers.add_parser('describe',
+      help='Show resource variables along with environment information.')
+    parser_describe.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='Name of environment to describe')
     
-    parser_deploy = subparsers.add_parser('listall',
+    parser_deploy = subparsers.add_parser('list',
       help='List all deployments and corrosponding status.')
 
     options = parser.parse_args()
