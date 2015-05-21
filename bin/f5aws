@@ -337,29 +337,33 @@ class F5Aws(object):
         self.display_env_resources(env, False)
         
   def cmd_describe(self, options, extra_vars):
-    env = extra_vars['env_name']
-    display(" - %s" % env, color='green', stderr=False)
-    self.display_env_info(env)
-    self.display_env_resources(env, True)
+    try:
+      env = extra_vars['env_name']
+      self.display_env_info(env)
+      self.display_env_resources(env, True)
+    except IOError:
+      display(" Environment '%s' does not exist" % env, color='red', stderr=True)
 
   def get_envs(self):
     return os.listdir(self.settings['env_path'])
 
   def display_env_info(self, env):
-    for k, v in self.get_env_info(env).iteritems():
+    env_info = self.get_env_info(env)
+    display(" - %s" % env, color='green', stderr=False)
+    for k, v in env_info.iteritems():
           display("    %s: %s" % (k,v), color='green', stderr=False)
 
-  def display_env_resources(self, env, show_resource_vars):
-    display("    resources: ", color='green', stderr=False)
-    resources, statuses = self.get_env_status(env, show_resource_vars)
-    for r in resources:
-          if 'error' in statuses[r]['state']:
-              color='red'
-          else: 
-              color='green'
-          if show_resource_vars:
-            display("      %s:" % r, color=color, stderr=False)
-            display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
+  def display_env_resources(self, env, show_resource_vars):  
+      resources, statuses = self.get_env_status(env, show_resource_vars)
+      display("    resources: ", color='green', stderr=False)
+      for r in resources:
+            if 'error' in statuses[r]['state']:
+                color='red'
+            else: 
+                color='green'
+            if show_resource_vars:
+              display("      %s:" % r, color=color, stderr=False)
+              display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
 
   def get_env_info(self, env):
     """Read some information about this @env from the inventory/hosts 
