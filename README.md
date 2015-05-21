@@ -12,6 +12,10 @@ Further, this library shows how BIG-IP can be orchestrated using open-source con
 These examples are provided in order to demonstrate how BIG-IP can be used to manage the availability, performance, and security of applications running in AWS and other public cloud environments.
 
 
+	As of now, these deployment models are:
+		-standalone-per-zone
+
+
 ### Setup:
 1) Download this code somewhere to your system
 2) Create ~/.f5aws with the following contents:
@@ -25,6 +29,7 @@ install_path: 'path to your install'
 
 
 2) Install the project requirements, i.e.:
+
 
 ```pip install requirements.txt```
 
