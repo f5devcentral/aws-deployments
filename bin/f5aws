@@ -6,8 +6,8 @@
 
 This is a modified version of the code found in the ansible-playbook
 script which ships with ansible. It leverages the ansible python APIs
-for running playbooks, but allows reloads inventory between plays, 
-to better allow reuse of ansibles inventory feature.
+for running playbooks, but allows reloading inventory between plays, 
+to better reuse of ansibles inventory features for our specific use case.
 
 For more information on the usage, see the project README.md
 
@@ -295,9 +295,9 @@ class F5Aws(object):
         created by the 'init' command.
     """
     playbooks = [
-        './bin/deploy_vpc.yml',
-        './bin/deploy_az.yml',
-        './bin/deploy_bigip.yml'
+      './bin/deploy_vpc.yml',
+      './bin/deploy_az.yml',
+      './bin/deploy_bigip.yml'
     ]
     inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
     self.run_playbooks(playbooks, inventory, options, extra_vars)
@@ -311,19 +311,33 @@ class F5Aws(object):
     inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
     self.run_playbooks(playbooks, inventory, options, extra_vars)
 
-
   def cmd_remove(self, options, extra_vars):
     """
       Delete an environment (it should have already been torn down...)
     """
-    # TODO: check that resources for this environment do not 
-    #  still exist when tearing it down. 
-    playbooks = ['./bin/remove.yml']
+    env = extra_vars['env_name']
+    resources, statuses = self.get_env_status(env)
+    
+    okToRemove = True
+    stillExist = []
+    for r in resources: 
+      if statuses[r]['state'] == 'deployed':
+        okToRemove = False
+        stillExist.append(r)
 
-    # just use 'localhost' as the set of hosts when executing this playbook
-    inventory = self.settings['install_path']+'/inventory/hosts'
-    self.run_playbooks(playbooks, inventory, options, extra_vars)
-      
+    if okToRemove is True:
+      #playbooks = ['./bin/remove.yml']
+
+      # just use 'localhost' as the set of hosts when executing this playbook
+      inventory = self.settings['install_path']+'/inventory/hosts'
+      self.run_playbooks(playbooks, inventory, options, extra_vars)
+    else:
+      msg = """Cannot remove environment '%s' until all resources have been deprovisioned.
+The following resources still exist: %s. 
+Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
+
+      display(msg, color='red', stderr=True)
+        
   def cmd_list(self, options, extra_vars):
     display("Installed environments (%s):" %
       self.settings['env_path'], color='green', stderr=False) 
@@ -332,7 +346,6 @@ class F5Aws(object):
       display("(none)", color='red', stderr=False) 
     else:
       for env in self.get_envs():
-        display(" - %s" % env, color='green', stderr=False)
         self.display_env_info(env)
         self.display_env_resources(env, False)
         
@@ -351,19 +364,22 @@ class F5Aws(object):
     env_info = self.get_env_info(env)
     display(" - %s" % env, color='green', stderr=False)
     for k, v in env_info.iteritems():
-          display("    %s: %s" % (k,v), color='green', stderr=False)
+      display("    %s: %s" % (k,v), color='green', stderr=False)
 
   def display_env_resources(self, env, show_resource_vars):  
       resources, statuses = self.get_env_status(env, show_resource_vars)
       display("    resources: ", color='green', stderr=False)
       for r in resources:
-            if 'error' in statuses[r]['state']:
-                color='red'
-            else: 
-                color='green'
-            if show_resource_vars:
-              display("      %s:" % r, color=color, stderr=False)
-              display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
+        if 'error' in statuses[r]['state']:
+          color='red'
+        else: 
+          color='green'
+
+        if show_resource_vars:
+          display("      %s:" % r, color=color, stderr=False)
+          display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
+        else:
+          display("      %s: %s" % (r, statuses[r]), color=color, stderr=False)
 
   def get_env_info(self, env):
     """Read some information about this @env from the inventory/hosts 
@@ -392,10 +408,8 @@ class F5Aws(object):
 
     return env_info
 
-  def get_env_status(self, env, show_resource_vars):
-      
+  def get_env_status(self, env, show_resource_vars=False):
     managers = self.get_managers(env)
-
     statuses = {}
     resources = []
     for m in managers:
@@ -488,14 +502,14 @@ class F5Aws(object):
     parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be deployed/updated')
     
-    parser_deploy = subparsers.add_parser('teardown',
+    parser_teardown = subparsers.add_parser('teardown',
       help='De-provision all resources in AWS EC2 for this environment.')
-    parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
+    parser_teardown.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be de-provisioned. ')
 
-    parser_deploy = subparsers.add_parser('remove',
+    parser_remove = subparsers.add_parser('remove',
       help='Remove all inventory files for this environment.')
-    parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
+    parser_remove.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be deleted')
 
     parser_describe = subparsers.add_parser('describe',
@@ -503,7 +517,7 @@ class F5Aws(object):
     parser_describe.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to describe')
     
-    parser_deploy = subparsers.add_parser('list',
+    parser_list = subparsers.add_parser('list',
       help='List all deployments and corrosponding status.')
 
     options = parser.parse_args()
