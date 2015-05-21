@@ -13,4 +13,4 @@
 - name: persist vpc deploy results
   template: src='az-managers.j2' dest='~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/az-managers'
 
-- copy: content="{{ vpc_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/vpc.yml
+- copy: content="{{ vpc_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

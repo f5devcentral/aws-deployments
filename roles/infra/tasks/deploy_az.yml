@@ -20,4 +20,4 @@
 - name: create a file in which to persist results
   template: src='bigip-managers.j2' dest=~/vars/f5aws/env/{{ env_name }}/inventory/host_vars/{{zone_id}}-bigip1-manager
 
-- copy: content="{{ az_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/az-{{ zone_id }}.yml
+- copy: content="{{ az_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

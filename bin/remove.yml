@@ -3,5 +3,6 @@
 ---
 - hosts: localhosts
   gather_facts: False
-  roles: 
-  - inventory_manager
+  tasks:
+    - name: deploy vpc
+      include: "{{ install_path }}/roles/inventory_manager/tasks/teardown.yml"

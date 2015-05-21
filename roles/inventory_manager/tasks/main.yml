@@ -12,6 +12,3 @@
 
 # add a template to be used when we deploy the amazon infrstructure (vpc, subnets, bigips, etcs)
 - template: src="{{ deployment_model }}-hosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/hosts"
-
-
-

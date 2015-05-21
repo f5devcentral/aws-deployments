@@ -12,5 +12,5 @@
 - name: debug bigip_teardown_results var 
   debug: var=bigip_teardown_results 
 
-- copy: content="{{ bigip_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/bigip-{{ zone_id }}.yml
+- copy: content="{{ bigip_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
 

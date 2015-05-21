@@ -11,4 +11,4 @@
 - name: debug vpc_teardown_results var 
   debug: var=vpc_teardown_results  
 
-- copy: content="{{ vpc_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/vpc.yml
+- copy: content="{{ vpc_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

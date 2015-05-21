@@ -1,7 +1,17 @@
 #!/usr/bin/python
-# (C) 2012, Chris Mutzel, <c.mutzel@f5.com>
 
-#  This is a modified version of ansible-playbook
+
+"""
+# (C) 2015, Chris Mutzel, <c.mutzel@f5.com>
+
+This is a modified version of the code found in the ansible-playbook
+script which ships with ansible. It leverages the ansible python APIs
+for running playbooks, but allows reloads inventory between plays, 
+to better allow reuse of ansibles inventory feature.
+
+For more information on the usage, see the project README.md
+
+"""
 
 import sys
 import os
@@ -29,429 +39,510 @@ from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
 
-
-__version__ = "0.0.1"
+__version__ = "0.0.4"
 __prog__ = "f5aws"
 
 def colorize(lead, num, color):
-    """ Print 'lead' = 'num' in 'color' """
-    if num != 0 and ANSIBLE_COLOR and color is not None:
-        return "%s%s%-15s" % (stringc(lead, color), stringc("=", color), stringc(str(num), color))
-    else:
-        return "%s=%-4s" % (lead, str(num))
+  """ Print 'lead' = 'num' in 'color' """
+  if num != 0 and ANSIBLE_COLOR and color is not None:
+    return "%s%s%-15s" % (stringc(lead, color),
+        stringc("=", color), stringc(str(num), color))
+  else:
+      return "%s=%-4s" % (lead, str(num))
 
 def hostcolor(host, stats, color=True):
-    if ANSIBLE_COLOR and color:
-        if stats['failures'] != 0 or stats['unreachable'] != 0:
-            return "%-37s" % stringc(host, 'red')
-        elif stats['changed'] != 0:
-            return "%-37s" % stringc(host, 'yellow')
-        else:
-            return "%-37s" % stringc(host, 'green')
-    return "%-26s" % host
+  if ANSIBLE_COLOR and color:
+      if stats['failures'] != 0 or stats['unreachable'] != 0:
+          return "%-37s" % stringc(host, 'red')
+      elif stats['changed'] != 0:
+          return "%-37s" % stringc(host, 'yellow')
+      else:
+          return "%-37s" % stringc(host, 'green')
+  return "%-26s" % host
 
-#The cloudformation module outputs a yaml blob
-# for the key 'invocation' in this blob, we get back a string like the below
-# which has a format that is totally beyond me....
-# I guess one of the quirks of ansible is that they couldn't decide on
-#  one type of object notation...
-# a='stack_name="foo3-vpc" state=absent region="eu-west-1" template=/Users/mutzel/workspace/aws-deployments/roles/infra/files/vpc.json'
+
 def get_dict_from_junk_str(inStr):
-    l = [i.split('=') for i in inStr.split(' ')]
-    res_arr = [i.replace('"','') for i in list(itertools.chain(*l))]
-    return dict(zip(res_arr[::2], res_arr[1::2]))
+  """
+      The cloudformation module outputs a yaml blob
+      for the key 'invocation' in this blob, we get back
+      a string like the below.
+      a='stack_name="foo3-vpc" state=absent region="eu-west-1"
+          template=/Users/mutzel/workspace/aws-deployments/roles/infra/files/vpc.json'
+      This format is totally beyond me...
+      I guess one of the quirks of ansible is that they couldn't decide on
+      one type of object notation..
+  """
+  l = [i.split('=') for i in inStr.split(' ')]
+  res_arr = [i.replace('"','') for i in list(itertools.chain(*l))]
+  return dict(zip(res_arr[::2], res_arr[1::2]))
 
 class VerbosityCallback(argparse.Action):
-    def __init__(self, option_strings, dest, nargs=None, **kwargs):
-        if nargs is not None:
-            raise ValueError('nargs not allowed')
+  """
+      This class implements a callback option for increasing the verbosity
+      of logging during ansible playbook execution.  This class
+      is not part of the orignal ansible-playbook script, as that script
+      uses the optparse module, which is no depreciated. 
+  """
+  def __init__(self, option_strings, dest, nargs=None, **kwargs):
+    if nargs is not None:
+      raise ValueError('nargs not allowed')
 
-        super(VerbosityCallback, self).__init__(option_strings, dest, **kwargs)
+    super(VerbosityCallback, self).__init__(option_strings, dest, **kwargs)
 
-    def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, values)
-        utils.increment_debug(parser, namespace, values, None)
+  def __call__(self, parser, namespace, values, option_string=None):
+    setattr(namespace, self.dest, values)
+    utils.increment_debug(parser, namespace, values, None)
 
 class F5Aws(object):
-    def __init__(self):
-        try:
-            global_vars_path = '~/.{}'.format(__prog__)
-            fd = open(os.path.expanduser(global_vars_path), 'r')
-            self.settings = yaml.load(fd)
-            if self.settings.get('install_path', None) is None:
-                raise Exception('Required variable "install_path" not found in {}'.format(global_vars_path))
+  def __init__(self):
+    try:
+      global_vars_path = '~/.{}'.format(__prog__)
+      fd = open(os.path.expanduser(global_vars_path), 'r')
+      self.settings = yaml.load(fd)
+      if self.settings.get('install_path', None) is None:
+        # TODO: better exception handling...
+        raise Exception('Required variable "install_path" not found in {}'.format(global_vars_path))
 
-            self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
-            self.settings['env_path'] = self.settings['vars_path'] + '/env'
-            self.settings['bin_path'] = self.settings['install_path'] + '/bin' #~/workspace/f5aws/bin
+      self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
+      self.settings['env_path'] = self.settings['vars_path'] + '/env'
+      self.settings['bin_path'] = self.settings['install_path'] + '/bin' #~/workspace/f5aws/bin
 
-        except OSError:
-            pass
+    except OSError:
+      pass
 
-        #make the /env/ directory if it does not exist
-        try:
-            os.makedirs(self.settings['env_path'])
-        except OSError:
-            pass
+    #make the /env/ directory if it does not exist
+    try:
+      os.makedirs(self.settings['env_path'])
+    except OSError:
+      pass
 
-    def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
-        #defaults - are these used still?
-        sshpass = None
-        sudopass = None
-        su_pass = None
-        vault_pass = None
+  def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
+    #defaults - are these used still?
+    sshpass = None
+    sudopass = None
+    su_pass = None
+    vault_pass = None
 
-        for playbook in playbooks:
-            if not os.path.exists(playbook):
-                raise errors.AnsibleError("the playbook: %s could not be found" % playbook)
-            if not (os.path.isfile(playbook) or stat.S_ISFIFO(os.stat(playbook).st_mode)):
-                raise errors.AnsibleError("the playbook: %s does not appear to be a file" % playbook)
+    for playbook in playbooks:
+      if not os.path.exists(playbook):
+        raise errors.AnsibleError("the playbook: %s could not be found" % playbook)
+      if not (os.path.isfile(playbook) or stat.S_ISFIFO(os.stat(playbook).st_mode)):
+        raise errors.AnsibleError("the playbook: %s does not appear to be a file" % playbook)
 
-        for playbook in playbooks:
-            display("Running playbook: %s" % playbook, color='green', stderr=False)
+    for playbook in playbooks:
+      display("Running playbook: %s" % playbook, color='green', stderr=False)
 
-            stats = callbacks.AggregateStats()
-            playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
-            runner_cb = callbacks.PlaybookRunnerCallbacks(stats, verbose=utils.VERBOSITY)
-            inventory = ansible.inventory.Inventory(inventory_path, vault_password=vault_pass)
+      stats = callbacks.AggregateStats()
+      playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
+      runner_cb = callbacks.PlaybookRunnerCallbacks(stats, verbose=utils.VERBOSITY)
+      inventory = ansible.inventory.Inventory(inventory_path, vault_password=vault_pass)
 
-            if len(inventory.list_hosts()) == 0:
-                raise errors.AnsibleError("provided hosts list is empty")
+      if len(inventory.list_hosts()) == 0:
+          raise errors.AnsibleError("provided hosts list is empty")
 
-            pb = ansible.playbook.PlayBook(
-                playbook=playbook,
-                module_path=options.module_path,
-                inventory=inventory,
-                forks=options.forks,
-                remote_user=options.remote_user,
-                remote_pass=sshpass,
-                callbacks=playbook_cb,
-                runner_callbacks=runner_cb,
-                stats=stats,
-                timeout=options.timeout,
-                transport=options.connection,
-                sudo=options.sudo,
-                sudo_user=options.sudo_user,
-                sudo_pass=sudopass,
-                extra_vars=extra_vars,
-                private_key_file=options.private_key_file,
-                #only_tags=only_tags,
-                #skip_tags=skip_tags,
-                check=options.check,
-                diff=options.diff,
-                su=options.su,
-                su_pass=su_pass,
-                su_user=options.su_user,
-                vault_password=vault_pass,
-                force_handlers=options.force_handlers
-            )
+      pb = ansible.playbook.PlayBook(
+        playbook=playbook,
+        module_path=options.module_path,
+        inventory=inventory,
+        forks=options.forks,
+        remote_user=options.remote_user,
+        remote_pass=sshpass,
+        callbacks=playbook_cb,
+        runner_callbacks=runner_cb,
+        stats=stats,
+        timeout=options.timeout,
+        transport=options.connection,
+        sudo=options.sudo,
+        sudo_user=options.sudo_user,
+        sudo_pass=sudopass,
+        extra_vars=extra_vars,
+        private_key_file=options.private_key_file,
+        #only_tags=only_tags,
+        #skip_tags=skip_tags,
+        check=options.check,
+        diff=options.diff,
+        su=options.su,
+        su_pass=su_pass,
+        su_user=options.su_user,
+        vault_password=vault_pass,
+        force_handlers=options.force_handlers
+      )
 
-            if options.flush_cache:
-                display(callbacks.banner("FLUSHING FACT CACHE"))
-                pb.SETUP_CACHE.flush()
+      if options.flush_cache:
+        display(callbacks.banner("FLUSHING FACT CACHE"))
+        pb.SETUP_CACHE.flush()
 
-            if options.listhosts or options.listtasks or options.syntax:
-                print ''
-                print 'playbook: %s' % playbook
-                print ''
-                playnum = 0
-                for (play_ds, play_basedir) in zip(pb.playbook, pb.play_basedirs):
-                    playnum += 1
-                    play = ansible.playbook.Play(pb, play_ds, play_basedir,
-                                                  vault_password=pb.vault_password)
-                    label = play.name
-                    hosts = pb.inventory.list_hosts(play.hosts)
+      if options.listhosts or options.listtasks or options.syntax:
+        print ''
+        print 'playbook: %s' % playbook
+        print ''
+        playnum = 0
+        for (play_ds, play_basedir) in zip(pb.playbook, pb.play_basedirs):
+          playnum += 1
+          play = ansible.playbook.Play(pb, play_ds, play_basedir,
+                                        vault_password=pb.vault_password)
+          label = play.name
+          hosts = pb.inventory.list_hosts(play.hosts)
 
-                    # Filter all tasks by given tags
-                    if pb.only_tags != 'all':
-                        if options.subset and not hosts:
-                            continue
-                        matched_tags, unmatched_tags = play.compare_tags(pb.only_tags)
+          # Filter all tasks by given tags
+          if pb.only_tags != 'all':
+            if options.subset and not hosts:
+              continue
+            matched_tags, unmatched_tags = play.compare_tags(pb.only_tags)
 
-                        # Remove skipped tasks
-                        matched_tags = matched_tags - set(pb.skip_tags)
+            # Remove skipped tasks
+            matched_tags = matched_tags - set(pb.skip_tags)
 
-                        unmatched_tags.discard('all')
-                        unknown_tags = ((set(pb.only_tags) | set(pb.skip_tags)) -
-                                        (matched_tags | unmatched_tags))
+            unmatched_tags.discard('all')
+            unknown_tags = ((set(pb.only_tags) | set(pb.skip_tags)) -
+                            (matched_tags | unmatched_tags))
 
-                        if unknown_tags:
-                            continue
+            if unknown_tags:
+              continue
 
-                    if options.listhosts:
-                        print '  play #%d (%s): host count=%d' % (playnum, label, len(hosts))
-                        for host in hosts:
-                            print '    %s' % host
+          if options.listhosts:
+            print '  play #%d (%s): host count=%d' % (playnum, label, len(hosts))
+            for host in hosts:
+                print '    %s' % host
 
-                    if options.listtasks:
-                        print '  play #%d (%s):' % (playnum, label)
+          if options.listtasks:
+              print '  play #%d (%s):' % (playnum, label)
 
-                        for task in play.tasks():
-                            if (set(task.tags).intersection(pb.only_tags) and not
-                                set(task.tags).intersection(pb.skip_tags)):
-                                if getattr(task, 'name', None) is not None:
-                                    # meta tasks have no names
-                                    print '    %s' % task.name
-                    if options.listhosts or options.listtasks:
-                        print ''
-                continue
+              for task in play.tasks():
+                if (set(task.tags).intersection(pb.only_tags) and not
+                  set(task.tags).intersection(pb.skip_tags)):
+                  if getattr(task, 'name', None) is not None:
+                    # meta tasks have no names
+                    print '    %s' % task.name
+          if options.listhosts or options.listtasks:
+              print ''
+        continue
 
-            if options.syntax:
-                # if we've not exited by now then we are fine.
-                print 'Playbook Syntax is fine'
-                return 0
-
-            failed_hosts = []
-            unreachable_hosts = []
-
-            try:
-
-                pb.run()
-
-                hosts = sorted(pb.stats.processed.keys())
-                display(callbacks.banner("PLAY RECAP"))
-                playbook_cb.on_stats(pb.stats)
-
-                for h in hosts:
-                    t = pb.stats.summarize(h)
-                    if t['failures'] > 0:
-                        failed_hosts.append(h)
-                    if t['unreachable'] > 0:
-                        unreachable_hosts.append(h)
-
-                retries = failed_hosts + unreachable_hosts
-
-                if len(retries) > 0:
-                    filename = pb.generate_retry_inventory(retries)
-                    if filename:
-                        display("           to retry, use: --limit @%s\n" % filename)
-
-                for h in hosts:
-                    t = pb.stats.summarize(h)
-
-                    display("%s : %s %s %s %s" % (
-                        hostcolor(h, t),
-                        colorize('ok', t['ok'], 'green'),
-                        colorize('changed', t['changed'], 'yellow'),
-                        colorize('unreachable', t['unreachable'], 'red'),
-                        colorize('failed', t['failures'], 'red')),
-                        screen_only=True
-                    )
-
-                    display("%s : %s %s %s %s" % (
-                        hostcolor(h, t, False),
-                        colorize('ok', t['ok'], None),
-                        colorize('changed', t['changed'], None),
-                        colorize('unreachable', t['unreachable'], None),
-                        colorize('failed', t['failures'], None)),
-                        log_only=True
-                    )
-
-                print ""
-                if len(failed_hosts) > 0:
-                    return 2
-                if len(unreachable_hosts) > 0:
-                    return 3
-
-            except errors.AnsibleError, e:
-                display("ERROR: %s" % e, color='red')
-                return 1
-
+      if options.syntax:
+        # if we've not exited by now then we are fine.
+        print 'Playbook Syntax is fine'
         return 0
 
-    def cmd_init(self, options, extra_vars):
-        #make sure the environment does not already exist
-        # all variables for the deployment should be available 
-        #  in extra_vars
-        playbooks = ['./bin/init.yml']
-        inventory = self.settings['install_path']+'/inventory/hosts'
-        self.run_playbooks(playbooks, inventory, options, extra_vars)
+      failed_hosts = []
+      unreachable_hosts = []
 
-    def cmd_deploy(self, options, extra_vars):
-        playbooks = ['./bin/deploy_vpc.yml', './bin/deploy_az.yml','./bin/deploy_bigip.yml']
-        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-        self.run_playbooks(playbooks, inventory, options, extra_vars)
+      try:
+        pb.run()
 
-    def cmd_teardown(self, options, extra_vars):
-        playbooks = ['./bin/teardown_all.yml']
-        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-        self.run_playbooks(playbooks, inventory, options, extra_vars)
+        hosts = sorted(pb.stats.processed.keys())
+        display(callbacks.banner("PLAY RECAP"))
+        playbook_cb.on_stats(pb.stats)
+
+        for h in hosts:
+          t = pb.stats.summarize(h)
+          if t['failures'] > 0:
+              failed_hosts.append(h)
+          if t['unreachable'] > 0:
+              unreachable_hosts.append(h)
+
+        retries = failed_hosts + unreachable_hosts
+
+        if len(retries) > 0:
+          filename = pb.generate_retry_inventory(retries)
+          if filename:
+              display("           to retry, use: --limit @%s\n" % filename)
+
+        for h in hosts:
+          t = pb.stats.summarize(h)
+
+          display("%s : %s %s %s %s" % (
+            hostcolor(h, t),
+            colorize('ok', t['ok'], 'green'),
+            colorize('changed', t['changed'], 'yellow'),
+            colorize('unreachable', t['unreachable'], 'red'),
+            colorize('failed', t['failures'], 'red')),
+            screen_only=True
+          )
+
+          display("%s : %s %s %s %s" % (
+            hostcolor(h, t, False),
+            colorize('ok', t['ok'], None),
+            colorize('changed', t['changed'], None),
+            colorize('unreachable', t['unreachable'], None),
+            colorize('failed', t['failures'], None)),
+            log_only=True
+          )
+
+        print ""
+        if len(failed_hosts) > 0:
+          return 2
+        if len(unreachable_hosts) > 0:
+          return 3
+
+      except errors.AnsibleError, e:
+        display("ERROR: %s" % e, color='red')
+        return 1
+
+    return 0
+
+  def cmd_init(self, options, extra_vars):
+    """
+        To instantiate a new environment, we create a set
+        of inventory files for that environment. 
+        See individual playbooks for more info. 
+    """
+    playbooks = ['./bin/init.yml']
+
+    # just use 'localhost' as the set of hosts when executing this playbook
+    inventory = self.settings['install_path']+'/inventory/hosts'
+    self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+  def cmd_deploy(self, options, extra_vars):
+    """
+        Deploy an environment based on the set of inventory files 
+        created by the 'init' command.
+    """
+    playbooks = [
+        './bin/deploy_vpc.yml',
+        './bin/deploy_az.yml',
+        './bin/deploy_bigip.yml'
+    ]
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+  def cmd_teardown(self, options, extra_vars):
+    """
+        Teardown a deployed environment based on the set of inventory 
+        files created by the 'init' command. 
+    """
+    playbooks = ['./bin/teardown_all.yml']
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(playbooks, inventory, options, extra_vars)
 
 
-    def cmd_remove(self, options, extra_vars):
-        # TODO: should we use a playbook here instead of python utility functions
-        #    would probably help to make it a bit more idempotent
-        playbooks = ['./bin/remove.yml']
-        inventory = self.settings['install_path']+'/inventory/hosts'
-        self.run_playbooks(playbooks, inventory, options, extra_vars)
+  def cmd_remove(self, options, extra_vars):
+    """
+      Delete an environment (it should have already been torn down...)
+    """
+    # TODO: check that resources for this environment do not 
+    #  still exist when tearing it down. 
+    playbooks = ['./bin/remove.yml']
+
+    # just use 'localhost' as the set of hosts when executing this playbook
+    inventory = self.settings['install_path']+'/inventory/hosts'
+    self.run_playbooks(playbooks, inventory, options, extra_vars)
+      
+  def cmd_listall(self, options, extra_vars):
+    display("Installed environments (%s):" %
+      self.settings['env_path'], color='green', stderr=False) 
+    envs = self.get_envs()
+    if len(envs) == 0:
+      display("(none)", color='red', stderr=False) 
+    else:
+      for env in self.get_envs():
+        display(" - %s" % env,
+          color='green', stderr=False)
         
-    def cmd_listall(self, options, extra_vars):
-        display("Installed environments (%s):" %
-            self.settings['env_path'], color='green', stderr=False) 
-        envs = self.get_envs()
-        if len(envs) == 0:
-            display("(none)", color='red', stderr=False) 
+        for k, v in self.get_env_info(env).iteritems():
+          display("    %s: %s" % (k,v),
+          color='green', stderr=False)
+        display("    resources: ", color='green', stderr=False)
+        resources, statuses = self.get_env_status(env)
+        for r in resources:
+          if 'error' in statuses[r]['state']:
+              color='red'
+          else: 
+              color='green'
+          display("      %s: %s" % (r, statuses[r]['state']), color=color, stderr=False)
+
+  def get_envs(self):
+    return os.listdir(self.settings['env_path'])
+
+  def get_env_info(self, env):
+    """Read some information about this @env from the inventory/hosts 
+        file.  We do this by parsing the [all:vars] section.
+    """
+
+    env_info = {}
+    # hack to get some useful information about the deployment
+    with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
+      foundVars = False
+      for l in f.readlines():
+        if foundVars is False:
+          if 'all:vars' not in l:
+            continue
+          else:
+            foundVars = True
         else:
-            for env in self.get_envs():
-                display(" - %s" % env,
-                    color='green', stderr=False)
-                display("    info: ", color='green', stderr=False)
-                for k, v in self.get_env_info(env).iteritems():
-                    display("      %s: %s" % (k,v),
-                    color='green', stderr=False)
-                display("    resources: ", color='green', stderr=False)
-                resource_status = self.get_env_status(env)
-                for key, value in resource_status.iteritems():
-                    if 'error' in value['state']:
-                        color='red'
-                    else: 
-                        color='green'
-                    display("      %s: %s" % (key, value), color=color, stderr=False)
+          # break on the first blank line
+          if l.rstrip().lstrip() == '':
+            break
+          else:
+            result = re.match('^([a-z0-9_\-\.]+)=([a-z0-9_\-\.\/]+)', l)
+            if result:
+              env_info[result.group(1)] = result.group(2)
+    del env_info['env_name']
 
-    def get_envs(self):
-        return os.listdir(self.settings['env_path'])
+    return env_info
 
-    def get_env_info(self, env):
+  def get_env_status(self, env):
+      
+    managers = self.get_managers(env)
 
-        env_info = {}
-        # hack to get some useful information about the deployment
-        f = open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r')
-        foundVars = False
-        for l in f.readlines():
-            if foundVars is False:
-                if 'all:vars' not in l:
-                    continue
-                else:
-                    foundVars = True
-            else:
-                # break on the first blank line
-                if l.rstrip().lstrip() == '':
-                    break
-                else:
-                    result = re.match('^([a-z0-9_\-\.]+)=([a-z0-9_\-\.\/]+)', l)
-                    if result:
-                        env_info[result.group(1)] = result.group(2)
-        del env_info['env_name']
+    statuses = {}
+    resources = []
+    for m in managers:
+      # for each resource, we will get the results from
+      #  most recent manager execution for that resource
+      resource_name = m[:-8]
+      resources.append(resource_name)
+      try:
+        with open('{}/{}/{}.yml'.format(self.settings['env_path'], env, m)) as f:
+          latest = yaml.load(f)
+          statuses[resource_name] = getattr(self,
+              'state_'+latest['invocation']['module_name'],
+              self.raise_not_implemented)(latest)
+      except:
+        statuses[resource_name] = {'state': 'error'}
 
-        return env_info
+    return resources, statuses
 
-    def get_env_status(self, env):
-        
-        # get the resources we are managing
-        path = self.settings['env_path']+'/'+env
-        env_resources = [ f for f in os.listdir(path)]
-        env_resources.remove('inventory')         
+  def get_managers(self, env ):
+    """
+      Returns an ordered list of all the 'managers'
+      who report status via a yaml file i the ./<env>/ directory
+    """
+    managers = []
+    # hack to get some useful information about the deployment
+    
+    with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
+      foundManagers = False
+      for l in f.readlines():
+        if foundManagers is False:
+          if '[localhost]' not in l:
+            continue
+          else:
+            foundManagers = True
+        else:
+          # break on the first blank line
+          if l.rstrip().lstrip() == '':
+            break
+          else:
+            result = re.match('^([a-z0-9_\-]+)', l)
+            if result:
+              managers.append(result.group(1))
 
-        res = {}
-        for r in env_resources:
-            # for each resource, we will get the results from
-            #  most recent manager execution for that resource
-            latest = yaml.load(open(path+'/'+r))
-            res[r[0:-4]] = getattr(self,
-                'state_'+latest['invocation']['module_name'],
-                self.raise_not_implemented)(latest)
+    return managers   
 
-        return res
+  def state_cloudformation(self, latest_result):
+    res_state = {}
+    cf = get_dict_from_junk_str(latest_result['invocation']['module_args'])
+    # we need to handle 'present' and 'absent' situations differently
+    if cf['state'] == 'present':
+      res_state['stack_name'] = cf['stack_name']
+      if (latest_result['output'] == 'Stack CREATE complete' or
+        latest_result['output'] == 'Stack is already up-to-date.'):
+        res_state['state'] = 'deployed'
+      else:
+        res_state['state']='deploy-error'
+    else: # state == 'absent'...
+      if (latest_result.get('output','') == 'Stack Deleted' or
+        'does not exist' in latest_result.get('msg','')):
+        res_state['state'] = 'absent'
+      else:
+        res_state['state'] = 'teardown-error'
 
-    def state_cloudformation(self, latest_result):
-        res_state = {}
-        cf = get_dict_from_junk_str(latest_result['invocation']['module_args'])
-        # we need to handle 'present' and 'absent' situations differently
-        if cf['state'] == 'present':
-            res_state['stack_name'] = cf['stack_name']
-            if (latest_result['output'] == 'Stack CREATE complete' or
-            latest_result['output'] == 'Stack is already up-to-date.'):
-                res_state['state'] = 'deployed'
-            else:
-                res_state['state']='deploy-error'
-        else: # state == 'absent'...
-            if (latest_result.get('output','') == 'Stack Deleted' or
-                'does not exist' in latest_result.get('msg','')):
-                res_state['state'] = 'absent'
-            else:
-                res_state['state'] = 'teardown-error'
+    return res_state
 
-        return res_state
+  def raise_not_implemented(*args):
+    raise NotImplementedError()
 
-    def raise_not_implemented(*args):
-        raise NotImplementedError()
+  def run(self):
+    parser = argparse.ArgumentParser(prog='f5aws')
+    parser.add_argument('-v', '--verbose', action=VerbosityCallback,
+      help='verbose mode (-vvv for more, -vvvv to enable connection debugging')
+    subparsers = parser.add_subparsers(dest='cmd', help='sub-command help')
+    
+    parser_init = subparsers.add_parser('init',
+      help='Create a new AWS deployment with F5 services.')
+    parser_init.set_defaults(cmd='init')
+    parser_init.add_argument('env_name', help='name of the new environment')
+    parser_init.add_argument('-e', '--extra-vars', required=True,
+      dest="extra_vars", action="append",
+      help="set additional variables as key=value or YAML/JSON", default=[])
+    # TODO: cleanup the variable passing for extravars so we don't need to 
+    #   pass the extra-vars argument -- allow users to pass variables directly
 
-    def run(self):
-        parser = argparse.ArgumentParser(prog='f5aws')
-        parser.add_argument('-v', '--verbose', action=VerbosityCallback,
-            help='verbose mode (-vvv for more, -vvvv to enable connection debugging')
-        subparsers = parser.add_subparsers(dest='cmd', help='sub-command help')
-        
-        parser_init = subparsers.add_parser('init', help='Create a new AWS deployment with F5 services.')
-        parser_init.set_defaults(cmd='init')
-        parser_init.add_argument('env_name', help='name of the new environment')
-        parser_init.add_argument('-e', '--extra-vars', required=True,
-            dest="extra_vars", action="append",
-            help="set additional variables as key=value or YAML/JSON", default=[])
-        # TODO: cleanup the variable passing for extravars so we don't need to 
-        #   pass the extra-vars argument -- allow users to pass variables directly
+    parser_deploy = subparsers.add_parser('deploy',
+      help='Deploy EC2 resource and application services based on inventory files. ')
+    parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='name help message')
+    
+    parser_deploy = subparsers.add_parser('teardown',
+      help='De-provision all resources in AWS EC2 for this environment.')
+    parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='name help message')
 
-        parser_deploy = subparsers.add_parser('deploy', help='deploy help msg')
-        parser_deploy.add_argument('env_name', metavar='ENVIRONMENT', type=str, help='name help message')
+    parser_deploy = subparsers.add_parser('remove',
+      help='Remove all inventory files for this environment.')
+    parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='name help message')
+    
+    parser_deploy = subparsers.add_parser('listall',
+      help='List all deployments and corrosponding status.')
 
-        parser_deploy = subparsers.add_parser('teardown', help='deploy help msg')
-        parser_deploy.add_argument('env_name', metavar='ENVIRONMENT', type=str, help='name help message')
+    options = parser.parse_args()
+    
+    # think of a deployment as a set of immutable parameters defined when launched using init
+    #  at time of init, the environment is given a name, i.e. env_name 
+    extra_vars = {}
+    if options.cmd == 'init':
+      for extra_vars_opt in options.extra_vars:
+        if extra_vars_opt.startswith("@"):
+          # Argument is a YAML file (JSON is a subset of YAML)
+          extra_vars = utils.combine_vars(extra_vars,
+            utils.parse_yaml_from_file(extra_vars_opt[1:],
+              vault_password=vault_pass))
+        elif extra_vars_opt and extra_vars_opt[0] in '[{':
+          # Arguments as YAML
+          extra_vars = utils.combine_vars(extra_vars,
+            utils.parse_yaml(extra_vars_opt))
+        else:
+          # Arguments as Key-value
+          extra_vars = utils.combine_vars(extra_vars,
+            utils.parse_kv(extra_vars_opt))
 
-        parser_deploy = subparsers.add_parser('listall', help='List all deployments and corrosponding status.')
+    if getattr(options, 'env_name', None) is not None:
+      extra_vars['env_name'] = options.env_name
 
-        options = parser.parse_args()
-        
-        # think of a deployment as a set of immutable parameters defined when launched using init
-        #  at time of init, the environment is given a name, i.e. env_name 
-        extra_vars = {}
-        if options.cmd == 'init':
-            for extra_vars_opt in options.extra_vars:
-                if extra_vars_opt.startswith("@"):
-                    # Argument is a YAML file (JSON is a subset of YAML)
-                    extra_vars = utils.combine_vars(extra_vars, utils.parse_yaml_from_file(extra_vars_opt[1:], vault_password=vault_pass))
-                elif extra_vars_opt and extra_vars_opt[0] in '[{':
-                    # Arguments as YAML
-                    extra_vars = utils.combine_vars(extra_vars, utils.parse_yaml(extra_vars_opt))
-                else:
-                    # Arguments as Key-value
-                    extra_vars = utils.combine_vars(extra_vars, utils.parse_kv(extra_vars_opt))
+    extra_vars['install_path'] = self.settings['install_path']
 
-        if getattr(options, 'env_name', None) is not None:
-            extra_vars['env_name'] = options.env_name
+    options.forks = constants.DEFAULT_FORKS
+    options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
+    options.module_path = constants.DEFAULT_MODULE_PATH
+    options.remote_user = constants.DEFAULT_REMOTE_USER
+    options.timeout = constants.DEFAULT_TIMEOUT
+    options.connection = constants.DEFAULT_TRANSPORT
+    options.sudo = constants.DEFAULT_SUDO
+    options.sudo_user = None
+    options.su = constants.DEFAULT_SU
+    options.su_user = constants.DEFAULT_SU_USER
+    options.check = False #TODO: can we make this work for some scenarios?
+    options.diff = False #TODO: can we make this work for some scenarios?
+    options.force_handlers = False
+    options.flush_cache = False
+    options.listhosts = False  #TODO: can we make this work for some scenarios?
+    options.listtasks = False  #TODO: can we make this work for some scenarios?
+    options.syntax = False  #TODO: can we make this work for some scenarios?
 
-        extra_vars['install_path'] = self.settings['install_path']
-
-        options.forks = constants.DEFAULT_FORKS
-        options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
-        options.module_path = constants.DEFAULT_MODULE_PATH
-        options.remote_user = constants.DEFAULT_REMOTE_USER
-        options.timeout = constants.DEFAULT_TIMEOUT
-        options.connection = constants.DEFAULT_TRANSPORT
-        options.sudo = constants.DEFAULT_SUDO
-        options.sudo_user = None
-        options.su = constants.DEFAULT_SU
-        options.su_user = constants.DEFAULT_SU_USER
-        options.check = False #TODO: can we make this work for some scenarios?
-        options.diff = False #TODO: can we make this work for some scenarios?
-        options.force_handlers = False
-        options.flush_cache = False
-        options.listhosts = False  #TODO: can we make this work for some scenarios?
-        options.listtasks = False  #TODO: can we make this work for some scenarios?
-        options.syntax = False  #TODO: can we make this work for some scenarios?
-
-        # how about a common set of return values by all cmd functions
-        getattr(self, 'cmd_'+options.cmd, self.raise_not_implemented)(options, extra_vars)
+    # how about a common set of return values by all cmd functions
+    getattr(self, 'cmd_'+options.cmd, self.raise_not_implemented)(options, extra_vars)
 
 if __name__ == "__main__":
-    display(" ", log_only=True)
-    display(" ".join(sys.argv), log_only=True)
-    display(" ", log_only=True)
+  display(" ", log_only=True)
+  display(" ".join(sys.argv), log_only=True)
+  display(" ", log_only=True)
 
-    try:
-        F5Aws().run()
-    except errors.AnsibleError, e:
-        display("ERROR: %s" % e, color='red', stderr=True)
-        sys.exit(1)
-    except KeyboardInterrupt, ke:
-        display("ERROR: interrupted", color='red', stderr=True)
-        sys.exit(1)
+  try:
+    F5Aws().run()
+  except errors.AnsibleError, e:
+    display("ERROR: %s" % e, color='red', stderr=True)
+    sys.exit(1)
+  except KeyboardInterrupt, ke:
+    display("ERROR: interrupted", color='red', stderr=True)
+    sys.exit(1)
