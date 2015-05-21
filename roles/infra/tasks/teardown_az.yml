@@ -13,3 +13,4 @@
   debug: var=az_teardown_results  
 
 - copy: content="{{ az_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/az-{{ zone_id }}.yml
+

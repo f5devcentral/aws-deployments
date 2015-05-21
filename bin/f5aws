@@ -277,13 +277,14 @@ class F5Aws(object):
         inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
         self.run_playbooks(playbooks, inventory, options, extra_vars)
 
+
     def cmd_remove(self, options, extra_vars):
         # TODO: should we use a playbook here instead of python utility functions
         #    would probably help to make it a bit more idempotent
         playbooks = ['./bin/remove.yml']
         inventory = self.settings['install_path']+'/inventory/hosts'
         self.run_playbooks(playbooks, inventory, options, extra_vars)
-
+        
     def cmd_listall(self, options, extra_vars):
         display("Installed environments (%s):" %
             self.settings['env_path'], color='green', stderr=False) 
