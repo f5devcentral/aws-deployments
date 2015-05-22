@@ -2,7 +2,7 @@
 
 - name: Teardown all subnets in AZ
   cloudformation:
-    stack_name="{{ env_name }}-az-{{ availability_zone }}"
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=absent
     region="{{ region }}"
     template={{ install_path }}/roles/infra/files/az.json

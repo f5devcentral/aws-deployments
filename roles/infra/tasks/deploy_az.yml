@@ -1,7 +1,7 @@
 ---  
 - name: Create subnets in all availability zones
   cloudformation:
-    stack_name="{{ env_name }}-az-{{ availability_zone }}"
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present
     region="{{ region }}"
     template={{ install_path }}/roles/infra/files/az.json

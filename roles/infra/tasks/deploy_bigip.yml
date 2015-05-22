@@ -2,7 +2,7 @@
 
 - name: Launch a big-ip in each AZ
   action: cloudformation
-    stack_name="{{ env_name }}-bigip-{{ zone_id }}"
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present
     region="{{ region }}"
     template={{ install_path }}/roles/infra/files/bigip.json
