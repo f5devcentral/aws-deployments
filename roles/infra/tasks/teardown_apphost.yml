@@ -1,0 +1,14 @@
+---
+- name: Teardown app hosts
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/docker_host.json
+  register: apphost_teardown_results
+  ignore_errors: yes
+
+- name: debug apphost_teardown_results var 
+  debug: var=apphost_teardown_results  
+
+- copy: content="{{ apphost_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

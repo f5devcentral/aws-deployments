@@ -1,23 +1,14 @@
 ---
-# We can use the ec2 module here from ansible. It works well when 
-#  deploying fairly generic compute resources
-- name: deploy application host
-  ec2:
-	assign_public_ip: yes
-	region: "{{ region }}"
-	key_name: "{{ key_name }}"
-	instance_type: "{{ app_instance_type }}"
-	image: "{{ app_ami_id }}"
-	#group_id: "{{ security_group_id }}"  # lets see if we can use a default security group 
-	vpc_subnet_id: "{{ item.value.id }}"
-	wait: yes
-	wait_timeout: 500
-	#count: 1
-	exact_count: 1
-  register: deploy_app_host_result
+- name: Teardown vpc
+  action: cloudformation
+    stack_name="{{ env_name }}-vpc"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/vpc.json
+  register: vpc_teardown_results
+  ignore_errors: yes
 
-- name: debug deploy_app_host_result var 
-  debug: var=deploy_app_host_result 
+- name: debug vpc_teardown_results var 
+  debug: var=vpc_teardown_results 
 
-#- copy: content="{{ bigip_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
-
+- copy: content="{{ vpc_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

@@ -28,3 +28,6 @@
 
 - copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
 
+- name: add host to group
+  add_host: name={{ bigip_deploy_results['stack_outputs']['ManagementInterfacePublicIp'] }} groups=bigips
+

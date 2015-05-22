@@ -311,7 +311,7 @@ class F5Aws(object):
         Teardown a deployed environment based on the set of inventory 
         files created by the 'init' command. 
     """
-    playbooks = ['./bin/teardown_all.yml']
+    playbooks = ['teardown_all.yml']
     inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
     self.run_playbooks(playbooks, inventory, options, extra_vars)
 

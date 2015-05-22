@@ -11,7 +11,6 @@ bigip_instance_type: "m3.xlarge"
 
 # defaults for deploying applications within docker containers
 # default ami is Docker optimized in US-EAST-1
-apphost_ami_id:  "ami-ed7c149a"
 apphost_instance_type: "t2.micro"
 containers_per_host: 2
 apphosts_per_zone: 1

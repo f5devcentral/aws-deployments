@@ -20,6 +20,7 @@ zone{{ outer_loop.index }}-apphost{{ apphostnum }}-manager
 
 ; dynamic group that we will add to via add_host
 [bigips]
+[apphosts]
 
 {% for zone in zones %}
 [zone{{ loop.index }}-bigips]
@@ -88,7 +89,6 @@ bigip_license_throughput={{ bigip_license_throughput }}
 bigip_license_model={{ bigip_license_model }}
 bigip_license_package={{ bigip_license_package }}
 bigip_instance_type={{ bigip_instance_type }}
-apphost_ami_id={{ apphost_ami_id }}
 apphost_instance_type={{ apphost_instance_type }}
 
 {% endfor %}

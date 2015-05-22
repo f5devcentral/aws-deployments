@@ -1,0 +1,23 @@
+# We can use the ec2 module here from ansible. It works well when 
+#  deploying fairly generic compute resources
+- name: Launch app hosts
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=present
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/docker_host.json
+  args:
+    template_parameters:
+      vpc: "{{ vpc_id }}"
+      privateSubnet: "{{ private_subnet }}"
+      instanceType: "{{ apphost_instance_type }}"
+      keyName: "{{ key_name }}"
+  register: apphost_deploy_results
+
+- name: debug apphost_deploy_results var 
+  debug: var=apphost_deploy_results
+
+- copy: content="{{ apphost_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+
+- name: add host to group
+  add_host: name={{ apphost_deploy_results['stack_outputs']['WebServerInstancePrivateIp'] }} groups=apphosts

@@ -1,5 +1,11 @@
 #This playbook dismantles all deployed EC2 resources. 
 ---
+- hosts: apphost-managers
+  gather_facts: no
+  tasks:
+    - name: teardown apphosts
+      include: "{{ install_path }}/roles/infra/tasks/teardown_apphost.yml"
+
 - hosts: bigip-managers
   gather_facts: no
   tasks:
