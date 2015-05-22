@@ -18,6 +18,6 @@
 - debug: var=az_deploy_results
 
 - name: create a file in which to persist results
-  template: src='bigip-managers.j2' dest=~/vars/f5aws/env/{{ env_name }}/inventory/host_vars/{{zone_id}}-bigip1-manager
+  template: src='host-managers.j2' dest=~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/{{zone_id}}-az-managers
 
 - copy: content="{{ az_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

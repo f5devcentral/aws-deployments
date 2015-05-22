@@ -114,6 +114,9 @@ class F5Aws(object):
       pass
 
   def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
+    # get the absolute path for the playbooks
+    playbooks = ['{}/bin/{}'.format(self.settings['install_path'], pb) for pb in playbooks]
+
     #defaults - are these used still?
     sshpass = None
     sudopass = None
@@ -283,7 +286,7 @@ class F5Aws(object):
         of inventory files for that environment. 
         See individual playbooks for more info. 
     """
-    playbooks = ['./bin/init.yml']
+    playbooks = ['init.yml']
 
     # just use 'localhost' as the set of hosts when executing this playbook
     inventory = self.settings['install_path']+'/inventory/hosts'
@@ -295,9 +298,10 @@ class F5Aws(object):
         created by the 'init' command.
     """
     playbooks = [
-      './bin/deploy_vpc.yml',
-      './bin/deploy_az.yml',
-      './bin/deploy_bigip.yml'
+      #'deploy_vpc.yml',
+      #'deploy_az.yml',
+      #'deploy_bigip.yml',
+      'deploy_apphost.yml'
     ]
     inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
     self.run_playbooks(playbooks, inventory, options, extra_vars)
@@ -326,7 +330,7 @@ class F5Aws(object):
         stillExist.append(r)
 
     if okToRemove is True:
-      #playbooks = ['./bin/remove.yml']
+      playbooks = ['remove.yml']
 
       # just use 'localhost' as the set of hosts when executing this playbook
       inventory = self.settings['install_path']+'/inventory/hosts'
@@ -424,7 +428,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
               'state_'+latest['invocation']['module_name'],
               self.raise_not_implemented)(latest, show_resource_vars)
       except:
-        statuses[resource_name] = {'state': 'error'}
+        statuses[resource_name] = {'state': 'not deployed'}
 
     return resources, statuses
 
