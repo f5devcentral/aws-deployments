@@ -18,8 +18,8 @@ These examples are provided in order to demonstrate how BIG-IP can be used to ma
 
 ### Setup:
 1) Download this code somewhere to your system
-2) Create ~/.f5aws with the following contents:
 
+2) Create ~/.f5aws with the following contents
 
 <div>
 ---<br>
@@ -38,7 +38,7 @@ install_path: 'path to your install'
 1) To create a new environment, use the init.yml playbook with the inventory provided as part of this repository. 
 This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'
  
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}''```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"],"bigip_rest_password": "****"}'```
 
 2) Deploy and manage the environment you instantiated in step 1: 
 

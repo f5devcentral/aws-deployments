@@ -15,6 +15,9 @@ apphost_instance_type: "t2.micro"
 containers_per_host: 2
 apphosts_per_zone: 1
 
+bigip_rest_user: "restadmin"
+
+
 # standalone big-ip in each availability zone, traffic directed
 #  via gslb, dns
 standalone_per_az:

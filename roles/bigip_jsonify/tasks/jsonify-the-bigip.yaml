@@ -1,0 +1,19 @@
+---
+
+- name: Remount the /usr filesystem as rw so we can install python stuff
+  raw: mount -o remount,rw /dev/mapper/vg--db--hda-set.1._usr /usr
+
+- name: Download an old enough version of simplejson that will work with python 2.4.3
+  raw: "curl -k -O {{ simplejson_url }}"
+
+- name: Download the setuptools package needed to install simplejson
+  raw: "curl -kLO {{ setuptools_url }}"
+
+- name: Extract the downloaded simplejson tarball
+  raw: "tar zxvf {{ simplejson_url|basename }}"
+
+- name: Put the setuptools package inside of simplejson
+  raw: "mv {{ setuptools_url|basename }} simplejson-2.1.0/"
+
+- name: Install simplejson
+  raw: cd simplejson-2.1.0 && python setup.py install

@@ -4,3 +4,13 @@
   tasks:
     - name: deploy bigips
       include: "{{ install_path }}/roles/infra/tasks/deploy_bigip.yml"
+
+- hosts: bigips
+  gather_facts: no
+  roles:
+    # basic devic setup
+    - bigip_base 
+    # vlan, interfaces, ntp, dns, dhcp, snmp, etc
+    - bigip_network
+    # add python json/simplejson for use with ansible
+    - bigip_jsonify

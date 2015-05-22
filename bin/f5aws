@@ -78,23 +78,6 @@ def get_dict_from_junk_str(inStr):
   res_arr = [i.replace('"','') for i in list(itertools.chain(*l))]
   return dict(zip(res_arr[::2], res_arr[1::2]))
 
-class VerbosityCallback(argparse.Action):
-  """
-      This class implements a callback option for increasing the verbosity
-      of logging during ansible playbook execution.  This class
-      is not part of the orignal ansible-playbook script, as that script
-      uses the optparse module, which is no depreciated. 
-  """
-  def __init__(self, option_strings, dest, nargs=None, **kwargs):
-    if nargs is not None:
-      raise ValueError('nargs not allowed')
-
-    super(VerbosityCallback, self).__init__(option_strings, dest, **kwargs)
-
-  def __call__(self, parser, namespace, values, option_string=None):
-    setattr(namespace, self.dest, values)
-    utils.increment_debug(parser, namespace, values, None)
-
 class F5Aws(object):
   def __init__(self):
     try:
@@ -298,9 +281,9 @@ class F5Aws(object):
         created by the 'init' command.
     """
     playbooks = [
-      #'deploy_vpc.yml',
-      #'deploy_az.yml',
-      #'deploy_bigip.yml',
+      # 'deploy_vpc.yml',
+      # 'deploy_az.yml',
+      'deploy_bigip.yml',
       'deploy_apphost.yml'
     ]
     inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
@@ -486,7 +469,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
   def run(self):
     parser = argparse.ArgumentParser(prog='f5aws')
-    parser.add_argument('-v', '--verbose', action=VerbosityCallback,
+    parser.add_argument('-v', '--verbose', action='count', default=0,
       help='verbose mode (-vvv for more, -vvvv to enable connection debugging')
     subparsers = parser.add_subparsers(dest='cmd', help='sub-command help')
     
@@ -525,9 +508,11 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       help='List all deployments and corrosponding status.')
 
     options = parser.parse_args()
-    
-    # think of a deployment as a set of immutable parameters defined when launched using init
-    #  at time of init, the environment is given a name, i.e. env_name 
+
+    for i in range(options.verbose):
+      print 'Incrementing debug to level %s' % i
+      utils.increment_debug(False, False, False, False)
+
     extra_vars = {}
     if options.cmd == 'init':
       for extra_vars_opt in options.extra_vars:

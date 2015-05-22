@@ -76,6 +76,8 @@ deployment_model={{ deployment_model }}
 region={{ region }}
 vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
 key_name={{ key_name }}
+bigip_rest_user={{ bigip_rest_user }}
+bigip_rest_pass={{ bigip_rest_pass }}
 
 {% for zone in zones %}
 [zone{{ loop.index }}:vars]

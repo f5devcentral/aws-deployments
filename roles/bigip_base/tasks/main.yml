@@ -1,0 +1,8 @@
+---
+## Some initial setup for big ip once we can login.  We need a user for rest calls.  We also want the default shell
+# to be bash, rather than tmsh.  The latter is difficult to use ansible...
+# Finally, turn of the setup wizard so if anyone does every login in, they aren't prompted to setup the device.
+
+- include: change_shell.yml
+- include: add_rest_user.yml
+- include: misc_setup.yml
