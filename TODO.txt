@@ -2,3 +2,27 @@ TODO:
 -cannot init an environment with the same name as one which already exists
 --other syntax and symantic analysis of deployments
 -add a requirements.txt and use virtualenv like our consumers will
+-infra hosts template should work for all deployment models
+-fix mapping of big ip version license etc in CFT
+-make inventory work for a dynamic number of app hosts and bigips per zone
+
+-fix this problem:
+
+Installed environments (/Users/mutzel/vars/f5aws/env):
+ - testenv1
+    key_name: mutzel-kp-eu-west-1
+    region: eu-west-1
+    deployment_model: standalone-per-zone
+    bigip_rest_pass: galile0
+    vpc_cidr: 172.16.0.0/16
+    bigip_rest_user: restadmin
+    resources:
+      vpc: {'stack_name': 'testenv1-vpc-manager', 'state': 'deployed'}
+      zone1-az: {'stack_name': 'testenv1-zone1-az-manager', 'state': 'deployed'}
+      zone1-bigip1: {'stack_name': 'testenv1-zone1-bigip1-manager', 'state': 'deployed'}
+      zone1-apphost1: {'stack_name': 'testenv1-zone1-apphost1-manager', 'state': 'deployed'}
+      zone2-az: {'stack_name': 'testenv1-zone2-az-manager', 'state': 'deployed'}
+      zone2-bigip1: {'stack_name': 'testenv1-zone2-bigip1-manager', 'state': 'deployed'}
+      zone2-apphost1: {'state': 'not deployed'}  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< should say errpr
+
+  -3 -> 4 subnets: seperate internal from application subnet
