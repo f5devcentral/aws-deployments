@@ -26,3 +26,4 @@ Installed environments (/Users/mutzel/vars/f5aws/env):
       zone2-apphost1: {'state': 'not deployed'}  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< should say errpr
 
   -3 -> 4 subnets: seperate internal from application subnet
+  -if a CFT stack fails to install and enters rollback complete, the stack should be deleted
