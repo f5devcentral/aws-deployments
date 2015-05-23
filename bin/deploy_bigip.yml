@@ -10,7 +10,15 @@
   roles:
     # basic devic setup
     - bigip_base 
-    # vlan, interfaces, ntp, dns, dhcp, snmp, etc
+
+- hosts: bigips
+  gather_facts: no
+  roles:
+  # vlan, interfaces, ntp, dns, dhcp, snmp, etc
     - bigip_network
+
+- hosts: bigips
+  gather_facts: no
+  roles:
     # add python json/simplejson for use with ansible
-    - bigip_jsonify
+    #- bigip_jsonify
