@@ -357,7 +357,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       resources, statuses = self.get_env_status(env, show_resource_vars)
       display("    resources: ", color='green', stderr=False)
       for r in resources:
-        if 'error' in statuses[r]['state']:
+        if statuses[r]['state'] != 'deployed':
           color='red'
         else: 
           color='green'
