@@ -12,26 +12,50 @@ Further, this library shows how BIG-IP can be orchestrated using open-source con
 These examples are provided in order to demonstrate how BIG-IP can be used to manage the availability, performance, and security of applications running in AWS and other public cloud environments.
 
 
-	As of now, these deployment models are:
-		-standalone-per-zone
+As of now, these deployment models are:
+-standalone-per-zone
 
 
 ### Setup:
 1) Download this code somewhere to your system
 
-2) Create ~/.f5aws with the following contents
+2) Per python boto module requirements, create ~/.aws folder with correct contents
+(http://boto.readthedocs.org/en/latest/boto_config_tut.html).
 
-<div>
----<br>
-# location of top-level f5aws project directory<br>
+i.e.: in ~/.aws/credentials
+
+```
+[default]
+aws_access_key_id = <my access key>
+aws_secret_access_key = <my secret key>
+[us-west-cal]
+aws_access_key_id = <my access key>
+aws_secret_access_key = <my secret key>
+[us-west-or]
+aws_access_key_id = <my access key>
+aws_secret_access_key = <my secret key>
+[us-east-virg]
+aws_access_key_id = <my access key>
+aws_secret_access_key = <my secret key>
+```
+
+
+3) Create ~/.f5aws with the following contents
+
+```
+# location of top-level f5aws project directory
 install_path: 'path to your install'
-</div>
+```
 
-
-2) Install the project requirements, i.e.:
+4) Install the project requirements, i.e.:
 
 
 ```pip install requirements.txt```
+
+5) Fix the hardcoded AMI IDs in 
+./roles/infra/tasks/deploy_bigip.yml (make this the AMI of BIG-IP hourly in the region where you are deploying)
+./roles/infra/files/docker_hosts.yml (this will make sure you have the correct ECS optimized compute host for your application containers)
+
 
 ### Usage:
 
