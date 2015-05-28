@@ -2,7 +2,6 @@
 Examples of setting up BIG-IP AWS via iControlREST 
 """
 
-import re
 import json
 import requests
 import logging
@@ -25,9 +24,6 @@ def debug(msg):
 
 class iControlRest(object):
 	def __init__(self, targetIp, username, password):
-		#self.targetIp = targetIp
-		#self.username = username
-		#self.password = password
 
 		self.host = "https://%s" % targetIp
 		self.auth = (username, password)

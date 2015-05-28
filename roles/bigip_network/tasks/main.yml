@@ -3,37 +3,195 @@
 # steps.  iCR is used directly for clarity.
 ---
 
-# get the device hostname
+# ---------------------------------
+# Configure basic network services
+# ---------------------------------
 
-- name: Set the AWS access key and secret key in global-settings
+- name: Set aws access and secret keys
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{ \"awsAccessKey\":\"1234\", \"awsSecretKey\":\"1234\" }' https://{{ inventory_hostname }}/mgmt/tm/sys/global-settings"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"awsAccessKey":"5678", "awsSecretKey":"5678"}'
+    collection_path='mgmt/tm/sys/global-settings'
 
-- name: Stop DHCP
+- name: Disable dhcp
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{ \"value\":\"disable\" }' https://{{ inventory_hostname }}/mgmt/tm/sys/db/dhclient.mgmt"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{ "value":"disable" }'
+    collection_path=mgmt/tm/sys/db/dhclient.mgmt'
 
 - name: Configure DNS servers
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{\"nameServers\":[\"4.2.2.1\"]}' https://{{ inventory_hostname }}/mgmt/tm/sys/dns"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"nameServers":["4.2.2.1"]}'
+    collection_path='mgmt/tm/sys/dns'
 
 - name: Configure NTP servers
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{\"servers\":[\"0.pool.ntp.org\",\"1.pool.ntp.org\"],\"timezone\":\"America/Los_Angeles\"}' https://{{ inventory_hostname }}/mgmt/tm/sys/ntp"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
+    collection_path='mgmt/tm/sys/ntp'
 
-- name: Configure SSH access
+- name: Set SSH mgmt access
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{\"allow\":[\"ALL\"]}' https://{{ inventory_hostname }}/mgmt/tm/sys/sshd"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/sshd'
 
-- name: Configure HTTP access 
+- name: Set HTTP mgmt access
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{\"allow\":[\"ALL\"]}' https://{{ inventory_hostname }}/mgmt/tm/sys/httpd"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/httpd'
 
-- name: Configure SNMP access 
+- name: Set SNMP access
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{\"allowedAddresses\":[\"10.0.0.0/255.0.0.0\",\"172.16.0.0/255.255.0.0\"]}' https://{{ inventory_hostname }}/mgmt/tm/sys/snmp"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allowedAddresses":["10.0.0.0/255.0.0.0","172.16.0.0/255.255.0.0"]}'
+    collection_path='mgmt/tm/sys/snmp'
 
-- name: Configure syslog
+- name: Set SNMP access
   delegate_to: localhost
-  raw: "curl -sk -u {{ bigip_rest_user }}:{{ bigip_rest_pass }} -H 'Content-type: application/json' -X PATCH -d '{\"include\":\"destination loghost { udp(172.16.3.51 port (514)); udp(172.16.3.52 port (514));};\"}' https://{{ inventory_hostname }}/mgmt/tm/sys/syslog"
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"include":"destination loghost { udp(172.16.3.51 port (514)); udp(172.16.3.52 port (514));};"}'
+    collection_path='mgmt/tm/sys/syslog'
+
+
+# ------------------------------------------------------------
+# Configure BIG-IP on the network in a highly-available fashion
+# ------------------------------------------------------------
+
+- name: Add internal vlan
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"private", "interfaces":"1.1"}'
+    collection_path='mgmt/tm/net/vlan'
+    resource_key="name"
+
+- name: Add external vlan
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"public", "interfaces":"1.2"}'
+    collection_path='mgmt/tm/net/vlan'
+    resource_key="name"
+
+- name: Add internal selfip
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"private", "address":"172.16.13.128/24", "vlan":"private"}'
+    collection_path='mgmt/tm/net/self'
+    resource_key="name"
+
+- name: Add external selfip
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"public", "address":"172.16.12.55/24", "vlan":"public"}'
+    collection_path='mgmt/tm/net/self'
+    resource_key="name"
+
+- name: Add a default gateway pool
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"default_gateway_pool", "members":[{"name":"172.16.2.1:0","address":"172.16.2.1"}, {"name":"172.16.12.1:0","address":"172.16.12.1"}], "monitor":"gateway_icmp"}'
+    collection_path='mgmt/tm/ltm/pool'
+    resource_key="name"
+
+- name: Add pool member default gateway pool
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{ "name":"pool_member_gateway_pool", "members":[{"name":"172.16.3.1:0","address":"172.16.3.1"}, {"name":"172.16.13.1:0","address":"172.16.13.1"}], "monitor":"gateway_icmp" }'
+    collection_path='mgmt/tm/ltm/pool'
+    resource_key="name"
+
+- name: Set default route using the default_gateway_pool
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"default_route", "network":"default", "pool":"/Common/default_gateway_pool" }'
+    collection_path='/mgmt/tm/net/route'
+    resource_key="name"
+
+- name: Setting Pool Member Routes (using pool member gateway_pool)... - member 1 
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{ "name":"AZ1_pool_member_network", "network":"172.16.4.0/24", "pool":"/Common/pool_member_gateway_pool" }'
+    collection_path='/mgmt/tm/net/route'
+    resource_key="name"
+
+- name: Setting Pool Member Routes (using pool member gateway_pool)... - member 2
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{ "name":"AZ2_pool_member_network", "network":"172.16.14.0/24", "pool":"/Common/pool_member_gateway_pool" }'
+    collection_path='/mgmt/tm/net/route'
+    resource_key="name"
+
+
+
+
 
