@@ -5,6 +5,27 @@
     - name: deploy bigips
       include: "{{ install_path }}/roles/infra/tasks/deploy_bigip.yml"
 
+
+
+
+# We need some way to add the managemnt ips to the bigips group
+# Unfortunately, the add_hosts directive in ansible does not actually
+# execute on a per-host basis within a playbook.  
+# some possibilities for solving this problem are:
+- hosts: 
+   localhost
+  gather_facts: no
+  tasks:
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['bigip-managers']
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
+        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
+        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
+      with_items: output['results']
+
 - hosts: bigips
   gather_facts: no
   roles:
@@ -17,8 +38,8 @@
   # vlan, interfaces, ntp, dns, dhcp, snmp, etc
     - bigip_network
 
-- hosts: bigips
-  gather_facts: no
-  roles:
+# - hosts: bigips
+#   gather_facts: no
+#   roles:
     # add python json/simplejson for use with ansible
     #- bigip_jsonify

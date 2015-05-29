@@ -25,18 +25,22 @@
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
     payload='{ "value":"disable" }'
-    collection_path=mgmt/tm/sys/db/dhclient.mgmt'
+    collection_path='mgmt/tm/sys/db/dhclient.mgmt'
 
-- name: Configure DNS servers
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"nameServers":["4.2.2.1"]}'
-    collection_path='mgmt/tm/sys/dns'
+#dont need this in Amazon, we get through DHCP
+# - name: Configure DNS servers
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"nameServers":["4.2.2.1"]}'
+#     collection_path='mgmt/tm/sys/dns'
 
+# We need NTP, we don't get this through Amazon
+#TODO: take in an array for pool members
+# pool members are the same for each device if they are in the same region
 - name: Configure NTP servers
   delegate_to: localhost
   bigip_config:
@@ -47,26 +51,29 @@
     payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
     collection_path='mgmt/tm/sys/ntp'
 
-- name: Set SSH mgmt access
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"allow":["ALL"]}'
-    collection_path='mgmt/tm/sys/sshd'
+# We don't really need this - Amazon provides this functionality with their ACLs
+# - name: Set SSH mgmt access
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"allow":["ALL"]}'
+    # collection_path='mgmt/tm/sys/sshd'
 
-- name: Set HTTP mgmt access
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"allow":["ALL"]}'
-    collection_path='mgmt/tm/sys/httpd'
+# We don't really need this - Amazon provides this functionality with their ACLs
+# - name: Set HTTP mgmt access
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"allow":["ALL"]}'
+#     collection_path='mgmt/tm/sys/httpd'
 
+# TODO: Do we want to demo something with SNMP as part of topology?
 - name: Set SNMP access
   delegate_to: localhost
   bigip_config:
@@ -74,17 +81,18 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
-    payload='{"allowedAddresses":["10.0.0.0/255.0.0.0","172.16.0.0/255.255.0.0"]}'
+    payload='{"allowedAddresses":[ "{{ vpc_cidr }}" ]}'
     collection_path='mgmt/tm/sys/snmp'
 
-- name: Set SNMP access
+# TODO: define log server ip somewhere (172.16.14.100)
+- name: Configure syslog
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
-    payload='{"include":"destination loghost { udp(172.16.3.51 port (514)); udp(172.16.3.52 port (514));};"}'
+    payload='{"include":"destination loghost { udp( 172.16.14.100 port (514));};"}'
     collection_path='mgmt/tm/sys/syslog'
 
 
@@ -114,6 +122,7 @@
     collection_path='mgmt/tm/net/vlan'
     resource_key="name"
 
+# THe address we give for local only self-ip is provided by Amazon (InternalInterfacePrivateIp)
 - name: Add internal selfip
   delegate_to: localhost
   bigip_config:
@@ -121,10 +130,11 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
-    payload='{"name":"private", "address":"172.16.13.128/24", "vlan":"private"}'
+    payload='{"name":"private", "address":"172.16.13.128/24", "vlan":"private", "trafficGroup":"traffic-group-local-only"}'
     collection_path='mgmt/tm/net/self'
     resource_key="name"
 
+# THe address we give for external, local-only self-ip is provided by Amazon (ExternalInterfacePrivateIp)
 - name: Add external selfip
   delegate_to: localhost
   bigip_config:
@@ -136,28 +146,36 @@
     collection_path='mgmt/tm/net/self'
     resource_key="name"
 
-- name: Add a default gateway pool
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"name":"default_gateway_pool", "members":[{"name":"172.16.2.1:0","address":"172.16.2.1"}, {"name":"172.16.12.1:0","address":"172.16.12.1"}], "monitor":"gateway_icmp"}'
-    collection_path='mgmt/tm/ltm/pool'
-    resource_key="name"
+# TODO: add 1 secondary private IP per virtual
+#  we'll likely have two virtuals per big
 
-- name: Add pool member default gateway pool
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{ "name":"pool_member_gateway_pool", "members":[{"name":"172.16.3.1:0","address":"172.16.3.1"}, {"name":"172.16.13.1:0","address":"172.16.13.1"}], "monitor":"gateway_icmp" }'
-    collection_path='mgmt/tm/ltm/pool'
-    resource_key="name"
+# - name: Add a default gateway pool
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"name":"default_gateway_pool", "members":[{"name":"172.16.2.1:0","address":"172.16.2.1"}, {"name":"172.16.12.1:0","address":"172.16.12.1"}], "monitor":"gateway_icmp"}'
+#     collection_path='mgmt/tm/ltm/pool'
+#     resource_key="name"
 
+# - name: Add pool member default gateway pool
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{ "name":"pool_member_gateway_pool", "members":[{"name":"172.16.3.1:0","address":"172.16.3.1"}, {"name":"172.16.13.1:0","address":"172.16.13.1"}], "monitor":"gateway_icmp" }'
+#     collection_path='mgmt/tm/ltm/pool'
+#     resource_key="name"
+
+# for each bigip this route will be different
+# will be the first IP on the subnet network, i.e. 172.16.12.1 and 172.16.22.1
+# TODO: here we replace the '0' with a '1' from the variable 'public_cidr'. 
+#  In Amazon, the default gateway is the first IP in subnet.  THis might not 
+#  be true in other environments, in which case we'll want a more robust solution. 
 - name: Set default route using the default_gateway_pool
   delegate_to: localhost
   bigip_config:
@@ -165,31 +183,35 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
-    payload='{"name":"default_route", "network":"default", "pool":"/Common/default_gateway_pool" }'
+    payload='{"name":"default_route", "network":"default", "gw":"{{ public_cidr|replace('.0','.1') }} " }'
     collection_path='/mgmt/tm/net/route'
     resource_key="name"
 
-- name: Setting Pool Member Routes (using pool member gateway_pool)... - member 1 
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{ "name":"AZ1_pool_member_network", "network":"172.16.4.0/24", "pool":"/Common/pool_member_gateway_pool" }'
-    collection_path='/mgmt/tm/net/route'
-    resource_key="name"
 
-- name: Setting Pool Member Routes (using pool member gateway_pool)... - member 2
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{ "name":"AZ2_pool_member_network", "network":"172.16.14.0/24", "pool":"/Common/pool_member_gateway_pool" }'
-    collection_path='/mgmt/tm/net/route'
-    resource_key="name"
+# We don't physically need this because the default gateway (which is the amazon router)
+# will know how to route traffic to the pool members
+# To provide an "airgap"  we can include these routes
+# - name: Setting Pool Member Routes (using pool member gateway_pool)... - member 1 
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{ "name":"AZ1_pool_member_network", "network":"172.16.4.0/24", "pool":"/Common/pool_member_gateway_pool" }'
+#     collection_path='/mgmt/tm/net/route'
+#     resource_key="name"
+
+# - name: Setting Pool Member Routes (using pool member gateway_pool)... - member 2
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{ "name":"AZ2_pool_member_network", "network":"172.16.14.0/24", "pool":"/Common/pool_member_gateway_pool" }'
+#     collection_path='/mgmt/tm/net/route'
+#     resource_key="name"
 
 
 
