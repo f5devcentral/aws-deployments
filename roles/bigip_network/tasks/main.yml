@@ -17,6 +17,7 @@
     payload='{"awsAccessKey":"5678", "awsSecretKey":"5678"}'
     collection_path='mgmt/tm/sys/global-settings'
 
+
 - name: Disable dhcp
   delegate_to: localhost
   bigip_config:
@@ -94,7 +95,6 @@
     password={{ bigip_rest_pass }}
     payload='{"include":"destination loghost { udp( 172.16.14.100 port (514));};"}'
     collection_path='mgmt/tm/sys/syslog'
-
 
 # ------------------------------------------------------------
 # Configure BIG-IP on the network in a highly-available fashion
@@ -212,8 +212,4 @@
 #     payload='{ "name":"AZ2_pool_member_network", "network":"172.16.14.0/24", "pool":"/Common/pool_member_gateway_pool" }'
 #     collection_path='/mgmt/tm/net/route'
 #     resource_key="name"
-
-
-
-
 

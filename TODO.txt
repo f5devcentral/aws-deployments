@@ -8,23 +8,6 @@ TODO:
 
 -fix this problem:
 
-Installed environments (/Users/mutzel/vars/f5aws/env):
- - testenv1
-    key_name: mutzel-kp-eu-west-1
-    region: eu-west-1
-    deployment_model: standalone-per-zone
-    bigip_rest_pass: galile0
-    vpc_cidr: 172.16.0.0/16
-    bigip_rest_user: restadmin
-    resources:
-      vpc: {'stack_name': 'testenv1-vpc-manager', 'state': 'deployed'}
-      zone1-az: {'stack_name': 'testenv1-zone1-az-manager', 'state': 'deployed'}
-      zone1-bigip1: {'stack_name': 'testenv1-zone1-bigip1-manager', 'state': 'deployed'}
-      zone1-apphost1: {'stack_name': 'testenv1-zone1-apphost1-manager', 'state': 'deployed'}
-      zone2-az: {'stack_name': 'testenv1-zone2-az-manager', 'state': 'deployed'}
-      zone2-bigip1: {'stack_name': 'testenv1-zone2-bigip1-manager', 'state': 'deployed'}
-      zone2-apphost1: {'state': 'not deployed'}  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< should say errpr
-
   -3 -> 4 subnets: seperate internal from application subnet
   -if a CFT stack fails to install and enters rollback complete, the stack should be deleted
   -update use of EC2 security group, want:
@@ -33,3 +16,6 @@ Installed environments (/Users/mutzel/vars/f5aws/env):
     2) one for all public interfaces of all BIG-IPs
     3) one for all private interfaces of all BIG-IPs
     4) one for all web servers
+
+- figure out how to define and securily pass aws-access-key and aws-secret-key to bigip_network/tasks/main.yml
+- ssh key location should be defined outside of ansible.cfg in the project directory

@@ -6,13 +6,13 @@
 #   raw: bash
 
 - name: Check for user 
-  raw: tmsh list auth user {{ bigip_rest_user }}
+  raw: list auth user {{ bigip_rest_user }}
   register: list_user 
   ignore_errors: True
 
   #Conditionally create a user if not found
 - name: create a user for rest 
-  raw: tmsh create auth user {{ bigip_rest_user }} password '{{ bigip_rest_pass }}' partition-access add { all-partitions { role admin } } shell tmsh  
+  raw: create auth user {{ bigip_rest_user }} password '{{ bigip_rest_pass }}' partition-access add { all-partitions { role admin } } shell tmsh  
   when: list_user.stdout | search("was not found")
 
 
