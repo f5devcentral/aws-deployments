@@ -1,0 +1,25 @@
+---
+# tasks file for bigip
+#  All tmsh commands use "executable: bash" to ensure that ssh drops out of tmsh,
+#    otherwise tmsh will puke when ansible tries to drop into /bin/sh
+# - name: run bash
+#   raw: bash
+
+- name: modify change password
+  raw: modify auth user admin password '{{ bigip_rest_password }}' 
+  ignore_errors: True
+
+- name: save config
+  raw: save sys config 
+
+#### DON'T THINK WE NEED TO DO THIS AS WILL BE DOING REST FROM HERE ON OUT
+
+# - name: change admins shell to bash
+#   raw: modify auth user admin shell bash 
+#   ignore_errors: True
+# 
+# - name: pause couple of seconds to let shell restart
+#   pause: seconds=5
+#   tags:
+#       - pause 
+# 

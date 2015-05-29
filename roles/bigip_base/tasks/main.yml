@@ -3,6 +3,7 @@
 # to be bash, rather than tmsh.  The latter is difficult to use ansible...
 # Finally, turn of the setup wizard so if anyone does every login in, they aren't prompted to setup the device.
 
-- include: change_shell.yml
-- include: add_rest_user.yml
+# misc_setup can be changed in REST instead. Need to deprecate
 - include: misc_setup.yml
+- include: add_rest_user.yml
+- include: modify_admin.yml

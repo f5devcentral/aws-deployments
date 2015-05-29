@@ -14,6 +14,7 @@ For more information on the usage, see the project README.md
 """
 
 import sys
+sys.path.append('/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/')
 import os
 import stat
 import argparse
@@ -31,6 +32,7 @@ local_module_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', 'lib')
 )
 sys.path.append(local_module_path)
+
 
 import ansible.playbook
 import ansible.constants as constants
@@ -281,8 +283,8 @@ class F5Aws(object):
         created by the 'init' command.
     """
     playbooks = [
-      # 'deploy_vpc.yml',
-      # 'deploy_az.yml',
+      #'deploy_vpc.yml',
+      #'deploy_az.yml',
       'deploy_bigip.yml',
       'deploy_apphost.yml'
     ]

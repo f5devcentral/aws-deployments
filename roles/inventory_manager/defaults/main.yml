@@ -4,10 +4,10 @@ vpc_cidr_prefix: "172.16"
 
 # defaults for all bigips deployed
 bigip_version: "11.6"
-bigip_license_throughput: "25mbps"
+bigip_license_throughput: "1gbps"
 bigip_license_model: "hourly"
-bigip_license_package: "good"
-bigip_instance_type: "m3.xlarge"
+bigip_license_package: "best"
+bigip_instance_type: "m3.2xlarge"
 
 # defaults for deploying applications within docker containers
 # default ami is Docker optimized in US-EAST-1

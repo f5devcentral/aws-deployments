@@ -1,10 +1,11 @@
 ---
-- name: disable setup wizard
-  raw: tmsh modify sys db setup.run value false
 
 # - name: change hostname
-#   raw: tmsh modify sys global-settings hostname {{ bigip_hostname }}
+#   raw: modify sys global-settings hostname {{ bigip_hostname }}
+
+- name: disable setup wizard
+  raw: modify sys db setup.run value false
 
 - name: Save sys config
-  raw: tmsh save sys config 
+  raw: save sys config 
 

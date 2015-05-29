@@ -18,7 +18,7 @@
       licenseModel: "{{ bigip_license_model }}"
       licensePackage: "{{ bigip_license_package }}"
       instanceType: "{{ bigip_instance_type }}"
-      amiId: "ami-2f128a58" #eventually we'll want to leverage the mappings in cft
+      amiId: "ami-7c9ab114" #eventually we'll want to leverage the mappings in cft
       version: "{{ bigip_version }}"
       keyName: "{{ key_name }}"
   register: bigip_deploy_results
@@ -29,5 +29,5 @@
 - copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
 
 - name: add host to group
-  add_host: name={{ bigip_deploy_results['stack_outputs']['ManagementInterfacePublicIp'] }} groups=bigips
+  add_host: name={{ bigip_deploy_results['stack_outputs']['ManagementInterfacePublicIp'] }} groups=bigips ansible_ssh_user="admin" executable="bash"
 
