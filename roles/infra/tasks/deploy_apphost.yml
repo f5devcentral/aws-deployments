@@ -9,7 +9,7 @@
   args:
     template_parameters:
       vpc: "{{ vpc_id }}"
-      privateSubnet: "{{ private_subnet }}"
+      ApplicationSubnet: "{{ application_subnet }}"
       instanceType: "{{ apphost_instance_type }}"
       keyName: "{{ key_name }}"
   register: apphost_deploy_results

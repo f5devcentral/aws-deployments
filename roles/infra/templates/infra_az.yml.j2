@@ -10,5 +10,6 @@ availability_zones:
    managementSubnetCidr: "{{ result['item']['management_cidr'] }}"
    privateSubnetCidr: "{{ result['item']['private_cidr'] }}"
    publicSubnetCidr: "{{ result['item']['public_cidr'] }}"
+   applicationSubnetCidr: "{{ result['item']['application_cidr'] }}"
 
 {% endfor %}

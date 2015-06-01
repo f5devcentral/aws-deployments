@@ -6,7 +6,7 @@
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within working region."
     },
-  	"privateSubnet": {
+  	"ApplicationSubnet": {
   		"Description": "Private subnet for application servers",
   		"Type": "AWS::EC2::Subnet::Id",
   		"ConstraintDescription": "Must be an existing subnet"
@@ -107,7 +107,7 @@
           "Ref": "instanceType"
         },
         "SubnetId": {
-          "Ref": "privateSubnet"
+          "Ref": "ApplicationSubnet"
         },
         "SecurityGroupIds": [
           {

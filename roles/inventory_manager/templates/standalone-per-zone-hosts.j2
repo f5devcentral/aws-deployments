@@ -86,6 +86,7 @@ availability_zone={{ zone }}
 management_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}1.0/24"
 private_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}2.0/24"
 public_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}3.0/24"
+application_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}4.0/24"
 bigip_version={{ bigip_version }}
 bigip_license_throughput={{ bigip_license_throughput }}
 bigip_license_model={{ bigip_license_model }}
@@ -102,6 +103,6 @@ ansible_python_interpreter="/usr/bin/env python"
 
 ; For remote connections
 [bigips:vars]
-ansible_connection=local
+#ansible_connection=local
 excutable=bash
 ansible_python_interpreter=/usr/bin/env python
