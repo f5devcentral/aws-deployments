@@ -133,17 +133,21 @@
             "ToPort": "443",
             "CidrIp": "0.0.0.0/0"
           }
-	]
+        ]
       }
     },
     "InstanceSecurityGroupIngress": {
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties": {
-        "GroupId": { "Ref": "InstanceSecurityGroup" },
+        "GroupId": {
+          "Ref": "InstanceSecurityGroup"
+        },
         "IpProtocol": "-1",
         "FromPort": "-1",
         "ToPort": "-1",
-        "SourceSecurityGroupId": { "Ref": "InstanceSecurityGroup" }
+        "SourceSecurityGroupId": {
+          "Ref": "InstanceSecurityGroup"
+        }
       }
     },
     "ManagementInterface": {
@@ -167,7 +171,7 @@
         "SubnetId": {
           "Ref": "privateSubnet"
         },
-	"SourceDestCheck" : "false"
+        "SourceDestCheck": "false"
       }
     },
     "ExternalInterface": {
@@ -182,7 +186,7 @@
         "SubnetId": {
           "Ref": "publicSubnet"
         },
-	"SourceDestCheck" : "false",
+        "SourceDestCheck": "false",
         "SecondaryPrivateIpAddressCount": "5"
       }
     },
@@ -265,10 +269,10 @@
           "Ref": "ExternalInterface"
         },
         "PrivateIpAddress": {
-              "Fn::GetAtt": [
-                "ExternalInterface",
-                "PrimaryPrivateIpAddress"
-              ]
+          "Fn::GetAtt": [
+            "ExternalInterface",
+            "PrimaryPrivateIpAddress"
+          ]
         }
       }
     }
@@ -276,59 +280,136 @@
   "Outputs": {
     "BigipInstance": {
       "Description": "Instance id of Big-IP in Amazon",
-      "Value": { "Ref": "BigipInstance" }
+      "Value": {
+        "Ref": "BigipInstance"
+      }
     },
-    "ManagementInterfacePublicIp" : {
-      "Description" : "IP address of management port on BIG-IP",
-      "Value" : { "Ref" : "ManagementIpAddress" }
+    "ManagementInterfacePublicIp": {
+      "Description": "IP address of management port on BIG-IP",
+      "Value": {
+        "Ref": "ManagementIpAddress"
+      }
     },
     "ManagementInterfacePrivateIp": {
       "Description": "Internally routable IP of management interface on BIG-IP",
-      "Value": { "Fn::GetAtt":  [ "ManagementInterface", "PrimaryPrivateIpAddress"]}
+      "Value": {
+        "Fn::GetAtt": [
+          "ManagementInterface",
+          "PrimaryPrivateIpAddress"
+        ]
+      }
     },
     "ManagementInterfaceId": {
       "Description": "Management interface ID on BIG-IP",
-      "Value": { "Ref" : "ManagementInterface"  }
+      "Value": {
+        "Ref": "ManagementInterface"
+      }
     },
     "InternalInterfacePrivateIp": {
       "Description": "Internally routable IP of internal interface on BIG-IP",
-      "Value": { "Fn::GetAtt":  [ "InternalInterface", "PrimaryPrivateIpAddress"]}
+      "Value": {
+        "Fn::GetAtt": [
+          "InternalInterface",
+          "PrimaryPrivateIpAddress"
+        ]
+      }
     },
     "InternalInterfaceId": {
       "Description": "Internal interface ID on BIG-IP",
-      "Value": { "Ref": "InternalInterface" }
+      "Value": {
+        "Ref": "InternalInterface"
+      }
     },
-    "ExternalInterfacePublicIp" : {
-      "Description" : "IP Address of External interface attached to BIG-IP",
-      "Value" : { "Ref" : "ExternalSelfEipAddress" }
+    "ExternalInterfacePublicIp": {
+      "Description": "IP Address of External interface attached to BIG-IP",
+      "Value": {
+        "Ref": "ExternalSelfEipAddress"
+      }
     },
     "ExternalInterfacePrivateIp": {
       "Description": "Internally routable IP of public interface on BIG-IP",
-      "Value": { "Fn::GetAtt":  [ "ExternalInterface", "PrimaryPrivateIpAddress"]}
+      "Value": {
+        "Fn::GetAtt": [
+          "ExternalInterface",
+          "PrimaryPrivateIpAddress"
+        ]
+      }
     },
     "ExternalInterfaceId": {
       "Description": "External interface ID on BIG-IP",
-      "Value": { "Ref" : "ExternalInterface" }
+      "Value": {
+        "Ref": "ExternalInterface"
+      }
     },
     "Vip1": {
       "Description": "External Interface Secondary IP 1",
-      "Value" : { "Fn::Select": [ "0", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+      "Value": {
+        "Fn::Select": [
+          "0",
+          {
+            "Fn::GetAtt": [
+              "ExternalInterface",
+              "SecondaryPrivateIpAddresses"
+            ]
+          }
+        ]
+      }
     },
     "Vip2": {
       "Description": "External Interface Secondary IP 2",
-      "Value" : { "Fn::Select": [ "1", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+      "Value": {
+        "Fn::Select": [
+          "1",
+          {
+            "Fn::GetAtt": [
+              "ExternalInterface",
+              "SecondaryPrivateIpAddresses"
+            ]
+          }
+        ]
+      }
     },
     "Vip3": {
       "Description": "External Interface Secondary IP 3",
-      "Value" : { "Fn::Select": [ "2", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+      "Value": {
+        "Fn::Select": [
+          "2",
+          {
+            "Fn::GetAtt": [
+              "ExternalInterface",
+              "SecondaryPrivateIpAddresses"
+            ]
+          }
+        ]
+      }
     },
     "Vip4": {
       "Description": "External Interface Secondary IP 4",
-      "Value" : { "Fn::Select": [ "3", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+      "Value": {
+        "Fn::Select": [
+          "3",
+          {
+            "Fn::GetAtt": [
+              "ExternalInterface",
+              "SecondaryPrivateIpAddresses"
+            ]
+          }
+        ]
+      }
     },
     "Vip5": {
       "Description": "External Interface Secondary IP 5",
-      "Value" : { "Fn::Select": [ "4", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+      "Value": {
+        "Fn::Select": [
+          "4",
+          {
+            "Fn::GetAtt": [
+              "ExternalInterface",
+              "SecondaryPrivateIpAddresses"
+            ]
+          }
+        ]
+      }
     }
   }
 }
