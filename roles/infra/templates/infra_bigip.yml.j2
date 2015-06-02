@@ -7,10 +7,13 @@ bigips:
    managementSubnet: "{{ result['item']['managementSubnet'] }}"
    privateSubnet: "{{ result['item']['privateSubnet'] }}"
    publicSubnet: "{{ result['item']['publicSubnet'] }}"
-   ExternalInterfacePrivateIp: "{{ result['stack_outputs']['ExternalInterfacePrivateIp'] }}"
-   ExternalInterfacePublicIp: "{{ result['stack_outputs']['ExternalInterfacePublicIp'] }}" 
-   InternalInterfacePrivateIp: "{{ result['stack_outputs']['InternalInterfacePrivateIp'] }}"
    ManagementInterfacePrivateIp: "{{ result['stack_outputs']['ManagementInterfacePrivateIp'] }}"
    ManagementInterfacePublicIp: "{{ result['stack_outputs']['ManagementInterfacePublicIp'] }}"
-   
+   ManagementInterfaceId: "{{ result['stack_outputs']['ManagementInterfaceId'] }}"
+   InternalInterfacePrivateIp: "{{ result['stack_outputs']['InternalInterfacePrivateIp'] }}"
+   InternalInterfaceId: "{{ result['stack_outputs']['InternalInterfaceId'] }}"
+   ExternalInterfacePrivateIp: "{{ result['stack_outputs']['ExternalInterfacePrivateIp'] }}"
+   ExternalInterfacePublicIp: "{{ result['stack_outputs']['ExternalInterfacePublicIp'] }}" 
+   ExternalInterfaceId: "{{ result['stack_outputs']['ExternalInterfaceId'] }}"
+   ExternalSecondaryIps: "{{ result['stack_outputs']['ExternalSecondaryIps'] }}"
 {% endfor %}

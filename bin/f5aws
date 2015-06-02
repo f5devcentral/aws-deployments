@@ -286,6 +286,7 @@ class F5Aws(object):
       'deploy_vpc.yml',
       'deploy_az.yml',
       'deploy_bigip.yml',
+      'deploy_eip.yml',
       'deploy_apphost.yml'
     ]
     inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)

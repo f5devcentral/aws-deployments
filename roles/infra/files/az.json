@@ -265,6 +265,12 @@
       "Value": {
         "Ref": "ApplicationSubnet"
       }
+    },
+    "ApplicationRouteTable": {
+      "Description": "Application Route Table if BIG-IPs are default Route",
+      "Value": { 
+          "Ref": "ApplicationRouteTable"
+       }
     }
   }
 }
