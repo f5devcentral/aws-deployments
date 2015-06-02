@@ -430,7 +430,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       foundManagers = False
       for l in f.readlines():
         if foundManagers is False:
-          if '[localhost]' not in l:
+          if '[managers]' not in l:
             continue
           else:
             foundManagers = True
