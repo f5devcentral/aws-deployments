@@ -11,7 +11,7 @@
       "Type": "String",
       "ConstraintDescription": "Must be a Secondary IP "
     },
-    "PrivateIpAddress" : { 
+    "PrivateIpAddress": {
       "Description": "Private IP typically secondary for VIPs that the EIP will be attached to",
       "Type": "String",
       "ConstraintDescription": "Must be a Private IP"
@@ -31,7 +31,7 @@
           "Ref": "NetworkInterfaceId"
         },
         "PrivateIpAddress": {
-	  "Ref": "PrivateIpAddress"
+          "Ref": "PrivateIpAddress"
         },
         "AllocationId": {
           "Fn::GetAtt": [
@@ -41,19 +41,28 @@
         }
       }
     }
-   },
-   "Outputs": {
-	"PrivateIpAddress" : {
-	  "Description" : "Private IP Address",
-	  "Value" : { "Ref" : "PrivateIpAddress" }
-	},
-	"EipAddress" : {
-	  "Description" : "EIP NAT Address",
-	  "Value" : { "Ref" : "EipAddress" }
-	},
-	"EipAllocationId": {
-	  "Description" : "EIP Allocation ID",
-	  "Value" : { "Fn::GetAtt": [ "EipAddress", "AllocationId" ] }
-        } 
-   } 
+  },
+  "Outputs": {
+    "privateIpAddress": {
+      "Description": "Private IP Address",
+      "Value": {
+        "Ref": "PrivateIpAddress"
+      }
+    },
+    "eipAddress": {
+      "Description": "EIP NAT Address",
+      "Value": {
+        "Ref": "EipAddress"
+      }
+    },
+    "eipAllocationId": {
+      "Description": "EIP Allocation ID",
+      "Value": {
+        "Fn::GetAtt": [
+          "EipAddress",
+          "AllocationId"
+        ]
+      }
+    }
+  }
 }

@@ -4,7 +4,7 @@
     stack_name="{{ env_name }}-{{ inventory_hostname }}-vip-{{vip_id}}"
     state=present
     region="{{ region }}"
-    template={{ install_path }}/roles/infra/files/eip_to_private_ip.json
+    template={{ install_path }}/roles/infra/files/eip.json
   args:
     template_parameters:
       vpc: "{{ vpc_id }}"
