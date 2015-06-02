@@ -8,10 +8,11 @@
   args:
     template_parameters:
       vpc: "{{ vpc_id }}"
-      NetworkInterfaceId: "{{ ExternalInterfaceId }}"
-      #PrivateIPAddress: "{{ ExternalSecondaryIps[vip_id] }}"
+      NetworkInterfaceId: "{{ stack_outputs['ExternalInterfaceId'] }}"
+      #CFT not able to OUTPUT ExternalSecondaryIps attribute as not string
+      #PrivateIPAddress: "{{ stack_outputs["ExternalSecondaryIps"][vip_id] }}"
       #test first with hardcoded index
-      PrivateIPAddress: "{{ ExternalSecondaryIps[0] }}"
+      PrivateIpAddress: "{{ stack_outputs[vip_id] }}"
   register: eip_results
 
 - debug: var=eip_results

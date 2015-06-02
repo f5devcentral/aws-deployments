@@ -8,13 +8,13 @@
 - hosts: bigips
   gather_facts: no
   roles:
-    # basic devic setup
+    # basic devic setup: admin users, ntp, dns, dhcp, snmp, db keys, etc.
     - bigip_base 
 
 - hosts: bigips
   gather_facts: no
   roles:
-  # vlan, interfaces, ntp, dns, dhcp, snmp, etc
+  # vlans, self-ips, gateway_pools, routes
     - bigip_network
 
 - hosts: bigips

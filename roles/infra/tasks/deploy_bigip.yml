@@ -28,8 +28,6 @@
 
 - copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
 
-- copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
-
 - copy: content="{{ bigip_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json
 
 #- name: add host to group

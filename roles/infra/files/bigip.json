@@ -183,7 +183,7 @@
           "Ref": "publicSubnet"
         },
 	"SourceDestCheck" : "false",
-        "SecondaryPrivateIpAddressCount": "20"
+        "SecondaryPrivateIpAddressCount": "5"
       }
     },
     "BigipInstance": {
@@ -288,7 +288,7 @@
     },
     "ManagementInterfaceId": {
       "Description": "Management interface ID on BIG-IP",
-      "Value": { "Fn::GetAtt":  [ "ManagementInterface", ""NetworkInterfaceId"]}
+      "Value": { "Ref" : "ManagementInterface"  }
     },
     "InternalInterfacePrivateIp": {
       "Description": "Internally routable IP of internal interface on BIG-IP",
@@ -296,7 +296,7 @@
     },
     "InternalInterfaceId": {
       "Description": "Internal interface ID on BIG-IP",
-      "Value": { "Fn::GetAtt":  [ "InternalInterface", ""NetworkInterfaceId"]}
+      "Value": { "Ref": "InternalInterface" }
     },
     "ExternalInterfacePublicIp" : {
       "Description" : "IP Address of External interface attached to BIG-IP",
@@ -308,11 +308,27 @@
     },
     "ExternalInterfaceId": {
       "Description": "External interface ID on BIG-IP",
-      "Value": { "Fn::GetAtt":  [ "ExternalInterface", ""NetworkInterfaceId"]}
+      "Value": { "Ref" : "ExternalInterface" }
     },
-    "ExternalSecondaryIps": {
-      "Description": "Secondary IPs on External Interface",
-      "Value": { "Fn::GetAtt":  [ "ExternalInterface", "SecondaryPrivateIpAddresses"]}
+    "Vip1": {
+      "Description": "External Interface Secondary IP 1",
+      "Value" : { "Fn::Select": [ "0", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+    },
+    "Vip2": {
+      "Description": "External Interface Secondary IP 2",
+      "Value" : { "Fn::Select": [ "1", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+    },
+    "Vip3": {
+      "Description": "External Interface Secondary IP 3",
+      "Value" : { "Fn::Select": [ "2", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+    },
+    "Vip4": {
+      "Description": "External Interface Secondary IP 4",
+      "Value" : { "Fn::Select": [ "3", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
+    },
+    "Vip5": {
+      "Description": "External Interface Secondary IP 5",
+      "Value" : { "Fn::Select": [ "4", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Allocates and EIP and assigns it to a Private IP (Secondary)"
+  "Description": "Allocates and EIP and assigns it to a Private IP Secondary",
   "Parameters": {
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
@@ -11,8 +11,8 @@
       "Type": "String",
       "ConstraintDescription": "Must be a Secondary IP "
     },
-    "PrivateIPAddress" : { 
-      "Description": "Private IP (typically secondary for VIPs) that the EIP will be attached to",
+    "PrivateIpAddress" : { 
+      "Description": "Private IP typically secondary for VIPs that the EIP will be attached to",
       "Type": "String",
       "ConstraintDescription": "Must be a Private IP"
     }

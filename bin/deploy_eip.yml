@@ -1,8 +1,7 @@
 ---
 - hosts: bigip-managers
-  #hardcode now but eventually pass it in as read through master VIP/Application DB/List.
   vars:
-    vip_id: 1
+    vip_id: "Vip1"
   #Grab Interface IDs and Secondary IPs from each BIGIP
   vars_files:
      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
