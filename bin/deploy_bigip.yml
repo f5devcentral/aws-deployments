@@ -6,12 +6,11 @@
       include: "{{ install_path }}/roles/infra/tasks/deploy_bigip.yml"
 
 
-
-
 # We need some way to add the managemnt ips to the bigips group
 # Unfortunately, the add_hosts directive in ansible does not actually
 # execute on a per-host basis within a playbook.  
-# some possibilities for solving this problem are:
+# Here we solve this problem by looping through JSON results from previous 
+# provisioning steps by the bigip-managers group
 - hosts: 
    localhost
   gather_facts: no
@@ -26,17 +25,18 @@
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
       with_items: output['results']
 
+# Basic device setup using tmsh to enable further provisioning
 - hosts: bigips
   gather_facts: no
   roles:
-    # basic devic setup
     - bigip_base 
 
+# Provision network settings and service configuration
 - hosts: bigips
   gather_facts: no
   roles:
-  # vlan, interfaces, ntp, dns, dhcp, snmp, etc
-    - bigip_network
+    - bigip_network_general
+    - bigip_network_device
 
 # - hosts: bigips
 #   gather_facts: no

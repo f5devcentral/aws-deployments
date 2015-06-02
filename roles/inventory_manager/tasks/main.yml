@@ -8,7 +8,7 @@
 - file: path="~/vars/f5aws/env/{{ env_name }}/inventory/host_vars" state="directory"
 
 # create some files for the roles/hosts we know we need
-- template: src="localhost.yml.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/host_vars/localhost"
+- template: src="group_vars_localhosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/localhosts"
 
 # add some group vars for the bigips we will provision
 - template: src="group_vars_bigip.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/bigips"

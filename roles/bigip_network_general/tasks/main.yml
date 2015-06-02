@@ -4,7 +4,7 @@
 ---
 
 # ---------------------------------
-# Configure basic network services
+# Configure basic network services that are the same across all devices
 # ---------------------------------
 
 - name: Set aws access and secret keys
@@ -16,7 +16,6 @@
     password={{ bigip_rest_pass }}
     payload='{"awsAccessKey":"5678", "awsSecretKey":"5678"}'
     collection_path='mgmt/tm/sys/global-settings'
-
 
 - name: Disable dhcp
   delegate_to: localhost
@@ -97,7 +96,7 @@
     collection_path='mgmt/tm/sys/syslog'
 
 # ------------------------------------------------------------
-# Configure BIG-IP on the network in a highly-available fashion
+# Configure network settings which are specific to this device 
 # ------------------------------------------------------------
 
 - name: Add internal vlan
@@ -120,30 +119,6 @@
     password={{ bigip_rest_pass }}
     payload='{"name":"public", "interfaces":"1.2"}'
     collection_path='mgmt/tm/net/vlan'
-    resource_key="name"
-
-# THe address we give for local only self-ip is provided by Amazon (InternalInterfacePrivateIp)
-- name: Add internal selfip
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"name":"private", "address":"172.16.13.128/24", "vlan":"private", "trafficGroup":"traffic-group-local-only"}'
-    collection_path='mgmt/tm/net/self'
-    resource_key="name"
-
-# THe address we give for external, local-only self-ip is provided by Amazon (ExternalInterfacePrivateIp)
-- name: Add external selfip
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"name":"public", "address":"172.16.12.55/24", "vlan":"public"}'
-    collection_path='mgmt/tm/net/self'
     resource_key="name"
 
 # TODO: add 1 secondary private IP per virtual
@@ -171,21 +146,6 @@
 #     collection_path='mgmt/tm/ltm/pool'
 #     resource_key="name"
 
-# for each bigip this route will be different
-# will be the first IP on the subnet network, i.e. 172.16.12.1 and 172.16.22.1
-# TODO: here we replace the '0' with a '1' from the variable 'public_cidr'. 
-#  In Amazon, the default gateway is the first IP in subnet.  THis might not 
-#  be true in other environments, in which case we'll want a more robust solution. 
-- name: Set default route using the default_gateway_pool
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"name":"default_route", "network":"default", "gw":"{{ public_cidr|replace('.0','.1') }} " }'
-    collection_path='/mgmt/tm/net/route'
-    resource_key="name"
 
 
 # We don't physically need this because the default gateway (which is the amazon router)

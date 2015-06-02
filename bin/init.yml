@@ -18,7 +18,7 @@
 #   bigip_instance_type: "m3.xlarge"
 
 # --Run as 
-# ansible-playbook ./init.yml -i ./inventory/hosts --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"], "bigip_rest_password":"f5N3tworks"}'
+# ansible-playbook ./init.yml -i ./inventory/hosts --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "key_name": "mutzel-kp-eu-west-1", "zones": ["eu-west-1a","eu-west-1b"], "bigip_rest_pass":"f5N3tworks"}'
 
 ---
 - hosts: localhosts

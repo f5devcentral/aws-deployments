@@ -5,7 +5,8 @@
 
 ; our "management hosts" - these don't actually exist,
 ;  they are really virtual hosts we use to group variables
-[localhost]
+[localhosts]
+localhost
 vpc-manager
 {% for zone in zones %}
 zone{{ loop.index }}-az-manager
@@ -83,6 +84,7 @@ bigip_rest_pass={{ bigip_rest_pass }}
 [zone{{ loop.index }}:vars]
 zone_id=zone{{ loop.index }}
 availability_zone={{ zone }}
+zone_cidr_prefix="{{ vpc_cidr_prefix }}.{{ loop.index }}"
 management_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}1.0/24"
 private_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}2.0/24"
 public_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}3.0/24"
@@ -99,9 +101,3 @@ apphost_instance_type={{ apphost_instance_type }}
 [localhost:vars]
 ansible_connection=local
 ansible_python_interpreter="/usr/bin/env python"
-
-; For remote connections
-[bigips:vars]
-ansible_connection=local
-excutable=bash
-ansible_python_interpreter=/usr/bin/env python
