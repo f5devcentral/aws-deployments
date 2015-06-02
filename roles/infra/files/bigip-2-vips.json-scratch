@@ -132,18 +132,16 @@
             "FromPort": "443",
             "ToPort": "443",
             "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "-1",
+            "FromPort": "-1",
+            "ToPort": "-1",
+            "SourceSecurityGroupId": { 
+               "Ref": "InstanceSecurityGroup" 
+	    }
           }
-	]
-      }
-    },
-    "InstanceSecurityGroupIngress": {
-      "Type": "AWS::EC2::SecurityGroupIngress",
-      "Properties": {
-        "GroupId": { "Ref": "InstanceSecurityGroup" },
-        "IpProtocol": "-1",
-        "FromPort": "-1",
-        "ToPort": "-1",
-        "SourceSecurityGroupId": { "Ref": "InstanceSecurityGroup" }
+        ]
       }
     },
     "ManagementInterface": {
@@ -183,7 +181,100 @@
           "Ref": "publicSubnet"
         },
 	"SourceDestCheck" : "false",
-        "SecondaryPrivateIpAddressCount": "5"
+        "SecondaryPrivateIpAddressCount": "3",
+      }
+    },
+    "UniqueSelfIP_EIP_Address": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "UniqueSelfIp_EIP_Association": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "UniqueSelfIP_EIP_Address",
+            "AllocationId"
+          ]
+        },
+        "NetworkInterfaceId": {
+          "Ref": "ExternalInterface"
+        },
+        "PrivateIpAddress": {
+          "Fn::Select": [
+            "0",
+            {
+              "Fn::GetAtt": [
+                "ExternalInterface",
+                "SecondaryPrivateIpAddresses"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "VIP_1_EIP_Address": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "VIP_1_EIP_Association": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "VIP_1_EIP_Address",
+            "AllocationId"
+          ]
+        },
+        "NetworkInterfaceId": {
+          "Ref": "ExternalInterface"
+        },
+        "PrivateIpAddress": {
+          "Fn::Select": [
+            "1",
+            {
+              "Fn::GetAtt": [
+                "ExternalInterface",
+                "SecondaryPrivateIpAddresses"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "VIP_2_EIP_Address": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "VIP_2_EIP_Association": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "VIP_2_EIP_Address",
+            "AllocationId"
+          ]
+        },
+        "NetworkInterfaceId": {
+          "Ref": "ExternalInterface"
+        },
+        "PrivateIpAddress": {
+          "Fn::Select": [
+            "2",
+            {
+              "Fn::GetAtt": [
+                "ExternalInterface",
+                "SecondaryPrivateIpAddresses"
+              ]
+            }
+          ]
+        }
       }
     },
     "BigipInstance": {
@@ -232,12 +323,6 @@
         "Domain": "vpc"
       }
     },
-    "ExternalSelfEipAddress": {
-      "Type": "AWS::EC2::EIP",
-      "Properties": {
-        "Domain": "vpc"
-      }
-    },
     "ManagementIPAssociation": {
       "Type": "AWS::EC2::EIPAssociation",
       "Properties": {
@@ -251,32 +336,59 @@
           "Ref": "ManagementInterface"
         }
       }
-    },
-    "ExternalSelfEIPAssociation": {
-      "Type": "AWS::EC2::EIPAssociation",
-      "Properties": {
-        "AllocationId": {
-          "Fn::GetAtt": [
-            "ExternalSelfEipAddress",
-            "AllocationId"
-          ]
-        },
-        "NetworkInterfaceId": {
-          "Ref": "ExternalInterface"
-        },
-        "PrivateIpAddress": {
-              "Fn::GetAtt": [
-                "ExternalInterface",
-                "PrimaryPrivateIpAddress"
-              ]
-        }
-      }
     }
   },
   "Outputs": {
     "BigipInstance": {
       "Description": "Instance id of Big-IP in Amazon",
       "Value": { "Ref": "BigipInstance" }
+    },
+    "ExternalInterfacePublicIp" : {
+      "Description" : "IP Address of External interface attached to BIG-IP",
+      "Value" : { "Ref" : "UniqueSelfIP_EIP_Address" }
+    },
+    "VIP_1_EIP_Address" : {
+      "Description" : "VIP_1_EIP_Address",
+      "Value" : { "Ref" : "VIP_1_EIP_Address" }
+    },    
+    "VIP_1_Address" : {
+      "Description" : "VIP_1_Address",
+      "Value" : {            
+	    "Fn::Select": [
+            "1",
+            {
+              "Fn::GetAtt": [
+                "ExternalInterface",
+                "SecondaryPrivateIpAddresses"
+              ]
+            }
+          ]
+       }
+    },    
+    "VIP_2_EIP_Address" : {
+      "Description" : "VIP_2_EIP_Address",
+      "Value" : { "Ref" : "VIP_2_EIP_Address" }
+    },
+    "VIP_2_Address" : {
+      "Description" : "VIP_2_Address",
+      "Value" : {            
+	    "Fn::Select": [
+            "2",
+            {
+              "Fn::GetAtt": [
+                "ExternalInterface",
+                "SecondaryPrivateIpAddresses"
+              ]
+            }
+          ]
+       }
+
+
+
+    },
+    "ExternalInterfacePrivateIp": {
+      "Description": "Internally routable IP of public interface on BIG-IP",
+      "Value": { "Fn::GetAtt":  [ "ExternalInterface", "PrimaryPrivateIpAddress"]}
     },
     "ManagementInterfacePublicIp" : {
       "Description" : "IP address of management port on BIG-IP",
@@ -286,49 +398,9 @@
       "Description": "Internally routable IP of management interface on BIG-IP",
       "Value": { "Fn::GetAtt":  [ "ManagementInterface", "PrimaryPrivateIpAddress"]}
     },
-    "ManagementInterfaceId": {
-      "Description": "Management interface ID on BIG-IP",
-      "Value": { "Ref" : "ManagementInterface"  }
-    },
     "InternalInterfacePrivateIp": {
       "Description": "Internally routable IP of internal interface on BIG-IP",
       "Value": { "Fn::GetAtt":  [ "InternalInterface", "PrimaryPrivateIpAddress"]}
-    },
-    "InternalInterfaceId": {
-      "Description": "Internal interface ID on BIG-IP",
-      "Value": { "Ref": "InternalInterface" }
-    },
-    "ExternalInterfacePublicIp" : {
-      "Description" : "IP Address of External interface attached to BIG-IP",
-      "Value" : { "Ref" : "ExternalSelfEipAddress" }
-    },
-    "ExternalInterfacePrivateIp": {
-      "Description": "Internally routable IP of public interface on BIG-IP",
-      "Value": { "Fn::GetAtt":  [ "ExternalInterface", "PrimaryPrivateIpAddress"]}
-    },
-    "ExternalInterfaceId": {
-      "Description": "External interface ID on BIG-IP",
-      "Value": { "Ref" : "ExternalInterface" }
-    },
-    "Vip1": {
-      "Description": "External Interface Secondary IP 1",
-      "Value" : { "Fn::Select": [ "0", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
-    },
-    "Vip2": {
-      "Description": "External Interface Secondary IP 2",
-      "Value" : { "Fn::Select": [ "1", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
-    },
-    "Vip3": {
-      "Description": "External Interface Secondary IP 3",
-      "Value" : { "Fn::Select": [ "2", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
-    },
-    "Vip4": {
-      "Description": "External Interface Secondary IP 4",
-      "Value" : { "Fn::Select": [ "3", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
-    },
-    "Vip5": {
-      "Description": "External Interface Secondary IP 5",
-      "Value" : { "Fn::Select": [ "4", { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] } ] }
     }
   }
 }

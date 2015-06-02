@@ -25,16 +25,19 @@
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
       with_items: output['results']
 
+
 # Basic device setup using tmsh to enable further provisioning
 - hosts: bigips
   gather_facts: no
   roles:
+    # basic devic setup: admin users, ntp, dns, dhcp, snmp, db keys, etc.
     - bigip_base 
 
 # Provision network settings and service configuration
 - hosts: bigips
   gather_facts: no
   roles:
+    # vlans, self-ips, gateway_pools, routes
     - bigip_network_general
     - bigip_network_device
 

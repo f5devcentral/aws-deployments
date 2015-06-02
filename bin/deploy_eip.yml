@@ -1,0 +1,13 @@
+---
+- hosts: bigip-managers
+  vars:
+    vip_id: "Vip1"
+  #Grab Interface IDs and Secondary IPs from each BIGIP
+  vars_files:
+     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
+  gather_facts: no
+  tasks:
+    - name: deploy eips
+      include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
+
+

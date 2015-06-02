@@ -1,0 +1,32 @@
+
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Will fail due to SecondaryPrivateIpAddresses output not being string",
+  "Parameters": {
+    "vpc": {
+      "Type": "AWS::EC2::VPC::Id",
+      "ConstraintDescription": "Must be an existing VPC within working region."
+    },
+    "MySubnet": {
+      "Type" : "AWS::EC2::Subnet::Id"
+    }
+   },
+   "Resources": {
+    "ExternalInterface": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "Description": "External Interface",
+        "SubnetId": {
+          "Ref": "MySubnet"
+        },
+        "SecondaryPrivateIpAddressCount": "1"
+      }
+    }
+  },
+  "Outputs": {
+    "ExternalSecondaryIps": {
+      "Description": "Secondary IPs on External Interface",
+      "Value": { "Fn::GetAtt": [ "ExternalInterface", "SecondaryPrivateIpAddresses" ] }
+    }
+  }
+}

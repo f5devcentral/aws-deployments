@@ -13,6 +13,7 @@
       managementSubnetCidr: "{{ management_cidr }}"
       privateSubnetCidr: "{{ private_cidr }}"
       publicSubnetCidr: "{{ public_cidr }}"
+      applicationSubnetCidr: "{{ application_cidr }}"
   register: az_deploy_results
 
 - debug: var=az_deploy_results

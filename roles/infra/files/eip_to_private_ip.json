@@ -1,0 +1,59 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Allocates and EIP and assigns it to a Private IP Secondary",
+  "Parameters": {
+    "vpc": {
+      "Type": "AWS::EC2::VPC::Id",
+      "ConstraintDescription": "Must be an existing VPC within the supplied region."
+    },
+    "NetworkInterfaceId": {
+      "Description": "Network Interface ID to which this Secondary IP will be added",
+      "Type": "String",
+      "ConstraintDescription": "Must be a Secondary IP "
+    },
+    "PrivateIpAddress" : { 
+      "Description": "Private IP typically secondary for VIPs that the EIP will be attached to",
+      "Type": "String",
+      "ConstraintDescription": "Must be a Private IP"
+    }
+  },
+  "Resources": {
+    "EipAddress": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "EipAssociation": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "NetworkInterfaceId": {
+          "Ref": "NetworkInterfaceId"
+        },
+        "PrivateIpAddress": {
+	  "Ref": "PrivateIpAddress"
+        },
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "EipAddress",
+            "AllocationId"
+          ]
+        }
+      }
+    }
+   },
+   "Outputs": {
+	"PrivateIpAddress" : {
+	  "Description" : "Private IP Address",
+	  "Value" : { "Ref" : "PrivateIpAddress" }
+	},
+	"EipAddress" : {
+	  "Description" : "EIP NAT Address",
+	  "Value" : { "Ref" : "EipAddress" }
+	},
+	"EipAllocationId": {
+	  "Description" : "EIP Allocation ID",
+	  "Value" : { "Fn::GetAtt": [ "EipAddress", "AllocationId" ] }
+        } 
+   } 
+}

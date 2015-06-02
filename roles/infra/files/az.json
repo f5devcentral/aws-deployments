@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Deploys Public, Private, and Management subnets within a VPC",
+  "Description": "Deploys Mgmt, Public, Private, and Application subnets within a VPC",
   "Parameters": {
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
@@ -9,6 +9,11 @@
     "availabilityZone": {
       "Type": "String",
       "ConstraintDescription": "Must be an availability zone within the region associated with the specific VPC"
+    },
+    "managementSubnetCidr": {
+      "Description": "Management subnet CIDR.",
+      "Type": "String",
+      "ConstraintDescription": "Must be a unique address range within this vpc"
     },
     "publicSubnetCidr": {
       "Description": "Public subnet CIDR.",
@@ -20,8 +25,8 @@
       "Type": "String",
       "ConstraintDescription": "Must be a unique address range within this vpc"
     },
-    "managementSubnetCidr": {
-      "Description": "Management subnet CIDR.",
+    "applicationSubnetCidr": {
+      "Description": "Application subnet CIDR.",
       "Type": "String",
       "ConstraintDescription": "Must be a unique address range within this vpc"
     },
@@ -91,14 +96,34 @@
         }
       }
     },
+    "ApplicationSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Ref": "availabilityZone"
+        },
+        "CidrBlock": {
+          "Ref": "applicationSubnetCidr"
+        },
+        "Tags": [
+          {
+            "Key": "topology",
+            "Value": "big-ip-vpc"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpc"
+        }
+      }
+    },
     "ManagementSubnetRouteTableAssociation": {
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
-        "SubnetId": {
-          "Ref": "ManagementSubnet"
-        },
         "RouteTableId": {
           "Ref": "ManagementRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "ManagementSubnet"
         }
       }
     },
@@ -121,6 +146,37 @@
         },
         "SubnetId": {
           "Ref": "PrivateSubnet"
+        }
+      }
+    },
+    "ApplicationSubnetRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "ApplicationRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "ApplicationSubnet"
+        }
+      }
+    },
+    "ManagementRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        }
+      }
+    },
+    "ManagementRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "ManagementRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "internetGateway"
         }
       }
     },
@@ -164,7 +220,7 @@
         }
       }
     },
-    "ManagementRouteTable": {
+    "ApplicationRouteTable": {
       "Type": "AWS::EC2::RouteTable",
       "Properties": {
         "VpcId": {
@@ -172,20 +228,26 @@
         }
       }
     },
-    "ManagementRoute": {
+    "ApplicationRoute": {
       "Type": "AWS::EC2::Route",
       "Properties": {
         "RouteTableId": {
-          "Ref": "ManagementRouteTable"
+          "Ref": "ApplicationRouteTable"
         },
         "DestinationCidrBlock": "0.0.0.0/0",
         "GatewayId": {
           "Ref": "internetGateway"
         }
       }
-    }
-  },
-  "Outputs": {
+     }
+   },
+   "Outputs": {
+    "ManagementSubnet": {
+      "Description": "Id of management subnet",
+      "Value": {
+        "Ref": "ManagementSubnet"
+      }
+    },
     "PublicSubnet": {
       "Description": "Id of public subnet",
       "Value": {
@@ -198,11 +260,17 @@
         "Ref": "PrivateSubnet"
       }
     },
-    "ManagementSubnet": {
-      "Description": "Id of management subnet",
+    "ApplicationSubnet": {
+      "Description": "Id of application subnet",
       "Value": {
-        "Ref": "ManagementSubnet"
+        "Ref": "ApplicationSubnet"
       }
+    },
+    "ApplicationRouteTable": {
+      "Description": "Application Route Table if BIG-IPs are default Route",
+      "Value": { 
+          "Ref": "ApplicationRouteTable"
+       }
     }
   }
 }
