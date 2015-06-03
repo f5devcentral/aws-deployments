@@ -1,0 +1,30 @@
+# here we make some basic iControlRest calls to setup network elements on BIG-IP
+# A more polished implementation might include custom ansible modules for these
+# steps.  iCR is used directly for clarity.
+---
+
+# ---------------------------------
+# Make AWS specific customizations 
+# ---------------------------------
+
+- name: Set aws access and secret keys
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"awsAccessKey":"5678", "awsSecretKey":"5678"}'
+    collection_path='mgmt/tm/sys/global-settings'
+
+- name: Disable dhcp
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{ "value":"disable" }'
+    collection_path='mgmt/tm/sys/db/dhclient.mgmt'
+
+

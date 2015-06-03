@@ -30,19 +30,14 @@
 - hosts: bigips
   gather_facts: no
   roles:
-    # basic devic setup: admin users, ntp, dns, dhcp, snmp, db keys, etc.
+    # adds users via tmsh
     - bigip_base 
-
-# Provision network settings and service configuration
-- hosts: bigips
-  gather_facts: no
-  roles:
-    # vlans, self-ips, gateway_pools, routes
-    - bigip_network_general
-    - bigip_network_device
-
-# - hosts: bigips
-#   gather_facts: no
-#   roles:
-    # add python json/simplejson for use with ansible
+    # adds json so ansible doesn't puke
     #- bigip_jsonify
+    # provisions system globals like ntp, dns, snmp, syslog, db keys  
+    - bigip_system
+    # sets AWS keys and disables DHCP
+    - bigip_system_aws
+    # sets vlans, self-ips, routes
+    - bigip_network
+

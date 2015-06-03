@@ -26,8 +26,8 @@
 - name: debug bigip_deploy_results var 
   debug: var=bigip_deploy_results  
 
+# Persist data to disk for use across plays
 - copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
-
 - copy: content="{{ bigip_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json
 
 

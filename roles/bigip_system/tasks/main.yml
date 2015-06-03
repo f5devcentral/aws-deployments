@@ -1,0 +1,89 @@
+# here we make some basic iControlRest calls to setup network elements on BIG-IP
+# A more polished implementation might include custom ansible modules for these
+# steps.  iCR is used directly for clarity.
+---
+
+# ---------------------------------
+# Configure basic network services that are the same across all devices
+# ---------------------------------
+
+
+- name: Disable Setup Utility in GUI
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{ "value":"false" }'
+    collection_path='mgmt/tm/sys/db/setup.run'
+
+# Don't need this in Amazon, we get through DHCP. 
+# - name: Configure DNS servers
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"nameServers":["4.2.2.1"]}'
+#     collection_path='mgmt/tm/sys/dns'
+#   #Really just need to add condition so only runs in certain environments
+#   when: target_env != "AWS"
+
+# We need NTP, we don't get this through Amazon
+# TODO: take in an array for pool members
+# pool members are the same for each device if they are in the same region
+- name: Configure NTP servers
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
+    collection_path='mgmt/tm/sys/ntp'
+
+  # We don't really need this - Amazon provides this functionality with their ACLs
+- name: Set SSH mgmt access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/sshd'
+
+# We don't really need this - Amazon provides this functionality with their ACLs
+- name: Set HTTP mgmt access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/httpd'
+
+- name: Set SNMP access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allowedAddresses":[ "{{ vpc_cidr }}" ]}'
+    collection_path='mgmt/tm/sys/snmp'
+
+  # TODO: define log server ip somewhere (10.0.3.32). Right now pointed on on-prem though VPN.
+- name: Configure syslog
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"include":"destination loghost { udp( 10.0.3.32 port (514));};"}'
+    collection_path='mgmt/tm/sys/syslog'
+

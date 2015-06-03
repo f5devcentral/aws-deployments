@@ -1,16 +1,32 @@
 #This playbook dismantles all deployed EC2 resources. 
 ---
-- hosts: apphost-managers
+- hosts: bigip-managers
+  vars: 
+     vip_id: Vip1
   gather_facts: no
-  tasks:
-    - name: teardown apphosts
-      include: "{{ install_path }}/roles/infra/tasks/teardown_apphost.yml"
+  tasks: 
+    - name: teardown eip associated with Vip1
+      include: "{{ install_path }}/roles/bigip_app/tasks/teardown_eip.yml"
+
+- hosts: bigip-managers
+  vars: 
+     vip_id: Vip2
+  gather_facts: no
+  tasks: 
+    - name: teardown eip associated with Vip2
+      include: "{{ install_path }}/roles/bigip_app/tasks/teardown_eip.yml"
 
 - hosts: bigip-managers
   gather_facts: no
   tasks:
     - name: teardown bigips
       include: "{{ install_path }}/roles/infra/tasks/teardown_bigip.yml"
+
+- hosts: apphost-managers
+  gather_facts: no
+  tasks:
+    - name: teardown apphosts
+      include: "{{ install_path }}/roles/infra/tasks/teardown_apphost.yml"
 
 - hosts: az-managers
   gather_facts: no

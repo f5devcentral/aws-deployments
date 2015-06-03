@@ -17,7 +17,6 @@
 - name: debug apphost_deploy_results var 
   debug: var=apphost_deploy_results
 
+# Persist data to disk for use across plays
 - copy: content="{{ apphost_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
-
-- name: add host to group
-  add_host: name={{ apphost_deploy_results['stack_outputs']['WebServerInstancePrivateIp'] }} groups=apphosts
+- copy: content="{{ apphost_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json

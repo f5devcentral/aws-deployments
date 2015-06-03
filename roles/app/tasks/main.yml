@@ -21,7 +21,7 @@
 #   tags:
 #     - launch_containers
 # 
-# - name: Store docker containers from jinja template
-#   local_action: template src=../templates/docker_containers.cfg.j2 dest=../cache/{{env_tag}}/{{inventory_hostname}}_docker_containers_just_created
-#   tags:
-#      - launch_containers
+
+# can't run here because of sudo
+#- name: Store docker containers from jinja template
+#  local_action: template src=docker_containers.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{inventory_hostname}}_docker_containers.yml

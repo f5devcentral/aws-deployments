@@ -1,0 +1,52 @@
+---
+# Deploy the docker host AMIs via CFT
+- hosts: apphost-managers
+  gather_facts: no
+  tasks:
+    - name: deploy app hosts 
+      include: "{{ install_path }}/roles/infra/tasks/deploy_apphost.yml"
+
+# Now that instances created, add them / their IPs to the dynamic apphosts group
+# so we can configure them 
+- hosts:
+   localhost
+  gather_facts: no
+  tasks:
+    # Re-Create a docker host temp group from data persisted to disk
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['apphost-managers']
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
+        WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
+        WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
+        ansible_ssh_user="ec2-user"
+      with_items: output['results']
+
+# Now launch containers inside them
+# Amazon amis we're using already have docker installed so no need for install_docker role
+- hosts: apphosts
+  gather_facts: False
+  vars:
+    ansible_sudo: True
+  roles:
+    - docker_base
+    - app
+
+# New play so don't use sudo when caching containers to disk
+- hosts: apphosts
+  gather_facts: False
+  tasks:
+
+    - name: debug docker host variables
+      debug: var=docker_containers
+      tags:
+          - debug
+          - launch_containers
+
+    - name: Store docker containers from jinja template
+      local_action: template src=../roles/app/templates/docker_containers.cfg.j2  dest=~/vars/f5aws/env/{{ env_name }}/{{inventory_hostname}}_docker_containers.yml
+
+#cache it here or in from within app role task itself?
+
+

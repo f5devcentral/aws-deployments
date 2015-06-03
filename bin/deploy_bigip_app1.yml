@@ -1,0 +1,124 @@
+---
+# Unfortunately, add_hosts does not persist across plays so we have to rebuild the 
+# topology from scratch
+# Here we solve this problem by looping through results outputed from previous
+# provisioning steps
+# The other alternative was to use the VARs YAML output from previous provisioning 
+# steps but ansible doesn't seem to load them sequentially on a task-by-task basis and 
+# seems to try to preload the var files for all the tasks causing caching issues 
+# (ie. loads output previous playbook runs instead of newer desired output from an earlier task)
+# cat via shell ugly but at least gives task-by-task control
+# FUTURE: try fact caching.
+
+# - hosts: bigip-managers
+#   gather_facts: no
+#   vars_files:
+#      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
+#   tasks:
+# #    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+# #      register: output
+# #      with_items: groups['bigip-managers']
+# 
+#     - add_host: name="{{ stack_outputs.ManagementInterfacePublicIp }}" group=bigips
+#         ExternalInterfacePublicIp="{{ stack_outputs.ExternalInterfacePublicIp }}"
+#         ExternalInterfacePrivateIp="{{ stack_outputs.ExternalInterfacePrivateIp }}"
+#         InternalInterfacePrivateIp="{{ stack_outputs.InternalInterfacePrivateIp }}"
+# 
+# 
+# - hosts: apphost-managers
+#   gather_facts: no
+#   vars_files:
+#     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
+#   tasks:
+#     - add_host: name="{{ stack_outputs.WebServerInstancePublicIp }}" group=apphosts
+#         WebServerInstancePublicIp="{{ stack_outputs.WebServerInstancePublicIp }}"
+#         WebServerInstancePrivateIp="{{ stack_outputs.WebServerInstancePrivateIp }}"
+#         ansible_ssh_user="ec2-user"
+# 
+
+# Re-Create a bigip temp group from data persisted to disk
+- hosts:
+   localhost
+  gather_facts: no
+  tasks:
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['bigip-managers']
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
+        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
+        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
+        ansible_ssh_user="admin"
+      with_items: output['results']
+
+    # Re-Create a docker host temp group from data persisted to disk
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['apphost-managers']
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
+        WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
+        WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
+        ansible_ssh_user="ec2-user"
+      with_items: output['results']
+
+# Hmm, what is best way to get the docker images loaded.. 
+# Can use naming convention for now...
+- hosts: apphosts
+  gather_facts: no
+  vars_files:
+    - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml"
+  tasks:
+    - debug: var=apphosts
+
+#
+
+## Now that topology and variables are loaded again
+## Deploy App Stuff Here....
+
+- hosts: apphosts
+  gather_facts: no
+  vars:
+    vip_id: "Vip1"
+  tasks:
+    - name: Store pool members from containers into json
+      local_action: template src=../roles/bigip_app/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+
+
+- hosts: bigips
+  gather_facts: no
+  vars:
+    vip_id: "Vip1"
+  #  json_payload: "{{ lookup('file', '~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json') }}"
+  gather_facts: no
+  tasks:
+
+    #- shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json" 
+    - shell: "echo `< ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json`" 
+      register: json_payload
+      delegate_to: localhost
+
+    - debug: var=json_payload
+
+    - name: deploy pool
+      include: "{{ install_path }}/roles/bigip_app/tasks/deploy_pool.yml"
+
+
+#Deploy VIP or iApp
+
+
+
+# Attach an EIP to the APP
+- hosts: bigip-managers
+  vars:
+    vip_id: "Vip1"
+  #Grab Interface IDs and Secondary IPs from each BIGIP
+  vars_files:
+     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
+  gather_facts: no
+  tasks:
+    - name: deploy eips
+      include: "{{ install_path }}/roles/bigip_app/tasks/deploy_eip.yml"
+
+
