@@ -86,22 +86,23 @@
       local_action: template src=../roles/bigip_app/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
 
 
-# - hosts: bigips
-#   gather_facts: no
-#   vars:
-#     vip_id: "Vip1"
-#   #  json_payload: "{{ lookup('file', '~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json') }}"
-#   gather_facts: no
-#   tasks:
-# 
-#     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json" 
-#       register: json_payload
-#       delegate_to: localhost
-# 
-#     - name: deploy pool
-#       include: "{{ install_path }}/roles/bigip_app/tasks/deploy_pool.yml"
-#       delegate_to: localhost
-# 
+- hosts: bigips
+  gather_facts: no
+  vars:
+    vip_id: "Vip1"
+  #  json_payload: "{{ lookup('file', '~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json') }}"
+  gather_facts: no
+  tasks:
+
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json" 
+      register: json_payload
+      delegate_to: localhost
+
+    - debug: var=json_payload
+
+    - name: deploy pool
+      include: "{{ install_path }}/roles/bigip_app/tasks/deploy_pool.yml"
+
 
 #Deploy VIP or iApp
 

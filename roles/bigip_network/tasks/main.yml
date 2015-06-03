@@ -11,7 +11,7 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
-    payload='{"name":"private", "interfaces":"1.1"}'
+    payload='{"name":"private", "interfaces":"1.2"}'
     collection_path='mgmt/tm/net/vlan'
     resource_key="name"
 
@@ -22,7 +22,7 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
-    payload='{"name":"public", "interfaces":"1.2"}'
+    payload='{"name":"public", "interfaces":"1.1"}'
     collection_path='mgmt/tm/net/vlan'
     resource_key="name"
 
