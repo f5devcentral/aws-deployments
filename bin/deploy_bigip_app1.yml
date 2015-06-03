@@ -94,7 +94,8 @@
   gather_facts: no
   tasks:
 
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json" 
+    #- shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json" 
+    - shell: "echo `< ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json`" 
       register: json_payload
       delegate_to: localhost
 
