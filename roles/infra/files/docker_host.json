@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "AWS CloudFormation Template for Big-IP BYOL instances and a single web server pool **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
+  "Description": "AWS CloudFormation Template for Docker Host Instances.  **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
   "Parameters": {
   	"vpc": {
       "Type": "AWS::EC2::VPC::Id",
@@ -74,12 +74,12 @@
         "VpcId": {
           "Ref": "vpc"
         },
-        "GroupDescription": "Enable HTTP access via port 80",
+        "GroupDescription": "Enable access for all ports for docker instances",
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp",
-            "FromPort": "0",
-            "ToPort": "65000",
+            "FromPort": "1",
+            "ToPort": "65535",
             "CidrIp": "0.0.0.0/0"
           },
           {
@@ -106,31 +106,34 @@
         "InstanceType": {
           "Ref": "instanceType"
         },
-        "SubnetId": {
-          "Ref": "ApplicationSubnet"
-        },
-        "SecurityGroupIds": [
-          {
-            "Fn::GetAtt": [
-              "WebServerSecurityGroup",
-              "GroupId"
-            ]
-          }
-        ],
         "KeyName": {
           "Ref": "keyName"
-        }
+        },
+	"NetworkInterfaces": [ {
+	   "AssociatePublicIpAddress": "true",
+           "DeviceIndex": "0",
+           "GroupSet": [{ "Ref" : "WebServerSecurityGroup" }],
+           "SubnetId": { "Ref" : "ApplicationSubnet" }
+        } ]
       }
     }
   },
   "Outputs": {
-  	"WebServerInstance": {
+    "WebServerInstance": {
       "Description": "Webserver instance id",
       "Value": { "Ref": "WebServerInstance" }
     },
     "WebServerInstancePrivateIp": {
       "Description": "Internally routable IP of web server instance",
       "Value": { "Fn::GetAtt":  [ "WebServerInstance", "PrivateIp"]}
+    },
+    "WebServerInstancePublicIp": {
+      "Description": "Publicly routable IP of web server instance",
+      "Value": { "Fn::GetAtt":  [ "WebServerInstance", "PublicIp"]}
+    },
+    "WebServerInstancePublicDnsName": {
+      "Description": "Publicly routable DNS Name of web server instance",
+      "Value": { "Fn::GetAtt":  [ "WebServerInstance", "PublicDnsName"]}
     }
   }
 }

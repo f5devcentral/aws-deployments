@@ -1,0 +1,9 @@
+---
+#Not used
+bigips:
+{% for result in eip_deploy_results['results'] %}
+-  stackname: "{{ env_name }}-eip-{{ result['item']['name'] }}"
+   PrivateIpAddress: "{{ result['stack_outputs']['privateIpAddress'] }}"
+   EipAddress: "{{ result['stack_outputs']['eipAddress'] }}"
+   EipAllocationId: "{{ result['stack_outputs']['eipAllocationId'] }}"
+{% endfor %}
