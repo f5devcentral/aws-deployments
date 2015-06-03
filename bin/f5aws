@@ -353,8 +353,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
   def display_env_info(self, env):
     env_info = self.get_env_info(env)
     display(" - %s" % env, color='green', stderr=False)
-    for k, v in env_info.iteritems():
-      display("    %s: %s" % (k,v), color='green', stderr=False)
+    for k in sorted(env_info, key=lambda key: key):
+      display("    %s: %s" % (k, env_info[k]), color='green', stderr=False)
 
   def display_env_resources(self, env, show_resource_vars):  
       resources, statuses = self.get_env_status(env, show_resource_vars)
@@ -395,6 +395,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
             if result:
               env_info[result.group(1)] = result.group(2)
     del env_info['env_name']
+    env_info['bigip_rest_password'] = '********'
 
     return env_info
 
