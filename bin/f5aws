@@ -283,10 +283,10 @@ class F5Aws(object):
         created by the 'init' command.
     """
     playbooks = [
-#      'deploy_vpc.yml',
-#      'deploy_az.yml',
-#      'deploy_app.yml',
-#      'deploy_bigip.yml',
+      'deploy_vpc.yml',
+      'deploy_az.yml',
+      'deploy_app.yml',
+      'deploy_bigip.yml',
       'deploy_bigip_app1.yml',
       'deploy_bigip_app2.yml'
     ]

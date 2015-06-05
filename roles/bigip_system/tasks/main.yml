@@ -7,6 +7,35 @@
 # Configure basic network services that are the same across all devices
 # ---------------------------------
 
+# Provision Modules
+
+- name: Provision AVR 
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"level":"nominal"}'
+    collection_path='mgmt/tm/sys/provision/avr'
+
+# - name: Provision ASM 
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"level":"nominal"}'
+#     collection_path='mgmt/tm/sys/provision/asm'
+# 
+
+- name: Pausing for 15 seconds for vpc to be registered
+  pause: seconds=30
+  tags:
+      - pause
+
+# Pause in order to Provision 
 
 - name: Disable Setup Utility in GUI
   delegate_to: localhost
@@ -87,3 +116,38 @@
     payload='{"include":"destination loghost { udp( 10.0.3.32 port (514));};"}'
     collection_path='mgmt/tm/sys/syslog'
 
+- name: Configure FastL4 profiles ... fastL4-route-friendly
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"fastL4-route-friendly","resetOnTimeout":"disabled","looseInitialization":"enabled","looseClose":"enabled"}'
+    collection_path='mgmt/tm/ltm/profile/fastl4'
+    resource_key="name"
+
+#Create optmized SSL profiles with nagle and delayed-ack disabled
+#Bug 325280 - RFE: Implement auto-nagle / auto-delayed-ack for tcp profile. (Formerly CR 131876)
+
+- name: Configure TCP profiles ... ssl-wan-optimized
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"tcp-ssl-wan-optimized", "defaultsFrom":"/Common/tcp-wan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
+    collection_path='mgmt/tm/ltm/profile/tcp'
+    resource_key="name"
+
+- name: Configure TCP profiles ... ssl-lan-optimized
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"tcp-ssl-lan-optimized", "defaultsFrom":"/Common/tcp-lan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
+    collection_path='mgmt/tm/ltm/profile/tcp'
+    resource_key="name"
