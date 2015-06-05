@@ -1,17 +1,13 @@
 ---
 
-- name: debug json_payload passed to module
-  debug: var=json_payload
-
-- name: Setup a Pool
+- name: Setup a Pool in a role
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user="{{ bigip_rest_user }}"
     password="{{ bigip_rest_pass }}"
-    payload="{{json_payload}}"
+    payload="{{json_output.stdout}}"
     collection_path='mgmt/tm/ltm/pool'
     resource_key="name"
 
-    #payload='{"name":"Vip1_pool","monitor":"http","members":[{"name":"172.16.14.73:49154","address":"172.16.14.73","description":"Name=/backstabbing_poincare"},{"name":"172.16.14.73:49153","address":"172.16.14.73","description":"Name=/sleepy_goldstine"},{"name":"172.16.24.81:49154","address":"172.16.24.81","description":"Name=/pensive_elion"},{"name":"172.16.24.81:49153","address":"172.16.24.81","description":"Name=/drunk_almeida"}]}'

@@ -37,19 +37,21 @@
 # 
 
 # Re-Create a bigip temp group from data persisted to disk
-- hosts:
-   localhost
+- hosts: localhost
+  vars:
+    vip_id: "Vip2"
   gather_facts: no
   tasks:
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['bigip-managers']
 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+    - add_host: group=bigips name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
-        ansible_ssh_user="admin"
+        VipAddress="{{ item.stdout | from_json | attr('get')('Vip2') }}"  
+        ansible_ssh_user="admin" 
       with_items: output['results']
 
     # Re-Create a docker host temp group from data persisted to disk
@@ -64,7 +66,8 @@
       with_items: output['results']
 
 # Hmm, what is best way to get the docker images loaded.. 
-# Can use naming convention for now...
+# Can use naming convention for now.
+# Basically using this to pickup all the docker_containers variable data
 - hosts: apphosts
   gather_facts: no
   vars_files:
@@ -72,29 +75,207 @@
   tasks:
     - debug: var=apphosts
 
-#
 
 ## Now that topology and variables are loaded again
 ## Deploy App Stuff Here....
-
+# 
 - hosts: apphosts
+  gather_facts: no
   vars:
     vip_id: "Vip2"
   tasks:
+#
     - name: Store pool members from containers into json
       local_action: template src=../roles/bigip_app/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
 
-#Deploy Pool 
-#Deploy VIP or iApp
+     # Notes:
+     # strip out last comma from jinja template output (see note below)
+     # json.loads is more sensitive than our parser and need to strip out last "," at the end of the pool member list
+     # no clean way to use loop.last directive in jinja template because it's a nested loop over all docker hosts
+     # Could try a inline replacement
+     # json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
+     # easier for now to modify in place with ansible replace command than jinja regex filter
 
-# Attach an EIP to the APP
+    - name: Clean up Pool Member Json output from Jinja Template
+      replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
+      delegate_to: localhost
+
+- hosts: bigips
+  gather_facts: no
+  vars:
+    vip_id: "Vip2"
+
+    # Ansible modules (lookup/cat/etc.) auto converts file contents that contain json format into python dicts 
+    # so have to remove new lines and convert back to json ( with to_nice_json filter) so json modules don't fail 
+    # ex. 
+    # json/decoder.py", line 381, in raw_decode 
+    pool_json_payload: "{{ lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')|replace('\n','') }}"
+    background_image: "{{ lookup('file', install_path + '/roles/bigip_app/files/background_image_base_64') }}"
+    sorry_image: "{{ lookup('file', install_path + '/roles/bigip_app/files/sorry_image_base_64') }}"
+    sorry_page_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__sorry_page_rule.tcl') }}"
+    snat_random_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__snat_random_rule.tcl') }}"
+    demo_analytics_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__demo_analytics_rule.tcl') }}"
+    demo_iApp: "{{ lookup('file', install_path + '/roles/bigip_app/files/__demo_iApp.txt')|replace('\n','') }}"
+
+  tasks:
+    - name: Setup Webserver Pool
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          payload='{{pool_json_payload|to_nice_json}}'
+          collection_path='mgmt/tm/ltm/pool'
+          resource_key="name"
+
+    - name: Setup a High Speed Logging pool to send to Analytics Server
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/pool'
+          resource_key="name"
+          payload='{"name":"syslog_pool","members":[{"name":"10.0.3.32:514","address":"10.0.3.32"},{"name":"10.0.3.33:514","address":"10.0.3.33"}],"monitor":"tcp"}' 
+
+    ##### UPLOAD DATAGROUP #####
+    # TODO:
+    # "Setting SSL Profiles"
+    # "Setting Remote Logging Profiles"
+# 
+    - name: Setup Analytics Profile
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/profile/analytics'
+          resource_key="name"
+          payload='{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
+      ignore_errors: True
+
+    ##### UPLOAD DATAGROUP #####
+ 
+    - name: Upload Datagroup ... background for sorry page
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/data-group/internal'
+          resource_key="name"
+          payload='{"name":"background_image","type":"string","records":[{"name":"{{background_image}}"}]}'
+      ignore_errors: True
+
+    - name: Upload Datagroup ... image for sorry page
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/data-group/internal'
+          resource_key="name"
+          payload='{"name":"sorry_images","type":"string","records":[{"name":"{{sorry_image}}"}]}'
+      ignore_errors: True
+
+    ##### UPLOAD RULES #####
+
+    - name: Upload iRules ... sorry_page_rule
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/rule'
+          resource_key="name"
+          payload='{"name":"__sorry_page_rule","apiAnonymous":"{{sorry_page_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
+
+ 
+    - name: Upload iRules ... snat_random_rule
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/rule'
+          resource_key="name"
+          payload='{"name":"__snat_random_rule","apiAnonymous":"{{snat_random_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
+          #payload='{"name":"__snat_random_rule","apiAnonymous":"{{lookup('file', install_path + '/roles/bigip_app/files/__snat_random_rule.tcl')|replace("\n","\\n")|replace("\"","\\\"")}}"}'
+
+    - name: Upload iRules ... demo_analytics_rule
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/rule'
+          resource_key="name"
+          payload='{"name":"__demo_analytics_rule","apiAnonymous":"{{demo_analytics_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
+
+
+    #Deploy VIPs
+    - name: Setup the HTTP Virtual
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/virtual'
+          resource_key="name"
+          payload='{"name":"{{vip_id}}","destination":"/Common/{{VipAddress}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'
+
+    - name: Setup the HTTPS Virtual
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          collection_path='mgmt/tm/ltm/virtual'
+          resource_key="name"
+          payload='{"name":"{{vip_id}}_SSL_Offload","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"},{"name":"clientssl","context":"clientside"}]}'
+
+    - name: Setup the iApp
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          payload='{{demo_iApp|to_nice_json}}'
+          collection_path='mgmt/tm/sys/application/service'
+          resource_key="name"
+
+#     - name: Setup the iApp
+#       delegate_to: localhost
+#       uri:
+#             url: "https://{{inventory_hostname}}/mgmt/tm/sys/application/service"
+#             method: "POST"
+#             user: "{{ bigip_rest_user }}"
+#             password: "{{ bigip_rest_pass }}"
+#             body: "{{demo_iApp|to_nice_json}}"
+#             body_format: "json"
+#             return_content: "yes"
+#       #register: res
+#       #failed_when: res.json.code == NEVER
+
+# Finally attach an EIP to the Vip / Application
 - hosts: bigip-managers
+  gather_facts: no
   vars:
     vip_id: "Vip2"
   #Grab Interface IDs and Secondary IPs from each BIGIP
   vars_files:
      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
-  gather_facts: no
   tasks:
     - name: deploy eips
       include: "{{ install_path }}/roles/bigip_app/tasks/deploy_eip.yml"
