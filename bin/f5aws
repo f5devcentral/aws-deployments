@@ -4,11 +4,6 @@
 """
 # (C) 2015, Chris Mutzel, <c.mutzel@f5.com>
 
-This is a modified version of the code found in the ansible-playbook
-script which ships with ansible. It leverages the ansible python APIs
-for running playbooks, but allows reloading inventory between plays, 
-to better reuse of ansibles inventory features for our specific use case.
-
 For more information on the usage, see the project README.md
 
 """
@@ -22,7 +17,6 @@ import yaml
 import shutil
 import itertools
 import re
-#import pprint
 import json
 
 # Augment PYTHONPATH to find Python modules relative to this file path
@@ -43,7 +37,7 @@ from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
 
-__version__ = "0.0.4"
+__version__ = "0.1"
 __prog__ = "f5aws"
 
 def colorize(lead, num, color):
@@ -81,6 +75,13 @@ def get_dict_from_junk_str(inStr):
   return dict(zip(res_arr[::2], res_arr[1::2]))
 
 class F5Aws(object):
+  """
+    This class is used to execute a set of playbooks included in ./bin. 
+    Playbooks are executed using the run_playbooks method, which reloads 
+    inventory between each playbook.  This is slightly different than the 
+    way that ansible-playbook entry point typically handles inventory during 
+    a play.
+  """
   def __init__(self):
     try:
       global_vars_path = '~/.{}'.format(__prog__)
@@ -93,16 +94,120 @@ class F5Aws(object):
       self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
       self.settings['env_path'] = self.settings['vars_path'] + '/env'
       self.settings['bin_path'] = self.settings['install_path'] + '/bin' #~/workspace/f5aws/bin
-    #make the /env/ directory if it does not exist
+      #make the /env/ directory if it does not exist
       os.makedirs(self.settings['env_path'])
     except OSError:
       pass
 
+  
+
+  def cmd_init(self, options, extra_vars):
+    """
+        To instantiate a new environment, we create a set
+        of inventory files for that environment. 
+        
+        See individual playbooks for more info. 
+    """
+    playbooks = ['init.yml']
+
+    # uses the inventory included in this repository 
+    inventory = self.settings['install_path']+'/inventory/hosts'
+    self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+  def cmd_deploy(self, options, extra_vars):
+    """
+        Deploy an environment based on the set of inventory files 
+        created by the 'init' command.
+
+        See individual playbooks for more info. 
+    """
+    playbooks = [
+      'deploy_vpc.yml',
+      'deploy_az.yml',
+      'deploy_app.yml',
+      'deploy_bigip.yml',
+      'deploy_bigip_app1.yml',
+      'deploy_bigip_app2.yml'
+    ]
+
+    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+  def cmd_teardown(self, options, extra_vars):
+    """
+      Complete teardown a deployed environment.
+      Does not remove the inventory in ~/vars/f5aws/env/<env name>
+    """
+    playbooks = ['teardown_all.yml']
+    
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+  def cmd_remove(self, options, extra_vars):
+    """
+      Delete an environment from ~/vars/f5aws/env/<env name>
+      This environment should already have been torn down using `teardown`
+    """
+    env = extra_vars['env_name']
+    resources, statuses = self.get_env_status(env)
+    
+    okToRemove = True
+    stillExist = []
+    for r in resources: 
+      if statuses[r]['state'] == 'deployed':
+        okToRemove = False
+        stillExist.append(r)
+
+    if okToRemove is True:
+      playbooks = ['remove.yml']
+
+     # uses the inventory included in this repository 
+      inventory = self.settings['install_path']+'/inventory/hosts'
+      self.run_playbooks(playbooks, inventory, options, extra_vars)
+    else:
+      msg = """Cannot remove environment '%s' until all resources have been deprovisioned.
+The following resources still exist: %s. 
+Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
+
+      display(msg, color='red', stderr=True)
+        
+  def cmd_list(self, options, extra_vars):
+    """List all environments that have been instantiated using `init`,
+         regardless of whether or not they have been deployed. 
+    """
+    display("Installed environments (%s):" %
+      self.settings['env_path'], color='green', stderr=False) 
+    envs = self.get_envs()
+    if len(envs) == 0:
+      display("(none)", color='red', stderr=False) 
+    else:
+      for env in self.get_envs():
+        self.display_env_info(env)
+        self.display_env_resources(env, False)
+        
+  def cmd_describe(self, options, extra_vars):
+    """
+      Provide more details on the resources associated with 
+      a particular environment (vpc, subnets, bigip, app hosts, etc...)
+    """
+    try:
+      env = extra_vars['env_name']
+      self.display_env_info(env)
+      self.display_env_resources(env, True)
+    except IOError:
+      display(" Environment '%s' does not exist" % env, color='red', stderr=True)
+
   def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
+    """
+      This is a modified version of the function used within ansible-playbook.
+      playbooks 
+    """
     # get the absolute path for the playbooks
     playbooks = ['{}/bin/{}'.format(self.settings['install_path'], pb) for pb in playbooks]
 
-    #defaults - are these used still?
+    # Ansible defaults carried over from `ansible-playbook`.  Changes these
+    #  shouldn't be necessary since all R/W is done within *this* users directory. 
     sshpass = None
     sudopass = None
     su_pass = None
@@ -142,8 +247,6 @@ class F5Aws(object):
         sudo_pass=sudopass,
         extra_vars=extra_vars,
         private_key_file=options.private_key_file,
-        #only_tags=only_tags,
-        #skip_tags=skip_tags,
         check=options.check,
         diff=options.diff,
         su=options.su,
@@ -264,89 +367,6 @@ class F5Aws(object):
         return 1
 
     return 0
-
-  def cmd_init(self, options, extra_vars):
-    """
-        To instantiate a new environment, we create a set
-        of inventory files for that environment. 
-        See individual playbooks for more info. 
-    """
-    playbooks = ['init.yml']
-
-    # just use 'localhost' as the set of hosts when executing this playbook
-    inventory = self.settings['install_path']+'/inventory/hosts'
-    self.run_playbooks(playbooks, inventory, options, extra_vars)
-
-  def cmd_deploy(self, options, extra_vars):
-    """
-        Deploy an environment based on the set of inventory files 
-        created by the 'init' command.
-    """
-    playbooks = [
-      'deploy_vpc.yml',
-      'deploy_az.yml',
-      'deploy_app.yml',
-      'deploy_bigip.yml',
-      'deploy_bigip_app1.yml',
-      'deploy_bigip_app2.yml'
-    ]
-    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-    self.run_playbooks(playbooks, inventory, options, extra_vars)
-
-  def cmd_teardown(self, options, extra_vars):
-    """
-        Teardown a deployed environment based on the set of inventory 
-        files created by the 'init' command. 
-    """
-    playbooks = ['teardown_all.yml']
-    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-    self.run_playbooks(playbooks, inventory, options, extra_vars)
-
-  def cmd_remove(self, options, extra_vars):
-    """
-      Delete an environment (it should have already been torn down...)
-    """
-    env = extra_vars['env_name']
-    resources, statuses = self.get_env_status(env)
-    
-    okToRemove = True
-    stillExist = []
-    for r in resources: 
-      if statuses[r]['state'] == 'deployed':
-        okToRemove = False
-        stillExist.append(r)
-
-    if okToRemove is True:
-      playbooks = ['remove.yml']
-
-      # just use 'localhost' as the set of hosts when executing this playbook
-      inventory = self.settings['install_path']+'/inventory/hosts'
-      self.run_playbooks(playbooks, inventory, options, extra_vars)
-    else:
-      msg = """Cannot remove environment '%s' until all resources have been deprovisioned.
-The following resources still exist: %s. 
-Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
-
-      display(msg, color='red', stderr=True)
-        
-  def cmd_list(self, options, extra_vars):
-    display("Installed environments (%s):" %
-      self.settings['env_path'], color='green', stderr=False) 
-    envs = self.get_envs()
-    if len(envs) == 0:
-      display("(none)", color='red', stderr=False) 
-    else:
-      for env in self.get_envs():
-        self.display_env_info(env)
-        self.display_env_resources(env, False)
-        
-  def cmd_describe(self, options, extra_vars):
-    try:
-      env = extra_vars['env_name']
-      self.display_env_info(env)
-      self.display_env_resources(env, True)
-    except IOError:
-      display(" Environment '%s' does not exist" % env, color='red', stderr=True)
 
   def get_envs(self):
     return os.listdir(self.settings['env_path'])
@@ -469,7 +489,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
     return res_state
 
-  def raise_not_implemented(*args):
+  def raise_not_implemented(*args, **kwargs):
     raise NotImplementedError()
 
   def run(self):
@@ -490,17 +510,17 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     #   pass the extra-vars argument -- allow users to pass variables directly
 
     parser_deploy = subparsers.add_parser('deploy',
-      help='Deploy EC2 resource and application services based on inventory files. ')
+      help='Deploy EC2 resource and application services based on inventory files created using `init`.')
     parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be deployed/updated')
     
     parser_teardown = subparsers.add_parser('teardown',
-      help='De-provision all resources in AWS EC2 for this environment.')
+      help='De-provision all resources in AWS EC2 for an environment created using `init`.')
     parser_teardown.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be de-provisioned. ')
 
     parser_remove = subparsers.add_parser('remove',
-      help='Remove all inventory files for this environment.')
+      help='Remove all inventory files for an environment created using `init`.')
     parser_remove.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be deleted')
 
@@ -510,7 +530,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       type=str, help='Name of environment to describe')
     
     parser_list = subparsers.add_parser('list',
-      help='List all deployments and corrosponding status.')
+      help='List all deployments and corrosponding resource statuses.')
 
     options = parser.parse_args()
 
@@ -518,6 +538,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       print 'Incrementing debug to level %s' % i
       utils.increment_debug(False, False, False, False)
 
+    # additional argument handling based on the command executed
     extra_vars = {}
     if options.cmd == 'init':
       for extra_vars_opt in options.extra_vars:
@@ -537,9 +558,9 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
     if getattr(options, 'env_name', None) is not None:
       extra_vars['env_name'] = options.env_name
-
     extra_vars['install_path'] = self.settings['install_path']
 
+    # Ansible expects the following variables to be defined
     options.forks = constants.DEFAULT_FORKS
     options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
     options.module_path = constants.DEFAULT_MODULE_PATH

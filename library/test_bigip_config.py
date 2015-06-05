@@ -1,4 +1,5 @@
-#from bigip_config import BigipConfig
+
+from bigip_config import BigipConfig
 
 
 class Module(object):
@@ -7,19 +8,64 @@ class Module(object):
     	for k, v in kwargs.iteritems():
     		self.params[k] = v
 
-m = Module(a=1, b=2)
-print m.params["a"]
-    	    
+tests = [
+	Module(
+		host="52.17.211.89",
+		user="restadmin",
+		password="galile0",
+		state="present",
+		payload='{"name":"fastL4-route-friendly", "resetOnTimeout":"disabled", "looseInitialization": "disabled", "looseClose": "disabled" }',
+		collection_path="mgmt/tm/ltm/profile/fastl4",
+		resource_id=None,
+		resource_key="name"
+	),
+	Module(
+		host="52.17.211.89",
+		user="restadmin",
+		password="galile0",
+		state="present",
+		payload='{ "awsAccessKey":"12345", "awsSecretKey":"678910"}',
+		collection_path="mgmt/tm/sys/global-settings",
+		resource_id=None,
+		resource_key=None
+	),
+	Module(
+		host="52.17.211.89",
+		user="restadmin",
+		password="galile0",
+		state="present",
+		payload='{ "name": "default_gateway_pool", "members":[ {"name":"172.16.2.1:0","address":"172.16.2.1"}, {"name":"172.16.12.1:0","address":"172.16.12.1"} ], "monitor": "gateway_icmp" }',
+		collection_path="mgmt/tm/ltm/pool",
+		resource_id=None,
+		resource_key="name"
+	),
+	# Module(
+	# 	host="52.17.211.89",
+	# 	user="restadmin",
+	# 	password="galile0",
+	# 	state="present",
+	# 	payload='{"name":"private", "interfaces":"1.1"}',
+	# 	collection_path="mgmt/tm/net/vlan",
+	# 	resource_id=None,
+	# 	resource_key="name"
+	# )
+	Module(
+		host="52.17.211.89",
+		user="restadmin",
+		password="galile0",
+		state="present",
+		payload='{"name":"public", "address":"172.16.12.128/24", "vlan":"public"}',
+		collection_path="mgmt/tm/net/self",
+		resource_id=None,
+		resource_key="name"
+	),
 
-   
-# try a get
+]
 
+for m in tests:
+	bc = BigipConfig(m)
 
-
-# try a post where not object exists
-
-
-# try a post on the same object - should pass
+	print 'bigip_config.create_or_update_resource() = {}'.format(bc.create_or_update_resource())
 
 
 

@@ -1,5 +1,6 @@
-# We can use the ec2 module here from ansible. It works well when 
-#  deploying fairly generic compute resources
+# We could have used the ec2 module here from ansible. It works well when 
+#  deploying "generic" compute resources but we'll use cloudformation
+#  instead for consistency. 
 - name: Launch app hosts
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"

@@ -1,10 +1,7 @@
-# here we make some basic iControlRest calls to setup network elements on BIG-IP
-# A more polished implementation might include custom ansible modules for these
-# steps.  iCR is used directly for clarity.
 ---
 
 # ---------------------------------
-# Make AWS specific customizations 
+# AWS-specific system variables
 # ---------------------------------
 
 - name: Set aws access and secret keys

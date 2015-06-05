@@ -1,14 +1,16 @@
-# here we make some basic iControlRest calls to setup network elements on BIG-IP
+# Make some basic iControlRest calls to setup network elements on BIG-IP
 # A more polished implementation might include custom ansible modules for these
-# steps.  iCR is used directly for clarity.
+# steps. 
+
+# Instead we use iControlRest (nearly) directly.  We wrap the iCR calls to 
+# provide a bit of idempotence.  See library/bigip_config
 ---
 
-# ---------------------------------
-# Configure basic network services that are the same across all devices
-# ---------------------------------
+# ----------------------------------------------------------------------
+# Configure basic network services that are the same across all devices.
+# ----------------------------------------------------------------------
 
-# Provision Modules
-
+# Example of provisioning modules...
 - name: Provision AVR 
   delegate_to: localhost
   bigip_config:
@@ -19,24 +21,13 @@
     payload='{"level":"nominal"}'
     collection_path='mgmt/tm/sys/provision/avr'
 
-# - name: Provision ASM 
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ inventory_hostname }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_pass }}
-#     payload='{"level":"nominal"}'
-#     collection_path='mgmt/tm/sys/provision/asm'
-# 
 
-- name: Pausing for 15 seconds for vpc to be registered
+- name: Pause and wait for module provisining to complete
   pause: seconds=30
   tags:
       - pause
 
-# Pause in order to Provision 
-
+# Example of setting database variables
 - name: Disable Setup Utility in GUI
   delegate_to: localhost
   bigip_config:
@@ -47,20 +38,7 @@
     payload='{ "value":"false" }'
     collection_path='mgmt/tm/sys/db/setup.run'
 
-# Don't need this in Amazon, we get through DHCP. 
-# - name: Configure DNS servers
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ inventory_hostname }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_pass }}
-#     payload='{"nameServers":["4.2.2.1"]}'
-#     collection_path='mgmt/tm/sys/dns'
-#   #Really just need to add condition so only runs in certain environments
-#   when: target_env != "AWS"
-
-# We need NTP, we don't get this through Amazon
+# We need NTP, we do not get this from Amazon
 # TODO: take in an array for pool members
 # pool members are the same for each device if they are in the same region
 - name: Configure NTP servers
@@ -73,39 +51,7 @@
     payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
     collection_path='mgmt/tm/sys/ntp'
 
-  # We don't really need this - Amazon provides this functionality with their ACLs
-- name: Set SSH mgmt access
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"allow":["ALL"]}'
-    collection_path='mgmt/tm/sys/sshd'
-
-# We don't really need this - Amazon provides this functionality with their ACLs
-- name: Set HTTP mgmt access
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"allow":["ALL"]}'
-    collection_path='mgmt/tm/sys/httpd'
-
-- name: Set SNMP access
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
-    payload='{"allowedAddresses":[ "{{ vpc_cidr }}" ]}'
-    collection_path='mgmt/tm/sys/snmp'
-
-  # TODO: define log server ip somewhere (10.0.3.32). Right now pointed on on-prem though VPN.
+# TODO: define log server ip somewhere (10.0.3.32). Right now, just for pretend...
 - name: Configure syslog
   delegate_to: localhost
   bigip_config:
@@ -151,3 +97,48 @@
     payload='{"name":"tcp-ssl-lan-optimized", "defaultsFrom":"/Common/tcp-lan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
     collection_path='mgmt/tm/ltm/profile/tcp'
     resource_key="name"
+
+# Amazon provides this functionality with their ACLs, but 
+#  peforming this lockdown within TMOS creates allows better portability across cloud providers
+- name: Set HTTP mgmt access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/httpd'
+
+- name: Set SSH mgmt access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allow":["ALL"]}'
+    collection_path='mgmt/tm/sys/sshd'
+
+- name: Set SNMP access
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"allowedAddresses":[ "{{ vpc_cidr }}" ]}'
+    collection_path='mgmt/tm/sys/snmp'
+
+# Unnecessary but nice to have examples all the same
+# - name: Configure DNS servers
+#   delegate_to: localhost
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"nameServers":["4.2.2.1"]}'
+#     collection_path='mgmt/tm/sys/dns'
+#   #Really just need to add condition so only runs in certain environments
+#   when: target_env != "AWS"
