@@ -28,15 +28,6 @@ i.e.: in ~/.aws/credentials
 [default]
 aws_access_key_id = <my access key>
 aws_secret_access_key = <my secret key>
-[us-west-cal]
-aws_access_key_id = <my access key>
-aws_secret_access_key = <my secret key>
-[us-west-or]
-aws_access_key_id = <my access key>
-aws_secret_access_key = <my secret key>
-[us-east-virg]
-aws_access_key_id = <my access key>
-aws_secret_access_key = <my secret key>
 ```
 
 
