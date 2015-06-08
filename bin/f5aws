@@ -204,7 +204,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       playbooks 
     """
     # get the absolute path for the playbooks
-    playbooks = ['{}/bin/{}'.format(self.settings['install_path'], pb) for pb in playbooks]
+    playbooks = ['{}/playbooks/{}'.format(self.settings['install_path'], pb) for pb in playbooks]
 
     # Ansible defaults carried over from `ansible-playbook`.  Changes these
     #  shouldn't be necessary since all R/W is done within *this* users directory. 
