@@ -122,10 +122,10 @@ class F5Aws(object):
         See individual playbooks for more info. 
     """
     playbooks = [
-#       'deploy_vpc.yml',
-#       'deploy_az.yml',
-#       'deploy_app.yml',
-#       'deploy_bigip.yml',
+      'deploy_vpc.yml',
+      'deploy_az.yml',
+      'deploy_app.yml',
+      'deploy_bigip.yml',
 #      'deploy_gtm.yml',
       'deploy_bigip_app1.yml',
       'deploy_bigip_app2.yml',
