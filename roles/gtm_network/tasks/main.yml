@@ -1,0 +1,53 @@
+# Make some basic iControlRest calls to setup network elements on BIG-IP
+# A more polished implementation might include custom ansible modules for these
+# steps. 
+
+# Instead we use iControlRest (nearly) directly.  We wrap the iCR calls to 
+# provide a bit of idempotence.  See library/bigip_config
+---
+
+# ---------------------------------
+# Configure network, LTM, and ASM settings which are specific to each device.
+# ---------------------------------
+
+- name: Add external vlan
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"public", "interfaces":"1.1"}'
+    collection_path='mgmt/tm/net/vlan'
+    resource_key="name"
+
+# THe address we give for external, local-only self-ip is provided by Amazon (ExternalInterfacePrivateIp)
+- name: Add unique external selfip
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"public", "address":"{{ ExternalInterfacePrivateIp }}/24", "vlan":"public", "trafficGroup":"traffic-group-local-only"}'
+    collection_path='mgmt/tm/net/self'
+    resource_key="name"
+
+#  for each bigip the routes may be different
+#  In Amazon, the Default Gateway is 
+#  the first IP on the subnet network, i.e. 172.16.12.1 and 172.16.22.1
+#  So we'll hardcode and just replace the '0' with a '1' from the variable 'public_cidr'. 
+#  This might not be true in other environments, in which case we'll want a more robust solution.
+
+- name: Set default route using the default_gateway or gateway_pool
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"name":"default_route", "network":"default", "gw":"{{ [ExternalInterfacePrivateIp[0:9],1]|join('.') }}" }'
+    collection_path='/mgmt/tm/net/route'
+    resource_key="name"
+
+

@@ -45,7 +45,7 @@ install_path: 'path to your install'
 
 5) Fix the hardcoded AMI IDs in 
 ./roles/infra/tasks/deploy_bigip.yml (make this the AMI of BIG-IP hourly in the region where you are deploying)
-./roles/infra/files/docker_hosts.yml (this will make sure you have the correct ECS optimized compute host for your application containers)
+./roles/infra/files/apphosts.yml (this will make sure you have the correct ECS optimized compute host for your application containers)
 
 
 ### Usage:

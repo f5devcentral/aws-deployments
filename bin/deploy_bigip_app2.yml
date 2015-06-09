@@ -1,73 +1,40 @@
 ---
-# Unfortunately, add_hosts does not persist across plays so we have to rebuild the 
+# Unfortunately, add_hosts does not persist across plays so we have to rebuild the
 # topology from scratch
 # Here we solve this problem by looping through results outputed from previous
 # provisioning steps
-# The other alternative was to use the VARs YAML output from previous provisioning 
-# steps but ansible doesn't seem to load them sequentially on a task-by-task basis and 
-# seems to try to preload the var files for all the tasks causing caching issues 
+# Here we use the VARs YAML output from previous provisioning
+# steps but ansible doesn't seem to load them sequentially on a task-by-task basis and
+# seems to try to preload the var files for all the tasks in the playbook causing caching issues
+# so we have to be careful
 # (ie. loads output previous playbook runs instead of newer desired output from an earlier task)
-# cat via shell ugly but at least gives task-by-task control
+# cat via shell ugly but at least gives task-by-task control option
 # FUTURE: try fact caching.
 
-# - hosts: bigip-managers
-#   gather_facts: no
-#   vars_files:
-#      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
-#   tasks:
-# #    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-# #      register: output
-# #      with_items: groups['bigip-managers']
-# 
-#     - add_host: name="{{ stack_outputs.ManagementInterfacePublicIp }}" group=bigips
-#         ExternalInterfacePublicIp="{{ stack_outputs.ExternalInterfacePublicIp }}"
-#         ExternalInterfacePrivateIp="{{ stack_outputs.ExternalInterfacePrivateIp }}"
-#         InternalInterfacePrivateIp="{{ stack_outputs.InternalInterfacePrivateIp }}"
-# 
-# 
-# - hosts: apphost-managers
-#   gather_facts: no
-#   vars_files:
-#     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
-#   tasks:
-#     - add_host: name="{{ stack_outputs.WebServerInstancePublicIp }}" group=apphosts
-#         WebServerInstancePublicIp="{{ stack_outputs.WebServerInstancePublicIp }}"
-#         WebServerInstancePrivateIp="{{ stack_outputs.WebServerInstancePrivateIp }}"
-#         ansible_ssh_user="ec2-user"
-# 
-
-# Re-Create a bigip temp group from data persisted to disk
-- hosts: localhost
-  vars:
-    vip_id: "Vip2"
+- hosts: bigip-managers
   gather_facts: no
+  vars_files:
+     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
   tasks:
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['bigip-managers']
 
-    - add_host: group=bigips name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
-        VipAddress="{{ item.stdout | from_json | attr('get')('Vip2') }}"  
-        ansible_ssh_user="admin" 
-      with_items: output['results']
+    - add_host: name="{{ stack_outputs.ManagementInterfacePublicIp }}" group=bigips
+        ExternalInterfacePublicIp="{{ stack_outputs.ExternalInterfacePublicIp }}"
+        ExternalInterfacePrivateIp="{{ stack_outputs.ExternalInterfacePrivateIp }}"
+        InternalInterfacePrivateIp="{{ stack_outputs.InternalInterfacePrivateIp }}"
+        VipAddress="{{ stack_outputs.Vip2 }}"
+        ansible_ssh_user="admin"
 
-    # Re-Create a docker host temp group from data persisted to disk
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['apphost-managers']
-
-    - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
-        WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
-        WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
+- hosts: apphost-managers
+  gather_facts: no
+  vars_files:
+    - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
+  tasks:
+    - add_host: name="{{ stack_outputs.WebServerInstancePublicIp }}" group=apphosts
+        WebServerInstancePublicIp="{{ stack_outputs.WebServerInstancePublicIp }}"
+        WebServerInstancePrivateIp="{{ stack_outputs.WebServerInstancePrivateIp }}"
         ansible_ssh_user="ec2-user"
-      with_items: output['results']
 
-# Hmm, what is best way to get the docker images loaded.. 
-# Can use naming convention for now.
-# Basically using this to pickup all the docker_containers variable data
+# Pickup all the docker_containers variable data
 - hosts: apphosts
   gather_facts: no
   vars_files:
@@ -76,9 +43,9 @@
     - debug: var=apphosts
 
 
-## Now that topology and variables are loaded again
-## Deploy App Stuff Here....
-# 
+# Now that topology and variables are finally loaded again
+# Finally Deploy App Stuff Here....
+
 - hosts: apphosts
   gather_facts: no
   vars:
@@ -109,7 +76,6 @@
     # so have to remove new lines and convert back to json ( with to_nice_json filter) so json modules don't fail 
     # ex. 
     # json/decoder.py", line 381, in raw_decode 
-    pool_json_payload: "{{ lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')|replace('\n','') }}"
     background_image: "{{ lookup('file', install_path + '/roles/bigip_app/files/background_image_base_64') }}"
     sorry_image: "{{ lookup('file', install_path + '/roles/bigip_app/files/sorry_image_base_64') }}"
     sorry_page_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__sorry_page_rule.tcl') }}"
@@ -125,7 +91,7 @@
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
           password="{{ bigip_rest_pass }}"
-          payload='{{pool_json_payload|to_nice_json}}'
+          payload='{{lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')}}'
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
 

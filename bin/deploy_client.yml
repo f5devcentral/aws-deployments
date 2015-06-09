@@ -1,0 +1,37 @@
+---
+# Deploy the docker host AMIs via CFT
+- hosts: clienthost-manager
+  gather_facts: no
+  tasks:
+    - name: deploy client host 
+      include: "{{ install_path }}/roles/infra/tasks/deploy_clienthost.yml"
+
+# Now that instances created, add them / their IPs to the dynamic apphosts group
+# so we can configure them 
+- hosts:
+   localhost
+  gather_facts: no
+  tasks:
+    # Re-Create a docker host temp group from data persisted to disk
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['clienthost-managers']
+      delegate_to: localhost
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}" group=clienthosts
+        ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
+        ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
+        ansible_ssh_user="ec2-user"
+      with_items: output['results']
+
+# Now launch containers inside them
+# Amazon amis we're using already have docker installed so no need for install_docker role
+- hosts: clienthosts
+  gather_facts: False
+  vars:
+    ansible_sudo: True
+  roles:
+    - jumpbox
+    - client
+
+

@@ -6,6 +6,9 @@
     region="{{ region }}"
     template={{ install_path }}/roles/infra/files/az.json
   args:
+    tags:
+      Environment: "{{ env_name }}"
+      InventoryHostname: "{{ inventory_hostname }}"
     template_parameters:
       vpc: "{{ vpc_id }}"
       internetGateway: "{{ internet_gateway_id }}"

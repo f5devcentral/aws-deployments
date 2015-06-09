@@ -11,8 +11,9 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_pass }}
-    payload='{"awsAccessKey":"5678", "awsSecretKey":"5678"}'
+    payload='{"awsAccessKey":"1234", "awsSecretKey":"1234"}'
     collection_path='mgmt/tm/sys/global-settings'
+    #payload='{"awsAccessKey":"{{bigip_aws_access_key_id}}", "awsSecretKey":"{{bigip_aws_secret_access_key}}"}'
 
 - name: Disable dhcp
   delegate_to: localhost

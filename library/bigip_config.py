@@ -4,8 +4,7 @@
 ansible module for managing configuration resource on BIG-IP over iControlREST.
 """
 
-# bigip_config
-
+import sys
 import json
 import requests
 from copy import deepcopy

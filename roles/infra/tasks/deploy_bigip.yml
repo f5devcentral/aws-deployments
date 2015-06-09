@@ -7,6 +7,10 @@
     region="{{ region }}"
     template={{ install_path }}/roles/infra/files/bigip.json
   args:
+    tags: 
+      Environment: "{{ env_name }}"
+      Host: "{{ inventory_hostname }}"
+      InstanceType: "BIG-IP"
     template_parameters:
       region: "{{ region }}"
       vpc: "{{ vpc_id }}"

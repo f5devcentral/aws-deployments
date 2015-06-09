@@ -1,0 +1,34 @@
+# Make some basic iControlRest calls to setup network elements on BIG-IP
+# A more polished implementation might include custom ansible modules for these
+# steps. 
+
+# Instead we use iControlRest (nearly) directly.  We wrap the iCR calls to 
+# provide a bit of idempotence.  See library/bigip_config
+---
+
+# ----------------------------------------------------------------------
+# Add GTMs and BIGIPs to the gtm sync group
+# ----------------------------------------------------------------------
+
+
+# 
+# - name: Add GTMs to a sync group 
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"key":"value"}'
+#     collection_path='mgmt/tm/util'
+# 
+# - name: Add BIG-IPs to a sync group 
+#   bigip_config:
+#     state=present
+#     host={{ inventory_hostname }}
+#     user={{ bigip_rest_user }}
+#     password={{ bigip_rest_pass }}
+#     payload='{"key":"value"}'
+#     collection_path='mgmt/tm/util'
+# 
+# 
+

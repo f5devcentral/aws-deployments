@@ -6,6 +6,9 @@
     region="{{ region }}"
     template={{ install_path }}/roles/infra/files/vpc.json
   args:
+    tags:
+      Environment: "{{ env_name }}"
+      InventoryHostname: "{{ inventory_hostname }}"
     template_parameters:
       cidrBlock: "{{ vpc_cidr }}"
   register: vpc_deploy_results

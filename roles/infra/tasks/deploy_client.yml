@@ -1,0 +1,27 @@
+# We could have used the ec2 module here from ansible. It works well when 
+#  deploying "generic" compute resources but we'll use cloudformation
+#  instead for consistency. 
+- name: Launch App hosts
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=present
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/client.json
+  args:
+    tags:
+      Environment: "{{ env_name }}"
+      Host: "{{ inventory_hostname }}"
+      InstanceType: "ClientHost"
+    template_parameters:
+      vpc: "{{ vpc_id }}"
+      ClientSubnet: "{{ public_subnet }}"
+      instanceType: "{{ clienthost_instance_type }}"
+      keyName: "{{ key_name }}"
+  register: clienthost_deploy_results
+
+- name: debug clienthost_deploy_results var 
+  debug: var=clienthost_deploy_results
+
+# Persist data to disk for use across plays
+- copy: content="{{ clienthost_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+- copy: content="{{ clienthost_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json

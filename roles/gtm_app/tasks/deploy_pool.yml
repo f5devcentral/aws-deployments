@@ -1,0 +1,13 @@
+---
+
+- name: Setup a Pool in a role
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user="{{ bigip_rest_user }}"
+    password="{{ bigip_rest_pass }}"
+    payload="{{json_output.stdout}}"
+    collection_path='mgmt/tm/gtm/pool'
+    resource_key="name"
+
