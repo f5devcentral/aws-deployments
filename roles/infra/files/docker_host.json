@@ -51,7 +51,7 @@
         "AMI": "ami-xxxxxxxx"
       },
       "us-west-2": {
-        "AMI": "ami-xxxxxxxx"
+        "AMI": "ami-f96353c9"
       },
       "eu-west-1": {
         "AMI": "ami-ed7c149a"

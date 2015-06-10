@@ -1,5 +1,7 @@
 ---
 
+# ami-7b755b4b - us-west-2 (OR), 200mbps best hourly 11.6
+
 - name: Launch a big-ip in each AZ
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
@@ -18,7 +20,7 @@
       licenseModel: "{{ bigip_license_model }}"
       licensePackage: "{{ bigip_license_package }}"
       instanceType: "{{ bigip_instance_type }}"
-      amiId: "ami-7c9ab114" #eventually we'll want to leverage the mappings in cft
+      amiId: "ami-7b755b4b" #eventually we'll want to leverage the mappings in cft
       version: "{{ bigip_version }}"
       keyName: "{{ key_name }}"
   register: bigip_deploy_results
