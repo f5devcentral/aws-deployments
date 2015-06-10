@@ -1,0 +1,16 @@
+---
+
+- name: Teardown GTM
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/gtm.json
+  register: gtm_teardown_results
+  ignore_errors: yes
+
+- name: debug gtm_teardown_results var 
+  debug: var=gtm_teardown_results 
+
+- copy: content="{{ gtm_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+

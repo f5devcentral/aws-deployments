@@ -1,0 +1,11 @@
+---
+- name: Setup the Virtual
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host="{{ inventory_hostname }}"
+      user="{{ bigip_rest_user }}"
+      password="{{ bigip_rest_pass }}"
+      collection_path='mgmt/tm/ltm/virtual'
+      resource_key="name"
+      payload='{"name":"{{vip_id}}","destination":"/Common/{{VipAddress}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'

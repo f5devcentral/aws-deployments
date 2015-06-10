@@ -6,6 +6,7 @@
     region="{{ region }}"
     template={{ install_path }}/roles/infra/files/eip.json
   register: eip_teardown_results
+  ignore_errors: yes
 
 - debug: var=eip_teardown_results
 

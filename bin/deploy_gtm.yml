@@ -1,12 +1,12 @@
 ---
-- hosts: bigip-managers
+- hosts: gtm-managers
   gather_facts: no
   tasks:
-    - name: deploy bigips
-      include: "{{ install_path }}/roles/infra/tasks/deploy_bigip.yml"
+    - name: deploy gtms
+      include: "{{ install_path }}/roles/infra/tasks/deploy_gtm.yml"
 
 
-# We need some way to add the managemnt ips to the bigips group
+# We need some way to add the managemnt ips to the gtms group
 # Unfortunately, the add_hosts directive in ansible does not actually
 # execute on a per-host basis within a playbook.  
 # Here we solve this problem by looping through JSON results from previous 
@@ -17,18 +17,17 @@
   tasks:
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
-      with_items: groups['bigip-managers']
+      with_items: groups['gtm-managers']
       delegate_to: localhost
 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=gtms
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
       with_items: output['results']
 
 
 # Basic device setup using tmsh to enable further provisioning
-- hosts: bigips
+- hosts: gtms
   gather_facts: no
   roles:
     # adds users via tmsh
@@ -40,5 +39,12 @@
     # sets AWS keys and disables DHCP
     - bigip_system_aws
     # sets vlans, self-ips, routes
-    - bigip_network
+    - gtm_network
+
+- hosts: gtms
+  gather_facts: no
+  roles:
+    # Cluster the GTMs  
+    - gtm_cluster
+
 

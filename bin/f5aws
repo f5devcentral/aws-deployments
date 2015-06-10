@@ -9,7 +9,7 @@ For more information on the usage, see the project README.md
 """
 
 import sys
-sys.path.append('/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/')
+#sys.path.append('/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/')
 import os
 import stat
 import argparse
@@ -126,8 +126,10 @@ class F5Aws(object):
       'deploy_az.yml',
       'deploy_app.yml',
       'deploy_bigip.yml',
+#      'deploy_gtm.yml',
       'deploy_bigip_app1.yml',
-      'deploy_bigip_app2.yml'
+      'deploy_bigip_app2.yml',
+#      'deploy_client.yml'
     ]
 
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
@@ -221,6 +223,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
     for playbook in playbooks:
       display("Running playbook: %s" % playbook, color='green', stderr=False)
+      #display("Private Key is: %s" % options.private_key_file )
 
       stats = callbacks.AggregateStats()
       playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
@@ -560,9 +563,21 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       extra_vars['env_name'] = options.env_name
     extra_vars['install_path'] = self.settings['install_path']
 
+    # Try to use key in ~/.f5aws. Otherwise, try global one defined in ansible.cfg.
+    if self.settings['private_key_file'] is not None:
+      options.private_key_file = self.settings['private_key_file'] 
+    else: 
+      options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
+
+    # Set Key for BIGIP IAM user with limited permissions to change network 
+    # (ex. reassign secondary IPs associated with VIPs)
+    options.bigip_aws_access_key_id = self.settings['bigip_aws_access_key_id']
+    options.bigip_aws_secret_access_key = self.settings['bigip_aws_secret_access_key']
+ 
+
     # Ansible expects the following variables to be defined
+    #options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
     options.forks = constants.DEFAULT_FORKS
-    options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
     options.module_path = constants.DEFAULT_MODULE_PATH
     options.remote_user = constants.DEFAULT_REMOTE_USER
     options.timeout = constants.DEFAULT_TIMEOUT

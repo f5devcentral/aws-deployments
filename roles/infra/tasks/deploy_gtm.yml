@@ -1,0 +1,36 @@
+---
+
+- name: Launch a big-ip in each AZ
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=present
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/gtm.json
+  args:
+    tags: 
+      Environment: "{{ env_name }}"
+      Host: "{{ inventory_hostname }}"
+      InstanceType: "GTM"
+    template_parameters:
+      region: "{{ region }}"
+      vpc: "{{ vpc_id }}"
+      availabilityZone: "{{ availability_zone }}"
+      managementSubnet: "{{ management_subnet }}"
+      publicSubnet: "{{ public_subnet }}"
+      licenseThroughput: "{{ gtm_license_throughput }}"
+      licenseModel: "{{ gtm_license_model }}"
+      licensePackage: "{{ gtm_license_package }}"
+      instanceType: "{{ gtm_instance_type }}"
+      amiId: "ami-f281aa9a" #us-east-1. eventually we'll want to leverage the mappings in cft
+      version: "{{ gtm_version }}"
+      keyName: "{{ key_name }}"
+  register: gtm_deploy_results
+
+- name: debug gtm_deploy_results var 
+  debug: var=gtm_deploy_results  
+
+# Persist data to disk for use across plays
+- copy: content="{{ gtm_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+- copy: content="{{ gtm_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json
+
+

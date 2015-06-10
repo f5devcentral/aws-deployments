@@ -1,40 +1,10 @@
 ---
-# Unfortunately, add_hosts does not persist across plays so we have to rebuild the 
-# topology from scratch
-# Here we solve this problem by looping through results outputed from previous
-# provisioning steps
-# The other alternative was to use the VARs YAML output from previous provisioning 
-# steps but ansible doesn't seem to load them sequentially on a task-by-task basis and 
-# seems to try to preload the var files for all the tasks in the playbook causing caching issues 
-# (ie. loads output previous playbook runs instead of newer desired output from an earlier task)
-# cat via shell ugly but at least gives task-by-task control
+# Unfortunately, add_hosts does not persist across plays or 
+# execute on a per host basis within a playbook 
+# so we have to rebuild the topology from scratch
+# Here we solve this problem by looping through JSON results from previous 
+# provisioning steps by the bigip-managers group
 # FUTURE: try fact caching.
-
-# - hosts: bigip-managers
-#   gather_facts: no
-#   vars_files:
-#      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
-#   tasks:
-# #    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-# #      register: output
-# #      with_items: groups['bigip-managers']
-# 
-#     - add_host: name="{{ stack_outputs.ManagementInterfacePublicIp }}" group=bigips
-#         ExternalInterfacePublicIp="{{ stack_outputs.ExternalInterfacePublicIp }}"
-#         ExternalInterfacePrivateIp="{{ stack_outputs.ExternalInterfacePrivateIp }}"
-#         InternalInterfacePrivateIp="{{ stack_outputs.InternalInterfacePrivateIp }}"
-# 
-# 
-# - hosts: apphost-managers
-#   gather_facts: no
-#   vars_files:
-#     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
-#   tasks:
-#     - add_host: name="{{ stack_outputs.WebServerInstancePublicIp }}" group=apphosts
-#         WebServerInstancePublicIp="{{ stack_outputs.WebServerInstancePublicIp }}"
-#         WebServerInstancePrivateIp="{{ stack_outputs.WebServerInstancePrivateIp }}"
-#         ansible_ssh_user="ec2-user"
-# 
 
 # Re-Create a bigip temp group from data persisted to disk
 - hosts: localhost
@@ -65,9 +35,7 @@
         ansible_ssh_user="ec2-user"
       with_items: output['results']
 
-# Hmm, what is best way to get the docker images loaded.. 
-# Can use naming convention for now.
-# Basically using this to pickup all the docker_containers variable data
+# Pickup all the docker_containers variable data
 - hosts: apphosts
   gather_facts: no
   vars_files:
@@ -75,10 +43,9 @@
   tasks:
     - debug: var=apphosts
 
+# Now that topology and variables are finally loaded again
+# Deploy App Stuff Here....
 
-## Now that topology and variables are loaded again
-## Deploy App Stuff Here....
-# 
 - hosts: apphosts
   gather_facts: no
   vars:
@@ -103,12 +70,6 @@
   gather_facts: no
   vars:
     vip_id: "Vip1"
-
-    # Ansible modules (lookup/cat/etc.) auto converts file contents that contain json format into python dicts
-    # so have to remove new lines and convert back to json ( with to_nice_json filter) so json modules don't fail
-    # ex.
-    # json/decoder.py", line 381, in raw_decode
-    pool_json_payload: "{{ lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')|replace('\n','') }}"
   tasks:
 
     - name: Setup a Webserver Pool
@@ -120,7 +81,7 @@
           password="{{ bigip_rest_pass }}"
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
-          payload='{{pool_json_payload|to_nice_json}}'
+          payload='{{lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')}}'
 
     - name: Setup a High Speed Logging pool to send to Analytics Server
       delegate_to: localhost
@@ -155,7 +116,7 @@
           password="{{ bigip_rest_pass }}"
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
-          payload='{"name":"{{vip_id}}_SSL_Offload","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"},{"name":"clientssl","context":"clientside"}]}'
+          payload='{"name":"{{vip_id}}_SSL_Offload","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"}, "profiles":[{"name":"http"},{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"},{"name":"clientssl","context":"clientside"}]}'
 
 # Finally attach an EIP to the Vip / Application
 - hosts: bigip-managers

@@ -1,0 +1,12 @@
+---
+- name: Setup the Listener / Virtual Server
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host="{{ inventory_hostname }}"
+      user="{{ bigip_rest_user }}"
+      password="{{ bigip_rest_pass }}"
+      collection_path='mgmt/tm/gtm/listener'
+      resource_key="name"
+      payload='{"name":"{{vip_id}}","destination":"/Common/{{VipAddress}}:53","mask":"255.255.255.255","ipProtocol":"udp","profiles":[{"name":"dns"}]}'
+

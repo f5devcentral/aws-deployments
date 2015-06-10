@@ -1,0 +1,10 @@
+{
+    "name": "{{vip_id}}_pool",
+    "monitor": "http",
+    "members":
+[
+{% for host in groups['bigips'] %}
+vip info here....
+{% endfor %}
+]
+}

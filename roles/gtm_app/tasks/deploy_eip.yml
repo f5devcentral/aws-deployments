@@ -9,9 +9,9 @@
     template_parameters:
       vpc: "{{ vpc_id }}"
       NetworkInterfaceId: "{{ stack_outputs['ExternalInterfaceId'] }}"
-      #Unfortunately, CFT will not output a list of secondary IPs 
-      #associated with an instance/interface.  Instead, we used a integer
-      #index within the CFT and leverage that hardcdoed index here (vip_id)
+      #CFT not able to OUTPUT ExternalSecondaryIps attribute as not string
+      #PrivateIPAddress: "{{ stack_outputs["ExternalSecondaryIps"][vip_id] }}"
+      #test first with hardcoded index
       PrivateIpAddress: "{{ stack_outputs[vip_id] }}"
   register: eip_results
 

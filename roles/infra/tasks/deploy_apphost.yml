@@ -1,13 +1,17 @@
 # We could have used the ec2 module here from ansible. It works well when 
 #  deploying "generic" compute resources but we'll use cloudformation
 #  instead for consistency. 
-- name: Launch app hosts
+- name: Launch App hosts
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present
     region="{{ region }}"
-    template={{ install_path }}/roles/infra/files/docker_host.json
+    template={{ install_path }}/roles/infra/files/apphost.json
   args:
+    tags:
+      Environment: "{{ env_name }}"
+      Host: "{{ inventory_hostname }}"
+      InstanceType: "ApplicationHost"
     template_parameters:
       vpc: "{{ vpc_id }}"
       ApplicationSubnet: "{{ application_subnet }}"
