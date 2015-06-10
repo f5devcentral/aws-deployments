@@ -249,7 +249,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         sudo_user=options.sudo_user,
         sudo_pass=sudopass,
         extra_vars=extra_vars,
-        private_key_file=options.private_key_file,
+        #private_key_file=options.private_key_file,
         check=options.check,
         diff=options.diff,
         su=options.su,
@@ -564,15 +564,15 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     extra_vars['install_path'] = self.settings['install_path']
 
     # Try to use key in ~/.f5aws. Otherwise, try global one defined in ansible.cfg.
-    if self.settings['private_key_file'] is not None:
-      options.private_key_file = self.settings['private_key_file'] 
-    else: 
-      options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
+    # if self.settings['private_key_file'] is not None:
+    #   options.private_key_file = self.settings['private_key_file'] 
+    # else: 
+    #   options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
 
     # Set Key for BIGIP IAM user with limited permissions to change network 
     # (ex. reassign secondary IPs associated with VIPs)
-    options.bigip_aws_access_key_id = self.settings['bigip_aws_access_key_id']
-    options.bigip_aws_secret_access_key = self.settings['bigip_aws_secret_access_key']
+    # options.bigip_aws_access_key_id = self.settings['bigip_aws_access_key_id']
+    # options.bigip_aws_secret_access_key = self.settings['bigip_aws_secret_access_key']
  
 
     # Ansible expects the following variables to be defined
