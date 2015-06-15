@@ -24,6 +24,14 @@
         ansible_ssh_user="ec2-user"
       with_items: output['results']
 
+# Need to wait for port 22 to open up
+- hosts: apphosts
+  gather_facts: False
+  vars:
+    ansible_sudo: True
+  tasks:
+    wait_for: port=22 search_regex=OpenSSH delay=10
+
 # Now launch containers inside them
 # Amazon amis we're using already have docker installed so no need for install_docker role
 - hosts: apphosts

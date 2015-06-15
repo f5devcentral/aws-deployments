@@ -2,6 +2,9 @@
 
 # ami-7b755b4b - us-west-2 (OR), 200mbps best hourly 11.6
 
+- shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ bigip_version }} --license {{ bigip_license_model }} --package {{ bigip_license_package }} --throughput {{ bigip_license_throughput }} --matchone"
+  register: output
+
 - name: Launch a big-ip in each AZ
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
@@ -20,12 +23,8 @@
       managementSubnet: "{{ management_subnet }}"
       privateSubnet: "{{ private_subnet }}"
       publicSubnet: "{{ public_subnet }}"
-      licenseThroughput: "{{ bigip_license_throughput }}"
-      licenseModel: "{{ bigip_license_model }}"
-      licensePackage: "{{ bigip_license_package }}"
       instanceType: "{{ bigip_instance_type }}"
-      amiId: "ami-7b755b4b" #eventually we'll want to leverage the mappings in cft
-      version: "{{ bigip_version }}"
+      amiId: "{{ output['stdout'] }}" #eventually we'll want to leverage the mappings in cft
       keyName: "{{ key_name }}"
   register: bigip_deploy_results
 

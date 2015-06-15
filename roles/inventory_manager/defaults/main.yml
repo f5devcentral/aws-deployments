@@ -7,16 +7,16 @@ bigip_rest_user: "restadmin"
 
 # defaults for all bigips deployed
 bigip_version: "11.6"
-bigip_license_throughput: "1gbps"
+bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
-bigip_license_package: "best"
+bigip_license_package: "better"
 bigip_instance_type: "m3.2xlarge"
 
 # defaults for all gtms deployed
 gtm_version: "11.6"
 gtm_license_throughput: "25mbps"
 gtm_license_model: "hourly"
-gtm_license_package: "good"
+gtm_license_package: "better"
 gtm_instance_type: "m3.xlarge"
 
 

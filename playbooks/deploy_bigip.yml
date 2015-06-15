@@ -26,6 +26,14 @@
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
       with_items: output['results']
 
+# Need to wait for port 22 to open up
+- hosts: bigips
+  gather_facts: False
+  vars:
+    ansible_sudo: True
+  tasks:
+    wait_for: port=22 search_regex=OpenSSH delay=10
+
 
 # Basic device setup using tmsh to enable further provisioning
 - hosts: bigips
