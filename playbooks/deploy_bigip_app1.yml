@@ -21,7 +21,6 @@
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
         VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"  
-        ansible_ssh_user="admin" 
       with_items: output['results']
 
     # Re-Create a docker host temp group from data persisted to disk
@@ -32,7 +31,6 @@
     - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
         WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
         WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
-        ansible_ssh_user="ec2-user"
       with_items: output['results']
 
 # Pickup all the docker_containers variable data
@@ -51,7 +49,6 @@
   vars:
     vip_id: "Vip1"
   tasks:
-#
     - name: Store pool members from containers into json
       local_action: template src=../roles/bigip_app/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
 
@@ -71,7 +68,6 @@
   vars:
     vip_id: "Vip1"
   tasks:
-
     - name: Setup a Webserver Pool
       delegate_to: localhost
       bigip_config:
@@ -94,7 +90,6 @@
           resource_key="name"
           payload='{"name":"syslog_pool","members":[{"name":"10.0.3.32:514","address":"10.0.3.32"},{"name":"10.0.3.33:514","address":"10.0.3.33"}],"monitor":"tcp"}'
 
-    #Deploy HTTP VIP
     - name: Setup the Virtual
       delegate_to: localhost
       bigip_config:
@@ -106,7 +101,6 @@
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
 
-    #Deploy HTTP VIP
     - name: Setup the HTTPS Virtual
       delegate_to: localhost
       bigip_config:

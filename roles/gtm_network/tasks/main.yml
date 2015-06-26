@@ -21,7 +21,7 @@
     collection_path='mgmt/tm/net/vlan'
     resource_key="name"
 
-# THe address we give for external, local-only self-ip is provided by Amazon (ExternalInterfacePrivateIp)
+# The address we give for external, local-only self-ip is provided by Amazon (ExternalInterfacePrivateIp)
 - name: Add unique external selfip
   delegate_to: localhost
   bigip_config:
@@ -34,11 +34,10 @@
     resource_key="name"
 
 #  for each bigip the routes may be different
-#  In Amazon, the Default Gateway is 
-#  the first IP on the subnet network, i.e. 172.16.12.1 and 172.16.22.1
+#  In Amazon, the Default Gateway is the first IP on the subnet network,
+#    i.e. 172.16.12.1 and 172.16.22.1
 #  So we'll hardcode and just replace the '0' with a '1' from the variable 'public_cidr'. 
 #  This might not be true in other environments, in which case we'll want a more robust solution.
-
 - name: Set default route using the default_gateway or gateway_pool
   delegate_to: localhost
   bigip_config:

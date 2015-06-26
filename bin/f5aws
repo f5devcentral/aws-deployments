@@ -2,14 +2,15 @@
 
 
 """
-# (C) 2015, Chris Mutzel, <c.mutzel@f5.com>
 
-For more information on the usage, see the project README.md
+Chris Mutzel <c.mutzel@f5.com>
+Alex Applebaum <a.applebaum@f5.com>
+
+For more information on the usage, see README.md
 
 """
 
 import sys
-#sys.path.append('/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/')
 import os
 import stat
 import argparse
@@ -59,16 +60,12 @@ def hostcolor(host, stats, color=True):
   return "%-26s" % host
 
 
-def get_dict_from_junk_str(inStr):
+def convert_str(inStr):
   """
-      The cloudformation module outputs a yaml blob
-      for the key 'invocation' in this blob, we get back
-      a string like the below.
-      a='stack_name="foo3-vpc" state=absent region="eu-west-1"
-          template=/Users/mutzel/workspace/aws-deployments/roles/infra/files/vpc.json'
-      This format is totally beyond me...
-      I guess one of the quirks of ansible is that they couldn't decide on
-      one type of object notation..
+    One of the quirks with ansible is the use of several different 
+    object notations, sometimes even one embedded within another...
+    This function modifies the string formatting so we can read it 
+    in as a variable. 
   """
   l = [i.split('=') for i in inStr.split(' ')]
   res_arr = [i.replace('"','') for i in list(itertools.chain(*l))]
@@ -76,11 +73,10 @@ def get_dict_from_junk_str(inStr):
 
 class F5Aws(object):
   """
-    This class is used to execute a set of playbooks included in ./bin. 
-    Playbooks are executed using the run_playbooks method, which reloads 
+    This class is used to execute a set of ansible playbooks included in ./playbooks. 
+    Playbooks are executed using the run_playbooks method, which reloads the 
     inventory between each playbook.  This is slightly different than the 
-    way that ansible-playbook entry point typically handles inventory during 
-    a play.
+    way that ansible-playbook command typically handles things. 
   """
   def __init__(self):
     try:
@@ -139,7 +135,7 @@ class F5Aws(object):
   def cmd_teardown(self, options, extra_vars):
     """
       Complete teardown a deployed environment.
-      Does not remove the inventory in ~/vars/f5aws/env/<env name>
+      Does not remove the inventory files in ~/vars/f5aws/env/<env name>
     """
     playbooks = ['teardown_all.yml']
     
@@ -148,7 +144,7 @@ class F5Aws(object):
 
   def cmd_remove(self, options, extra_vars):
     """
-      Delete an environment from ~/vars/f5aws/env/<env name>
+      Delete all inventory files for a deployment from ~/vars/f5aws/env/<env name>
       This environment should already have been torn down using `teardown`
     """
     env = extra_vars['env_name']
@@ -168,15 +164,16 @@ class F5Aws(object):
       inventory = self.settings['install_path']+'/inventory/hosts'
       self.run_playbooks(playbooks, inventory, options, extra_vars)
     else:
-      msg = """Cannot remove environment '%s' until all resources have been deprovisioned.
+      msg = """Cannot remove environment '%s' until all resources have been de-provisioned.
 The following resources still exist: %s. 
 Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
       display(msg, color='red', stderr=True)
         
   def cmd_list(self, options, extra_vars):
-    """List all environments that have been instantiated using `init`,
-         regardless of whether or not they have been deployed. 
+    """
+      Lists all environments that have been instantiated using `init`,
+      regardless of whether or not they have been deployed. 
     """
     display("Installed environments (%s):" %
       self.settings['env_path'], color='green', stderr=False) 
@@ -190,8 +187,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         
   def cmd_describe(self, options, extra_vars):
     """
-      Provide more details on the resources associated with 
-      a particular environment (vpc, subnets, bigip, app hosts, etc...)
+      Implements command line to provide more details on the resources associated with 
+      a particular deployment (vpc, subnets, bigip, app hosts, etc...)
     """
     try:
       env = extra_vars['env_name']
@@ -372,28 +369,37 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     return 0
 
   def get_envs(self):
+    """
+      Gets a list of all deployments
+    """
     return os.listdir(self.settings['env_path'])
 
   def display_env_info(self, env):
+    """
+    Print deployment variables to stdout
+    """
     env_info = self.get_env_info(env)
     display(" - %s" % env, color='green', stderr=False)
     for k in sorted(env_info, key=lambda key: key):
       display("    %s: %s" % (k, env_info[k]), color='green', stderr=False)
 
   def display_env_resources(self, env, show_resource_vars):  
-      resources, statuses = self.get_env_status(env, show_resource_vars)
-      display("    resources: ", color='green', stderr=False)
-      for r in resources:
-        if statuses[r]['state'] != 'deployed':
-          color='red'
-        else: 
-          color='green'
+    """
+      Print information nicely about deployment resources to stdout
+    """
+    resources, statuses = self.get_env_status(env, show_resource_vars)
+    display("    resources: ", color='green', stderr=False)
+    for r in resources:
+      if statuses[r]['state'] != 'deployed':
+        color='red'
+      else: 
+        color='green'
 
-        if show_resource_vars:
-          display("      %s:" % r, color=color, stderr=False)
-          display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
-        else:
-          display("      %s: %s" % (r, statuses[r]), color=color, stderr=False)
+      if show_resource_vars:
+        display("      %s:" % r, color=color, stderr=False)
+        display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
+      else:
+        display("      %s: %s" % (r, statuses[r]), color=color, stderr=False)
 
   def get_env_info(self, env):
     """Read some information about this @env from the inventory/hosts 
@@ -401,7 +407,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     """
 
     env_info = {}
-    # hack to get some useful information about the deployment
+    # get variables and status information about a deployment
+    # all of these details are stored the ansible hosts file 
     with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
       foundVars = False
       for l in f.readlines():
@@ -418,12 +425,18 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
             result = re.match('^([a-z0-9_\-\.]+)=([a-z0-9_\-\.\/]+)', l)
             if result:
               env_info[result.group(1)] = result.group(2)
+
+    # don't show the password in the output
     del env_info['env_name']
     env_info['bigip_rest_password'] = '********'
 
     return env_info
 
   def get_env_status(self, env, show_resource_vars=False):
+    """ 
+      Aggregates and prints the status for an environment
+      and all resources deployed in aws
+    """
     managers = self.get_managers(env)
     statuses = {}
     resources = []
@@ -447,6 +460,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     """
       Returns an ordered list of all the 'managers'
       who report status via a yaml file i the ./<env>/ directory
+      For example, vpc-manager
     """
     managers = []
     # hack to get some useful information about the deployment
@@ -471,24 +485,32 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     return managers   
 
   def state_cloudformation(self, latest_result, show_resource_vars):
-    res_state = {}
-    cf = get_dict_from_junk_str(latest_result['invocation']['module_args'])
+    """
+      Returns the status of executed ansible cloudformation tasls
+      from captured output. 
+
+      We need to deal with the case where the stack does not exist
+      in a particular fashion for the command line `descibe` and 
+      `list commands.
+    """
+    result = {}
+    cf = convert_str(latest_result['invocation']['module_args'])
     # we need to handle 'present' and 'absent' situations differently
     if cf['state'] == 'present':
-      res_state['stack_name'] = cf['stack_name']
+      result['stack_name'] = cf['stack_name']
       if show_resource_vars:
-        res_state['resource_vars'] = latest_result['stack_outputs']
+        result['resource_vars'] = latest_result['stack_outputs']
       if (latest_result['output'] == 'Stack CREATE complete' or
         latest_result['output'] == 'Stack is already up-to-date.'):
-        res_state['state'] = 'deployed'
+        result['state'] = 'deployed'
       else:
-        res_state['state']='deploy-error'
+        result['state']='deploy-error'
     else: # state == 'absent'...
       if (latest_result.get('output','') == 'Stack Deleted' or
         'does not exist' in latest_result.get('msg','')):
-        res_state['state'] = 'absent'
+        result['state'] = 'absent'
       else:
-        res_state['state'] = 'teardown-error'
+        result['state'] = 'teardown-error'
 
     return res_state
 

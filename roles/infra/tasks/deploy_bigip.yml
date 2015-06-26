@@ -1,7 +1,8 @@
 ---
 
-# ami-7b755b4b - us-west-2 (OR), 200mbps best hourly 11.6
-
+# Run python script to find out which AMI we should use based on user inputs
+#  This is easier than the ugly mapping sections in CloudFormation templates
+#  with high cardinality
 - shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ bigip_version }} --license {{ bigip_license_model }} --package {{ bigip_license_package }} --throughput {{ bigip_license_throughput }} --matchone"
   register: output
 
@@ -24,7 +25,7 @@
       privateSubnet: "{{ private_subnet }}"
       publicSubnet: "{{ public_subnet }}"
       instanceType: "{{ bigip_instance_type }}"
-      amiId: "{{ output['stdout'] }}" #eventually we'll want to leverage the mappings in cft
+      amiId: "{{ output['stdout'] }}"
       keyName: "{{ key_name }}"
   register: bigip_deploy_results
 

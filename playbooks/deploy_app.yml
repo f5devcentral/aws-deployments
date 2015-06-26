@@ -46,7 +46,6 @@
 - hosts: apphosts
   gather_facts: False
   tasks:
-
     - name: debug docker host variables
       debug: var=docker_containers
       tags:
@@ -54,7 +53,7 @@
           - launch_containers
 
     - name: Store docker containers from jinja template
-      local_action: template src=../roles/app/templates/docker_containers.cfg.j2  dest=~/vars/f5aws/env/{{ env_name }}/{{inventory_hostname}}_docker_containers.yml
+      local_action: template src=../roles/app/templates/docker_containers.cfg.j2  dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml
 
 #cache it here or in from within app role task itself?
 
