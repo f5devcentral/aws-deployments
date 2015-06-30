@@ -2,6 +2,10 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "AWS VPC",
   "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Environment name from f5Aws tool deployment."
+    },
     "cidrBlock": {
         "Type": "String",
         "Description": "CIDR block for the VPC"
@@ -17,14 +21,22 @@
         "InstanceTenancy": "default",
         "Tags": [
           {
-            "Key": "topology",
-            "Value": "big-ip-vpc"
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
           }
         ]
       }
     },
     "InternetGateway": {
-      "Type": "AWS::EC2::InternetGateway"
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
     },
     "InternetGateWayAttachment": {
       "Type": "AWS::EC2::VPCGatewayAttachment",

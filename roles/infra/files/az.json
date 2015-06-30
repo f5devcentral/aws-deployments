@@ -2,6 +2,10 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Deploys Mgmt, Public, Private, and Application subnets within a VPC",
   "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Environment name from f5Aws tool deployment."
+    },
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within the supplied region."
@@ -53,7 +57,13 @@
         ],
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "PublicSubnet": {
@@ -73,7 +83,13 @@
         ],
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "PrivateSubnet": {
@@ -93,7 +109,13 @@
         ],
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "ApplicationSubnet": {
@@ -113,7 +135,13 @@
         ],
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "ManagementSubnetRouteTableAssociation": {
@@ -165,7 +193,13 @@
       "Properties": {
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "ManagementRoute": {
@@ -185,7 +219,13 @@
       "Properties": {
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "PublicRoute": {
@@ -205,7 +245,13 @@
       "Properties": {
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "PrivateRoute": {
@@ -225,7 +271,13 @@
       "Properties": {
         "VpcId": {
           "Ref": "vpc"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     },
     "ApplicationRoute": {

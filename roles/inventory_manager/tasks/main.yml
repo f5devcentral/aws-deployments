@@ -1,22 +1,19 @@
 ---
-# make a directory for this new deployment
+# Create the directory structure for this deployment
 - file: path="~/vars/f5aws/env/{{ env_name }}" state="directory"
 - file: path="~/vars/f5aws/env/{{ env_name }}/inventory" state="directory"
+- file: path="~/vars/f5aws/env/{{ env_name }}/inventory/host_vars" state="directory"
 - file: path="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars" state="directory"
 
+# Creating group_vars files for 'localhosts'
+
 - file: path="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/apphosts" state="touch"
-- file: path="~/vars/f5aws/env/{{ env_name }}/inventory/host_vars" state="directory"
+- template: src="group_vars_localhosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/localhosts"
 
-# create some files for the roles/hosts we know we need
-#- template: src="host_vars_localhosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/localhosts"
-
-# create some files for the roles/hosts we know we need
-- template: src="group_vars_managers.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/managers"
-
-# add some group vars for the dynamic groups that will be provisioned
+# Adding group vars for dynamic groups that will be provisioned
 - template: src="group_vars_apphosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/apphosts"
 - template: src="group_vars_bigips.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/bigips"
 - template: src="group_vars_gtms.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/gtms"
 
-# add a template to be used when we deploy the amazon infrstructure (vpc, subnets, bigips, etcs)
+# Adding hosts file from template
 - template: src="{{ deployment_model }}-hosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/hosts"

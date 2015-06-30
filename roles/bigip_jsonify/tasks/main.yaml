@@ -1,22 +1,24 @@
 ---
 
-- name: Wait for BIG-IP to be available
-  bigip_facts: include=system_info
-               server={{ inventory_hostname }}
-               user={{ bigip_rest_user }}
-               password={{ bigip_rest_pass }}
-  delegate_to: localhost
-  register: result
-  until: result.ansible_facts.system_info.product_information.product_version is defined
-  retries: 60
-  delay: 15
+# - name: Wait for BIG-IP to be available
+#   local_action: bigip_facts include=system_info
+#                server={{ inventory_hostname }}
+#                user={{ bigip_rest_user }}
+#                password={{ bigip_rest_password }}
+#                validate_certs=no
+#   delegate_to: localhost
+#   register: result
+#   until: result.ansible_facts.system_info.product_information.product_version is defined
 
-- name: Check to see if json is available to us
+
+- name: Checking if json is available to us
   raw: python -c 'import json'
   register: has_json
   ignore_errors: true
+  retries: 60
+  delay: 15
 
-- name: Check to see if simplejson is available to us
+- name: Checking if simplejson is available to us
   raw: python -c 'import simplejson'
   register: has_json
   ignore_errors: true

@@ -2,11 +2,15 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "AWS CloudFormation Template for Docker Host Instances.  **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
   "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Environment name from f5Aws tool deployment."
+    },
   	"vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within working region."
     },
-  	"ApplicationSubnet": {
+  	"applicationSubnet": {
   		"Description": "Private subnet for application servers",
   		"Type": "AWS::EC2::Subnet::Id",
   		"ConstraintDescription": "Must be an existing subnet"
@@ -88,6 +92,12 @@
             "ToPort": "-1",
             "CidrIp": "0.0.0.0/0"
           }
+        ],
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
         ]
       }
     },
@@ -113,8 +123,14 @@
 	   "AssociatePublicIpAddress": "true",
            "DeviceIndex": "0",
            "GroupSet": [{ "Ref" : "WebServerSecurityGroup" }],
-           "SubnetId": { "Ref" : "ApplicationSubnet" }
-        } ]
+           "SubnetId": { "Ref" : "applicationSubnet" }
+        } ],
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
       }
     }
   },

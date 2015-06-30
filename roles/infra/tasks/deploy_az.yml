@@ -1,5 +1,17 @@
 ---  
-- name: Create subnets in all availability zones
+- name: Determining state of deployed cloudformation stacks
+  shell: "python {{ install_path }}/bin/get_cfn_stack_state.py {{ region }} {{ env_name }}-{{ inventory_hostname }}"
+  register: initial_cfn_state
+
+- name: Teardown previous stack if necessary
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/az.json
+  when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
+
+- name: Creating subnets in all availability zones
   cloudformation:
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present
@@ -7,9 +19,10 @@
     template={{ install_path }}/roles/infra/files/az.json
   args:
     tags:
-      Environment: "{{ env_name }}"
-      InventoryHostname: "{{ inventory_hostname }}"
+      envName: "{{ env_name }}"
+      inventoryHostname: "{{ inventory_hostname }}"
     template_parameters:
+      envName: "{{ env_name }}"
       vpc: "{{ vpc_id }}"
       internetGateway: "{{ internet_gateway_id }}"
       availabilityZone: "{{ availability_zone }}"
@@ -19,9 +32,7 @@
       applicationSubnetCidr: "{{ application_cidr }}"
   register: az_deploy_results
 
-- debug: var=az_deploy_results
-
-- name: create a file in which to persist results
+- name: Persisting variable data
   template: src='host-managers.j2' dest=~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/{{zone_id}}-az-managers
 
 - copy: content="{{ az_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

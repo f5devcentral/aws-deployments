@@ -5,12 +5,10 @@
     - name: deploy bigips
       include: "{{ install_path }}/roles/infra/tasks/deploy_bigip.yml"
 
-
 # We need some way to add the management ips to the bigips group
 # Unfortunately, the add_hosts directive in ansible does not actually
 # execute on a per-host basis within a playbook.  
-# Here we solve this problem by looping through JSON results from previous 
-# provisioning steps that were by the bigip-managers group (results from bigip provisioning steps)
+# Here we solve this problem by looping through JSON results from previous task
 - hosts: 
    localhost
   gather_facts: no
@@ -26,17 +24,20 @@
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
       with_items: output['results']
 
+
 # Need to wait for port 22 to open up
 - hosts: bigips
   gather_facts: False
-  # vars:
-  #   ansible_sudo: True
   tasks:
-    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10
-    - shell: "run /util bash -c 'cat /var/prompt/ps1'"
-      until: (result.stdout.find("Active") != -1  or result.stdout.find("NO LICENSE") != -1)
+    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+    # - raw: "run /util bash -c 'cat /var/prompt/ps1'"
+    #   register: result
+    # - debug: var=result
+    - raw: "run /util bash -c 'cat /var/prompt/ps1'"
+      until: (result.stdout.find("Active") != -1)
       register: result
       retries: 20
+  sudo: false
 
 # Basic device setup using tmsh to enable further provisioning
 - hosts: bigips

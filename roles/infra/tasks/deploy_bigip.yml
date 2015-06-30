@@ -1,4 +1,15 @@
 ---
+- name: delete stacks in 'rollback_complete' from previous executions
+  shell: "python {{ install_path }}/bin/get_cfn_stack_state.py {{ region }} {{ env_name }}-{{ inventory_hostname }}"
+  register: initial_cfn_state
+
+- name: Teardown previous stack if necessary
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/bigip.json
+  when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
 
 # Run python script to find out which AMI we should use based on user inputs
 #  This is easier than the ugly mapping sections in CloudFormation templates
@@ -6,7 +17,7 @@
 - shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ bigip_version }} --license {{ bigip_license_model }} --package {{ bigip_license_package }} --throughput {{ bigip_license_throughput }} --matchone"
   register: output
 
-- name: Launch a big-ip in each AZ
+- name: Launching a big-ip in each AZ
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present
@@ -14,10 +25,11 @@
     template={{ install_path }}/roles/infra/files/bigip.json
   args:
     tags: 
-      Environment: "{{ env_name }}"
-      Host: "{{ inventory_hostname }}"
-      InstanceType: "BIG-IP"
+      envName: "{{ env_name }}"
+      host: "{{ inventory_hostname }}"
+      instanceType: "BIG-IP"
     template_parameters:
+      envName: "{{ env_name }}"
       region: "{{ region }}"
       vpc: "{{ vpc_id }}"
       availabilityZone: "{{ availability_zone }}"
@@ -29,11 +41,13 @@
       keyName: "{{ key_name }}"
   register: bigip_deploy_results
 
-- name: debug bigip_deploy_results var 
-  debug: var=bigip_deploy_results  
+# - name: debug bigip_deploy_results var 
+#   debug: var=bigip_deploy_results  
 
 # Persist data to disk for use across plays
-- copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+- name: Persist variable data
+  copy: content="{{ bigip_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+  
 - copy: content="{{ bigip_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json
 
 

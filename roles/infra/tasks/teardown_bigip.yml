@@ -1,6 +1,5 @@
 ---
-
-- name: Teardown BIG-IP
+- name: Deleting bigip cfn stack(s)
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=absent
@@ -8,9 +7,6 @@
     template={{ install_path }}/roles/infra/files/bigip.json
   register: bigip_teardown_results
   ignore_errors: yes
-
-- name: debug bigip_teardown_results var 
-  debug: var=bigip_teardown_results 
 
 - copy: content="{{ bigip_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
 

@@ -1,6 +1,5 @@
 ---
-
-- name: Teardown all subnets in AZ
+- name: Deleting availability zone cfn stack(s)
   cloudformation:
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=absent
@@ -8,9 +7,6 @@
     template={{ install_path }}/roles/infra/files/az.json
   register: az_teardown_results
   ignore_errors: yes
-
-- name: debug az_teardown_results var 
-  debug: var=az_teardown_results  
 
 - copy: content="{{ az_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
 

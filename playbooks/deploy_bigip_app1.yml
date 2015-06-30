@@ -1,12 +1,6 @@
 ---
-# Unfortunately, add_hosts does not persist across plays or 
-# execute on a per host basis within a playbook 
-# so we have to rebuild the topology from scratch
-# Here we solve this problem by looping through JSON results from previous 
-# provisioning steps by the bigip-managers group
-# FUTURE: try fact caching.
-
-# Re-Create a bigip temp group from data persisted to disk
+# Dynamically populate bigip and apphost groups from persisted results from 
+# previous playbooks. See explanation in deploy_az.yml and deploy_bigip.yml playbooks
 - hosts: localhost
   vars:
     vip_id: "Vip1"
@@ -74,7 +68,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
           payload='{{lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')}}'
@@ -85,7 +79,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
           payload='{"name":"syslog_pool","members":[{"name":"10.0.3.32:514","address":"10.0.3.32"},{"name":"10.0.3.33:514","address":"10.0.3.33"}],"monitor":"tcp"}'
@@ -96,7 +90,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"{{vip_id}}","destination":"/Common/{{VipAddress}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
@@ -107,7 +101,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
           payload='{"name":"{{vip_id}}_SSL_Offload","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"}, "profiles":[{"name":"http"},{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"},{"name":"clientssl","context":"clientside"}]}'

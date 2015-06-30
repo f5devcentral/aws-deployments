@@ -1,5 +1,17 @@
 ---
-- name: Create Vpc
+- name: Determining state of deployed cloudformation stacks
+  shell: "python {{ install_path }}/bin/get_cfn_stack_state.py {{ region }} {{ env_name }}-{{ inventory_hostname }}"
+  register: initial_cfn_state
+
+- name: Teardown previous stack if necessary
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/vpc.json
+  when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
+
+- name: Creating Vpc
   cloudformation:
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present
@@ -7,13 +19,14 @@
     template={{ install_path }}/roles/infra/files/vpc.json
   args:
     tags:
-      Environment: "{{ env_name }}"
-      InventoryHostname: "{{ inventory_hostname }}"
+      envName: "{{ env_name }}"
+      inventoryHostname: "{{ inventory_hostname }}"
     template_parameters:
+      envName: "{{ env_name }}"
       cidrBlock: "{{ vpc_cidr }}"
   register: vpc_deploy_results
 
-- name: persist vpc deploy results
-  template: src='az-managers.j2' dest='~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/az-managers'
+- name: Persisting variable data
+  template: src='managers.j2' dest='~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/managers'
 
 - copy: content="{{ vpc_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

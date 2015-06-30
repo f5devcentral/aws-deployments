@@ -1,12 +1,11 @@
 #!/usr/bin/python
 
-
 """
 
 Chris Mutzel <c.mutzel@f5.com>
 Alex Applebaum <a.applebaum@f5.com>
 
-For more information on the usage, see README.md
+For more information on usage see README.md
 
 """
 
@@ -15,10 +14,12 @@ import os
 import stat
 import argparse
 import yaml
-import shutil
 import itertools
 import re
 import json
+
+#import ssl
+#ssl._create_default_https_context = ssl._create_unverified_context
 
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
@@ -71,6 +72,9 @@ def convert_str(inStr):
   res_arr = [i.replace('"','') for i in list(itertools.chain(*l))]
   return dict(zip(res_arr[::2], res_arr[1::2]))
 
+class ValidationError(Exception):
+    pass
+
 class F5Aws(object):
   """
     This class is used to execute a set of ansible playbooks included in ./playbooks. 
@@ -95,8 +99,6 @@ class F5Aws(object):
     except OSError:
       pass
 
-  
-
   def cmd_init(self, options, extra_vars):
     """
         To instantiate a new environment, we create a set
@@ -105,6 +107,14 @@ class F5Aws(object):
         See individual playbooks for more info. 
     """
     playbooks = ['init.yml']
+
+    # basic string checking to prevent failures later in playbook
+    if not re.match('^[a-zA-z]{1}[a-zA-Z0-9-]*', options.env_name):
+      raise ValidationError('The environment name must match the following regexp: "[a-zA-z]{1}[a-zA-Z0-9-]*" ')
+
+    # check to make sure this inventory does not already exist
+    if os.path.isdir(self.settings['install_path']) and not options.force:
+      raise ValidationError('There is already an environment with name "%s".  Use -f, --force to update the inventory variables for this environment. ' % options.env_name)
 
     # uses the inventory included in this repository 
     inventory = self.settings['install_path']+'/inventory/hosts'
@@ -120,7 +130,7 @@ class F5Aws(object):
     playbooks = [
       'deploy_vpc.yml',
       'deploy_az.yml',
-      'deploy_app.yml',
+      #'deploy_app.yml',
       'deploy_bigip.yml',
 #      'deploy_gtm.yml',
       'deploy_bigip_app1.yml',
@@ -144,7 +154,7 @@ class F5Aws(object):
 
   def cmd_remove(self, options, extra_vars):
     """
-      Delete all inventory files for a deployment from ~/vars/f5aws/env/<env name>
+      Deletes all inventory files for a deployment from ~/vars/f5aws/env/<env name>
       This environment should already have been torn down using `teardown`
     """
     env = extra_vars['env_name']
@@ -172,8 +182,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         
   def cmd_list(self, options, extra_vars):
     """
-      Lists all environments that have been instantiated using `init`,
-      regardless of whether or not they have been deployed. 
+      Implements a command line method to list all environments that have been instantiated using `init`.
     """
     display("Installed environments (%s):" %
       self.settings['env_path'], color='green', stderr=False) 
@@ -187,7 +196,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         
   def cmd_describe(self, options, extra_vars):
     """
-      Implements command line to provide more details on the resources associated with 
+      Implements command line method to provide more details on the resources associated with 
       a particular deployment (vpc, subnets, bigip, app hosts, etc...)
     """
     try:
@@ -246,7 +255,6 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         sudo_user=options.sudo_user,
         sudo_pass=sudopass,
         extra_vars=extra_vars,
-        #private_key_file=options.private_key_file,
         check=options.check,
         diff=options.diff,
         su=options.su,
@@ -518,6 +526,12 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     raise NotImplementedError()
 
   def run(self):
+    """
+      Define the various command line methods and arguments here. 
+      For each command, implement a sub-parser. Later we will call
+      the corrosponding method (e.g. init -> cmd_init) and pass the 
+      corrosponding argument values. 
+    """
     parser = argparse.ArgumentParser(prog='f5aws')
     parser.add_argument('-v', '--verbose', action='count', default=0,
       help='verbose mode (-vvv for more, -vvvv to enable connection debugging')
@@ -528,12 +542,15 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     parser_init.set_defaults(cmd='init')
     parser_init.add_argument('env_name',
       help='Name of the new environment to be created')
+    parser_init.add_argument('-f', '--force', required=False,
+      action='store_true', default=False,
+      help="Use to update inventory variables for an existing environment")
     parser_init.add_argument('-e', '--extra-vars', required=True,
       dest="extra_vars", action="append",
       help="set additional variables as key=value or YAML/JSON", default=[])
     # TODO: cleanup the variable passing for extravars so we don't need to 
     #   pass the extra-vars argument -- allow users to pass variables directly
-
+    
     parser_deploy = subparsers.add_parser('deploy',
       help='Deploy EC2 resource and application services based on inventory files created using `init`.')
     parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
@@ -544,11 +561,6 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     parser_teardown.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be de-provisioned. ')
 
-    parser_remove = subparsers.add_parser('remove',
-      help='Remove all inventory files for an environment created using `init`.')
-    parser_remove.add_argument('env_name', metavar='ENVIRONMENT',
-      type=str, help='Name of environment to be deleted')
-
     parser_describe = subparsers.add_parser('describe',
       help='Show resource variables along with environment information.')
     parser_describe.add_argument('env_name', metavar='ENVIRONMENT',
@@ -556,6 +568,11 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     
     parser_list = subparsers.add_parser('list',
       help='List all deployments and corrosponding resource statuses.')
+
+    parser_remove = subparsers.add_parser('remove',
+      help='Remove all inventory files for an environment created using `init`.')
+    parser_remove.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='Name of environment to be deleted')
 
     options = parser.parse_args()
 
@@ -585,20 +602,10 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       extra_vars['env_name'] = options.env_name
     extra_vars['install_path'] = self.settings['install_path']
 
-    # Try to use key in ~/.f5aws. Otherwise, try global one defined in ansible.cfg.
-    # if self.settings['private_key_file'] is not None:
-    #   options.private_key_file = self.settings['private_key_file'] 
-    # else: 
-    #   options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
-
-    # Set Key for BIGIP IAM user with limited permissions to change network 
-    # (ex. reassign secondary IPs associated with VIPs)
-    # options.bigip_aws_access_key_id = self.settings['bigip_aws_access_key_id']
-    # options.bigip_aws_secret_access_key = self.settings['bigip_aws_secret_access_key']
- 
-
-    # Ansible expects the following variables to be defined
-    #options.private_key_file = constants.DEFAULT_PRIVATE_KEY_FILE
+    # Since we have forked and modified ansible-playbook book
+    #  we have copied over many of these default variables. 
+    #  some of the options have been disabled due to unknown 
+    #  dependency changes we may have introduced. 
     options.forks = constants.DEFAULT_FORKS
     options.module_path = constants.DEFAULT_MODULE_PATH
     options.remote_user = constants.DEFAULT_REMOTE_USER
@@ -617,7 +624,12 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     options.syntax = False  #TODO: can we make this work for some scenarios?
 
     # how about a common set of return values by all cmd functions
-    getattr(self, 'cmd_'+options.cmd, self.raise_not_implemented)(options, extra_vars)
+    try:
+      getattr(self, 'cmd_'+options.cmd, self.raise_not_implemented)(options, extra_vars)
+    except ValidationError as e: 
+      display("Failed while processing input arguments: %s" % e, color='red', stderr=True)
+    except Exception as e:
+      display("Caught an unhandle exception: %s" % e, color='red', stderr=True)
 
 if __name__ == "__main__":
   display(" ", log_only=True)

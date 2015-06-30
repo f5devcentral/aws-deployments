@@ -6,8 +6,10 @@
     - name: deploy app hosts 
       include: "{{ install_path }}/roles/infra/tasks/deploy_apphost.yml"
 
-# Now that instances created, add them / their IPs to the dynamic apphosts group
-# so we can configure them 
+# We need some way to add the docker hosts to the apphost group
+# Unfortunately, the add_hosts directive in ansible does not actually
+# execute on a per-host basis within a playbook.  
+# Here we solve this problem by looping through JSON results from previous task
 - hosts:
    localhost
   gather_facts: no
@@ -27,10 +29,9 @@
 # Need to wait for port 22 to open up
 - hosts: apphosts
   gather_facts: False
-  vars:
-    ansible_sudo: True
   tasks:
-    wait_for: port=22 search_regex=OpenSSH delay=10
+    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+  sudo: false
 
 # Now launch containers inside them
 # Amazon amis we're using already have docker installed so no need for install_docker role
@@ -46,11 +47,11 @@
 - hosts: apphosts
   gather_facts: False
   tasks:
-    - name: debug docker host variables
-      debug: var=docker_containers
-      tags:
-          - debug
-          - launch_containers
+    # - name: debug docker host variables
+    #   #debug: var=docker_containers
+    #   tags:
+    #       - debug
+    #       - launch_containers
 
     - name: Store docker containers from jinja template
       local_action: template src=../roles/app/templates/docker_containers.cfg.j2  dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml

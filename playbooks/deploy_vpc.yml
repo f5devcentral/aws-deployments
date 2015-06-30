@@ -1,4 +1,9 @@
 ---
+# - hosts: localhost
+#   tasks:
+#    - name: debug group vars
+#      template: src=../templates/dumpall.j2 dest=~/vars/f5aws/ansible.all
+
 - hosts: vpc-manager
   gather_facts: no
   tasks:

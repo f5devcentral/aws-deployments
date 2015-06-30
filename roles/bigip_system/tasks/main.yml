@@ -12,37 +12,37 @@
 
 
 # Example of setting database variables
-- name: Disable Setup Utility in GUI
+- name: Disabling Setup Utility in GUI
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{ "value":"false" }'
     collection_path='mgmt/tm/sys/db/setup.run'
 
 # We need NTP, we do not get this from Amazon
 # TODO: take in an array for pool members
 # pool members are the same for each device if they are in the same region
-- name: Configure NTP servers
+- name: Configuring NTP servers
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
     collection_path='mgmt/tm/sys/ntp'
 
 # Unnecessary for AWS but nice to have examples all the same
-# - name: Configure DNS servers
+# - name: Configuring DNS servers
 #   delegate_to: localhost
 #   bigip_config:
 #     state=present
 #     host={{ inventory_hostname }}
 #     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_pass }}
+#     password={{ bigip_rest_password }}
 #     payload='{"nameServers":["4.2.2.1"]}'
 #     collection_path='mgmt/tm/sys/dns'
 #   #Really just need to add condition so only runs in certain environments
@@ -50,57 +50,57 @@
 
 
 # TODO: define log server ip somewhere (10.0.3.32). Right now, just for pretend...
-- name: Configure syslog
+- name: Configuring syslog
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"include":"destination loghost { udp( 10.0.3.32 port (514));};"}'
     collection_path='mgmt/tm/sys/syslog'
 
 # Amazon provides this functionality with their ACLs, but 
 #  peforming this lockdown within TMOS creates allows better portability across cloud providers
-- name: Set HTTP mgmt access
+- name: Configuring HTTP mgmt access
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"allow":["ALL"]}'
     collection_path='mgmt/tm/sys/httpd'
 
-- name: Set SSH mgmt access
+- name: Configuring SSH mgmt access
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"allow":["ALL"]}'
     collection_path='mgmt/tm/sys/sshd'
 
-- name: Set SNMP access
+- name: Configuring SNMP access
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"allowedAddresses":[ "{{ vpc_cidr }}" ]}'
     collection_path='mgmt/tm/sys/snmp'
 
 # Configure some global traffic profiles that can be shared by all tenants 
 
-- name: Configure FastL4 profiles ... fastL4-route-friendly
+- name: Configuring FastL4 profiles ... fastL4-route-friendly
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"name":"fastL4-route-friendly","resetOnTimeout":"disabled","looseInitialization":"enabled","looseClose":"enabled"}'
     collection_path='mgmt/tm/ltm/profile/fastl4'
     resource_key="name"
@@ -108,41 +108,41 @@
 #Create optmized SSL profiles with nagle and delayed-ack disabled
 #Bug 325280 - RFE: Implement auto-nagle / auto-delayed-ack for tcp profile. (Formerly CR 131876)
 
-- name: Configure TCP profiles ... ssl-wan-optimized
+- name: Configuring TCP profiles ... ssl-wan-optimized
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"name":"tcp-ssl-wan-optimized", "defaultsFrom":"/Common/tcp-wan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
     collection_path='mgmt/tm/ltm/profile/tcp'
     resource_key="name"
 
-- name: Configure TCP profiles ... ssl-lan-optimized
+- name: Configuring TCP profiles ... ssl-lan-optimized
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"name":"tcp-ssl-lan-optimized", "defaultsFrom":"/Common/tcp-lan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
     collection_path='mgmt/tm/ltm/profile/tcp'
     resource_key="name"
 
 
 # Example of provisioning modules...
-- name: Provision AVR 
+- name: Provisioning AVR 
   delegate_to: localhost
   bigip_config:
     state=present
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
-    password={{ bigip_rest_pass }}
+    password={{ bigip_rest_password }}
     payload='{"level":"nominal"}'
     collection_path='mgmt/tm/sys/provision/avr'
 
-- name: Pause and wait for module provisining to complete
+- name: Pausing for module provisining to complete
   pause: seconds=30
   tags:
       - pause

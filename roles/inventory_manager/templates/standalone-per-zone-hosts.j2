@@ -5,37 +5,30 @@
 
 ; our "management hosts" - these don't actually exist,
 ;  they are really virtual hosts we use to group variables
-localhost ansible_connection=local
 
-[managers]
-vpc-manager
-{% for zone in zones %}
-zone{{ loop.index }}-az-manager
-{% set outer_loop = loop %}
-{% for apphostnum in range(1, apphosts_per_zone + 1) %}
-zone{{ outer_loop.index }}-apphost{{ apphostnum }}-manager
-{% endfor %}
-{% for bigipnum in range(1, standalone_per_az['bigips_per_zone'] + 1) %}
-zone{{ outer_loop.index }}-bigip{{ bigipnum }}-manager
-{% endfor %}
-{% for gtmnum in range(1, standalone_per_az['gtms_per_zone'] + 1) %}
-zone{{ outer_loop.index }}-gtm{{ gtmnum }}-manager
-{% endfor %}
-{% endfor %}
-clienthost-manager
+[localhosts:chidren]
+localhost
+managers
 
-; dynamic group that we will add to via add_host
+
+[managers:children]
+vpc-managers
+apphost-managers
+bigip-managers
+az-managers
+gtm-managers
+clienthost-managers
+
+; dynamic groups that populate via add_host
 [clienthosts]
 [apphosts]
 [bigips]
 [gtms]
-
 {% for zone in zones %}
 [zone{{ loop.index }}-clienthosts]
 [zone{{ loop.index }}-apphosts]
 [zone{{ loop.index }}-bigips]
 [zone{{ loop.index }}-gtms]
-
 {% endfor %}
 
 {% for zone in zones %}

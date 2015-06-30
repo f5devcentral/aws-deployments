@@ -11,9 +11,14 @@
 #      - python-setuptools
 # 
 # Install few dependences for ansible
-- easy_install: name=pip #  puts it nicely in /usr/local/bin/pip
-- pip: name=pip state=present extra_args='--upgrade' executable=/usr/local/bin/pip
+- name: Ensuring 'pip' is available for python package upgrades
+  easy_install: name=pip #  puts it nicely in /usr/local/bin/pip
+
+- name: Ensuring 'pip' up to date
+  pip: name=pip state=present extra_args='--upgrade' executable=/usr/local/bin/pip
+
 #docker module only compat with version 1.1.0
 #https://github.com/ansible/ansible/issues/10879
+- name: Ensuring correct version of python 'docker' module
 - pip: name=docker-py state=present version=1.1.0 executable=/usr/local/bin/pip
 

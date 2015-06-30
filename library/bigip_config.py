@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-ansible module for managing configuration resource on BIG-IP over iControlREST.
+ansible module for managing configuration resources on BIG-IP over iControlREST.
 """
 
 import sys

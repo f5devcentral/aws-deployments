@@ -1,6 +1,17 @@
 ---
+- name: Determining state of deployed cloudformation stacks
+  shell: "python {{ install_path }}/bin/get_cfn_stack_state.py {{ region }} {{ env_name }}-{{ inventory_hostname }}"
+  register: initial_cfn_state
 
-- name: Launch a big-ip in each AZ
+- name: Teardown previous stack if necessary
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/gtm.json
+  when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
+
+- name: Launching a big-ip in each AZ
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present
@@ -8,10 +19,11 @@
     template={{ install_path }}/roles/infra/files/gtm.json
   args:
     tags: 
-      Environment: "{{ env_name }}"
-      Host: "{{ inventory_hostname }}"
-      InstanceType: "GTM"
+      envName: "{{ env_name }}"
+      host: "{{ inventory_hostname }}"
+      instanceType: "GTM"
     template_parameters:
+      envName: "{{ env_name }}"
       region: "{{ region }}"
       vpc: "{{ vpc_id }}"
       availabilityZone: "{{ availability_zone }}"
@@ -26,11 +38,11 @@
       keyName: "{{ key_name }}"
   register: gtm_deploy_results
 
-- name: debug gtm_deploy_results var 
-  debug: var=gtm_deploy_results  
+# - name: debug gtm_deploy_results var 
+#   debug: var=gtm_deploy_results  
 
-# Persist data to disk for use across plays
-- copy: content="{{ gtm_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+- name: Persisting variable data
+  copy: content="{{ gtm_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
 - copy: content="{{ gtm_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json
 
 
