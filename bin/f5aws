@@ -17,9 +17,7 @@ import yaml
 import itertools
 import re
 import json
-
-#import ssl
-#ssl._create_default_https_context = ssl._create_unverified_context
+import ConfigParser
 
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
@@ -130,7 +128,7 @@ class F5Aws(object):
     playbooks = [
       'deploy_vpc.yml',
       'deploy_az.yml',
-      #'deploy_app.yml',
+      'deploy_app.yml',
       'deploy_bigip.yml',
 #      'deploy_gtm.yml',
       'deploy_bigip_app1.yml',
@@ -414,17 +412,17 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         file.  We do this by parsing the [all:vars] section.
     """
 
+    print 'get_env_info'
+
     env_info = {}
     # get variables and status information about a deployment
     # all of these details are stored the ansible hosts file 
     with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
       foundVars = False
-      for l in f.readlines():
+      for l in f.read().split('\n'):
         if foundVars is False:
-          if 'all:vars' not in l:
-            continue
-          else:
-            foundVars = True
+          if 'all:vars' in l:
+            foundVars=True
         else:
           # break on the first blank line
           if l.rstrip().lstrip() == '':
@@ -435,6 +433,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
               env_info[result.group(1)] = result.group(2)
 
     # don't show the password in the output
+    print env_info
     del env_info['env_name']
     env_info['bigip_rest_password'] = '********'
 
@@ -454,12 +453,15 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       resource_name = m[:-8]
       resources.append(resource_name)
       try:
-        with open('{}/{}/{}.yml'.format(self.settings['env_path'], env, m)) as f:
+        fname = '{}/{}/{}.yml'.format(self.settings['env_path'], env, m)
+        print fname
+        with open(fname) as f:
           latest = yaml.load(f)
           statuses[resource_name] = getattr(self,
               'state_'+latest['invocation']['module_name'],
               self.raise_not_implemented)(latest, show_resource_vars)
-      except:
+      except Exception as e:
+        print 'Hit error %s' % e
         statuses[resource_name] = {'state': 'not deployed'}
 
     return resources, statuses
@@ -471,26 +473,15 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       For example, vpc-manager
     """
     managers = []
-    # hack to get some useful information about the deployment
     
     with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
-      foundManagers = False
       for l in f.readlines():
-        if foundManagers is False:
-          if '[managers]' not in l:
-            continue
-          else:
-            foundManagers = True
-        else:
-          # break on the first blank line
-          if l.rstrip().lstrip() == '':
-            break
-          else:
-            result = re.match('^([a-z0-9_\-]+)', l)
-            if result:
-              managers.append(result.group(1))
+        rematch = re.match('^([a-z0-9/-]*-manager)$', l.rstrip().lstrip())
+        if rematch:
+          managers.append(rematch.group(1))
 
-    return managers   
+    #return the unique set
+    return set(managers)   
 
   def state_cloudformation(self, latest_result, show_resource_vars):
     """
@@ -520,7 +511,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       else:
         result['state'] = 'teardown-error'
 
-    return res_state
+    return result
 
   def raise_not_implemented(*args, **kwargs):
     raise NotImplementedError()
@@ -628,8 +619,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       getattr(self, 'cmd_'+options.cmd, self.raise_not_implemented)(options, extra_vars)
     except ValidationError as e: 
       display("Failed while processing input arguments: %s" % e, color='red', stderr=True)
-    except Exception as e:
-      display("Caught an unhandle exception: %s" % e, color='red', stderr=True)
+    #except Exception as e:
+    #  display("Caught an unhandle exception: %s" % e, color='red', stderr=True)
 
 if __name__ == "__main__":
   display(" ", log_only=True)

@@ -31,12 +31,10 @@
   tasks:
     - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
     # - raw: "run /util bash -c 'cat /var/prompt/ps1'"
-    #   register: result
-    # - debug: var=result
     - raw: "run /util bash -c 'cat /var/prompt/ps1'"
       until: (result.stdout.find("Active") != -1)
       register: result
-      retries: 20
+      retries: 40
   sudo: false
 
 # Basic device setup using tmsh to enable further provisioning

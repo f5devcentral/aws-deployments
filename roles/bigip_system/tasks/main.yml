@@ -12,15 +12,15 @@
 
 
 # Example of setting database variables
+#  Here we use a loop to retry until this first attempt to 
+#  provision using REST completes. 
 - name: Disabling Setup Utility in GUI
   delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ inventory_hostname }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_password }}
-    payload='{ "value":"false" }'
-    collection_path='mgmt/tm/sys/db/setup.run'
+  bigip_config: state=present host={{ inventory_hostname }} user={{ bigip_rest_user }} password={{ bigip_rest_password }} payload='{ "value":"false" }' collection_path='mgmt/tm/sys/db/setup.run'
+  register: result
+  until: result.changed == true
+  retries: 5
+  delay: 5
 
 # We need NTP, we do not get this from Amazon
 # TODO: take in an array for pool members
@@ -35,7 +35,7 @@
     payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
     collection_path='mgmt/tm/sys/ntp'
 
-# Unnecessary for AWS but nice to have examples all the same
+# AWS gives us DNS via DHCP
 # - name: Configuring DNS servers
 #   delegate_to: localhost
 #   bigip_config:
