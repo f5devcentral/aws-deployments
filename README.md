@@ -13,23 +13,21 @@ These examples are provided in order to demonstrate how BIG-IP can be used to ma
 
 
 As of now, these deployment models are:
+
 -standalone-per-zone
 
 
-### Setup:
+### Install/Setup:
 1) Download this code somewhere to your system
 
-2) Per python boto module requirements, create ~/.aws folder with correct contents
-(http://boto.readthedocs.org/en/latest/boto_config_tut.html).
-
-i.e.: in ~/.aws/credentials
+2) Setup boto per requirements, i.e. create ~/.aws folder with correct contents
+(http://boto.readthedocs.org/en/latest/boto_config_tut.html):
 
 ```
 [default]
 aws_access_key_id = <my access key>
 aws_secret_access_key = <my secret key>
 ```
-
 
 3) Create ~/.f5aws with the following contents
 
@@ -40,20 +38,23 @@ install_path: 'path to your install'
 
 4) Install the project requirements, i.e.:
 
-
 ```pip install requirements.txt```
-
-5) Fix the hardcoded AMI IDs in 
-./roles/infra/tasks/deploy_bigip.yml (make this the AMI of BIG-IP hourly in the region where you are deploying)
-./roles/infra/files/apphosts.yml (this will make sure you have the correct ECS optimized compute host for your application containers)
 
 
 ### Usage:
 
 1) To create a new environment, use the init.yml playbook with the inventory provided as part of this repository. 
-This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.  The full_key_path parameter may include a . extension (e.g. ".pem")
+This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.  The full_key_path parameter may include a . extension (e.g. ".pem").  You must choose the availability zones in which you want to deploy. 
  
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "full_key_path": "/full/path/to/your/key", "zones": ["eu-west-1a","eu-west-1b"],"bigip_rest_password": "****"}'```
+
+ Note that the length of list passed to the "zones" variable must not strictly be 2.  This is also possible:
+
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "full_key_path": "/full/path/to/your/key", "zones": ["eu-west-1a","eu-west-1b", "eu-west-1c"],"bigip_rest_password": "****"}'```
+
+So you can deploy a standalone via: 
+
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "full_key_path": "/full/path/to/your/key", "zones": ["eu-west-1c"],"bigip_rest_password": "****"}'```
 
 2) Deploy and manage the environment you instantiated in step 1: 
 

@@ -11,6 +11,12 @@
     template={{ install_path }}/roles/infra/files/gtm.json
   when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
 
+# Run python script to find out which AMI we should use based on user inputs
+#  This is easier than the ugly mapping sections in CloudFormation templates
+#  with high cardinality
+- shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ gtm_version }} --license {{ gtm_license_model }} --package {{ gtm_license_package }} --throughput {{ gtm_license_throughput }} --matchone"
+  register: output
+
 - name: Launching a big-ip in each AZ
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
@@ -29,17 +35,11 @@
       availabilityZone: "{{ availability_zone }}"
       managementSubnet: "{{ management_subnet }}"
       publicSubnet: "{{ public_subnet }}"
-      licenseThroughput: "{{ gtm_license_throughput }}"
-      licenseModel: "{{ gtm_license_model }}"
-      licensePackage: "{{ gtm_license_package }}"
       instanceType: "{{ gtm_instance_type }}"
-      amiId: "ami-f281aa9a" #us-east-1. eventually we'll want to leverage the mappings in cft
+      amiId: "{{ output['stdout'] }}" #us-east-1. eventually we'll want to leverage the mappings in cft
       version: "{{ gtm_version }}"
       keyName: "{{ key_name }}"
-  register: gtm_deploy_results
-
-# - name: debug gtm_deploy_results var 
-#   debug: var=gtm_deploy_results  
+  register: gtm_deploy_results 
 
 - name: Persisting variable data
   copy: content="{{ gtm_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

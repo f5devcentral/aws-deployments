@@ -78,20 +78,25 @@ class F5Aws(object):
     This class is used to execute a set of ansible playbooks included in ./playbooks. 
     Playbooks are executed using the run_playbooks method, which reloads the 
     inventory between each playbook.  This is slightly different than the 
-    way that ansible-playbook command typically handles things. 
+    way that ansible-playbook command typically handles things.  It only loads
+    the inventory once for a set of playbooks.  
   """
   def __init__(self):
     try:
+      # load settings stored in a file configured by user (e.g ~/.f5aws)
       global_vars_path = '~/.{}'.format(__prog__)
       fd = open(os.path.expanduser(global_vars_path), 'r')
-      self.settings = yaml.load(fd)
-      if self.settings.get('install_path', None) is None:
-        # TODO: better exception handling...
-        raise Exception('Required variable "install_path" not found in {}'.format(global_vars_path))
+      self.yaml_settings = dict(yaml.load(fd))
+    
+      required_vars = ['install_path', 'f5_aws_access_key', 'f5_aws_secret_key']
+      for v in required_vars:
+        if self.settings.get(v, None) is None:
+          raise Exception('Required variable "{}" not found in {}'.format(v, global_vars_path))
 
-      self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
-      self.settings['env_path'] = self.settings['vars_path'] + '/env'
-      self.settings['bin_path'] = self.settings['install_path'] + '/bin' #~/workspace/f5aws/bin
+      self.yaml_settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
+      self.yaml_settings['env_path'] = self.yaml_settings['vars_path'] + '/env'
+      self.yaml_settings['bin_path'] = self.yaml_settings['install_path'] + '/bin' #~/workspace/f5aws/bin
+      
       #make the /env/ directory if it does not exist
       os.makedirs(self.settings['env_path'])
     except OSError:
@@ -130,7 +135,7 @@ class F5Aws(object):
       'deploy_az.yml',
       'deploy_app.yml',
       'deploy_bigip.yml',
-#      'deploy_gtm.yml',
+      'deploy_gtm.yml',
       'deploy_bigip_app1.yml',
       'deploy_bigip_app2.yml',
 #      'deploy_client.yml'
@@ -417,6 +422,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     env_info = {}
     # get variables and status information about a deployment
     # all of these details are stored the ansible hosts file 
+    # It would be nice to use ConfigParser here, but the new
+    #  line characters break it. 
     with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
       foundVars = False
       for l in f.read().split('\n'):
@@ -433,7 +440,6 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
               env_info[result.group(1)] = result.group(2)
 
     # don't show the password in the output
-    print env_info
     del env_info['env_name']
     env_info['bigip_rest_password'] = '********'
 
@@ -454,14 +460,12 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       resources.append(resource_name)
       try:
         fname = '{}/{}/{}.yml'.format(self.settings['env_path'], env, m)
-        print fname
         with open(fname) as f:
           latest = yaml.load(f)
           statuses[resource_name] = getattr(self,
               'state_'+latest['invocation']['module_name'],
               self.raise_not_implemented)(latest, show_resource_vars)
       except Exception as e:
-        print 'Hit error %s' % e
         statuses[resource_name] = {'state': 'not deployed'}
 
     return resources, statuses
@@ -481,7 +485,9 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
           managers.append(rematch.group(1))
 
     #return the unique set
-    return set(managers)   
+    managers = list(set(managers))
+    managers.sort()
+    return managers
 
   def state_cloudformation(self, latest_result, show_resource_vars):
     """
@@ -588,6 +594,10 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
           # Arguments as Key-value
           extra_vars = utils.combine_vars(extra_vars,
             utils.parse_kv(extra_vars_opt))
+
+    # read vault_pass from a file
+    if not options.ask_vault_pass and options.vault_password_file:
+        vault_pass = utils.read_vault_file(options.vault_password_file)
 
     if getattr(options, 'env_name', None) is not None:
       extra_vars['env_name'] = options.env_name

@@ -1,4 +1,17 @@
 ---  
+--- 
+- name: delete stacks in 'rollback_complete' from previous executions
+  shell: "python {{ install_path }}/bin/get_cfn_stack_state.py {{ region }} {{ env_name }}-{{ inventory_hostname }}-vip-{{vip_id}}"
+  register: initial_cfn_state
+
+- name: Teardown previous stack
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}-vip-{{vip_id}}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/eip.json
+  when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
+
 - name: Create EIP for a Private IP
   cloudformation:
     stack_name="{{ env_name }}-{{ inventory_hostname }}-vip-{{vip_id}}"

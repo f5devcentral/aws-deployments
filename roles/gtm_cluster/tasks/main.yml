@@ -1,9 +1,3 @@
-# Make some basic iControlRest calls to setup network elements on BIG-IP
-# A more polished implementation might include custom ansible modules for these
-# steps. 
-
-# Instead we use iControlRest (nearly) directly.  We wrap the iCR calls to 
-# provide a bit of idempotence.  See library/bigip_config
 ---
 
 # ----------------------------------------------------------------------

@@ -6,7 +6,7 @@
 ; our "management hosts" - these don't actually exist,
 ;  they are really virtual hosts we use to group variables
 
-[localhosts:chidren]
+[localhosts:children]
 localhost
 managers
 
@@ -97,6 +97,8 @@ vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
 key_name={{ full_key_path|attr('split')('/')|attr('pop')()|attr('split')('.')|attr('__getitem__')(0) }}
 bigip_rest_user={{ bigip_rest_user }}
 bigip_rest_password={{ bigip_rest_password }}
+f5_aws_access_key={{ f5_aws_access_key  }}
+f5_aws_secret_key={{ f5_aws_secret_key  }}
 
 {% for zone in zones %}
 [zone{{ loop.index }}:vars]

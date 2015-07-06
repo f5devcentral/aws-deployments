@@ -1,21 +1,11 @@
 TODO:
--cannot init an environment with the same name as one which already exists
---other syntax and symantic analysis of deployments
+- figure out how to define and securily pass aws-access-key and aws-secret-key to bigip_network/tasks/main.yml
+- examples of deploying a standalone in README
+- gtm working 
+- better client scripts for passing traffic, create a command line method
+- use ConfigParser in ./bin/f5aws
+- Handle a dynamic number of applications
 -add a requirements.txt and use virtualenv like our consumers will
 -infra hosts template should work for all deployment models
--fix mapping of big ip version license etc in CFT
 -make inventory work for a dynamic number of app hosts and bigips per zone
 
--fix this problem:
-
-  -3 -> 4 subnets: seperate internal from application subnet
-  -if a CFT stack fails to install and enters rollback complete, the stack should be deleted
-  -update use of EC2 security group, want:
-    1) one for all management interfaces of all BIG-IPs
-      -needs to include ip/port for clustering calls
-    2) one for all public interfaces of all BIG-IPs
-    3) one for all private interfaces of all BIG-IPs
-    4) one for all web servers
-
-- figure out how to define and securily pass aws-access-key and aws-secret-key to bigip_network/tasks/main.yml
-- ssh key location should be defined outside of ansible.cfg in the project directory

@@ -29,35 +29,6 @@
       "Type": "String",
       "ConstraintDescription": "Must be in <major>.<minor>.<maintenance> version format"
     },
-    "licenseThroughput": {
-      "Description": "Max Throughput Level",
-      "Type": "String",
-      "AllowedValues": [
-        "25mbps",
-        "200mbps",
-        "1gbps",
-        "None"
-      ],
-      "ConstraintDescription": "25mbps, 200mbps, 1gbps. Use None for BYOL licenses."
-    },
-    "licenseModel": {
-      "Description": "License model for BIG-IP",
-      "Type": "String",
-      "ConstraintDescription": "Hourly or BYOL",
-      "AllowedValues": [
-        "hourly",
-        "byol"
-      ]
-    },
-    "licensePackage": {
-      "Description": "GBB packaging",
-      "Type": "String",
-      "AllowedValues": [
-        "good",
-        "better",
-        "best"
-      ]
-    },
     "instanceType": {
       "Description": "EC2 Instance type to be used for BIG-IP",
       "Type": "String",

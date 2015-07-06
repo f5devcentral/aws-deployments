@@ -25,6 +25,17 @@
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
       with_items: output['results']
 
+# Need to wait for port 22 to open up
+- hosts: gtms
+  gather_facts: False
+  tasks:
+    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+    # - raw: "run /util bash -c 'cat /var/prompt/ps1'"
+    - raw: "run /util bash -c 'cat /var/prompt/ps1'"
+      until: (result.stdout.find("Active") != -1)
+      register: result
+      retries: 40
+  sudo: false
 
 # Basic device setup using tmsh to enable further provisioning
 - hosts: gtms
@@ -39,6 +50,7 @@
     # sets AWS keys and disables DHCP
     - bigip_system_aws
     # sets vlans, self-ips, routes
+    - gtm_base
     - gtm_network
 
 - hosts: gtms
