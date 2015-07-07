@@ -51,7 +51,7 @@ f5_aws_secret_key: '<your aws secret key>'
 1) To create a new environment, use the init.yml playbook with the inventory provided as part of this repository. 
 This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.  The full_key_path parameter may include a . extension (e.g. ".pem").  You must choose the availability zones in which you want to deploy. 
  
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "zones": ["eu-west-1a","eu-west-1b"],}'```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
 
  Note that the length of list passed to the "zones" variable must not strictly be 2.  This is also possible:
 

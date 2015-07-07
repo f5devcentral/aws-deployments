@@ -149,9 +149,7 @@ class F5Aws(object):
       'deploy_gtm.yml',
       'deploy_gtm_app1.yml',
       'deploy_gtm_app2.yml',
-      'deploy_client.yml',
-      'launch_traffic.yml'
-      'stop_traffic.yml'
+      'deploy_client.yml'
     ]
 
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
@@ -221,6 +219,24 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       self.display_env_resources(env, True)
     except IOError:
       display(" Environment '%s' does not exist" % env, color='red', stderr=True)
+
+  def cmd_start_traffic(self, options, extra_vars):
+    """
+      Implements command line method to pass traffic through BIG-IP
+    """
+    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(['launch_traffic.yml'], inventory, options, extra_vars)
+
+    print 'Jmeter now running on clienthost in zone1'
+
+  def cmd_stop_traffic(self, options, extra_vars):
+    """
+      Implements command line method to stop jmeter client
+    """
+    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(['stop_traffic.yml'], inventory, options, extra_vars)
 
   def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
     """
