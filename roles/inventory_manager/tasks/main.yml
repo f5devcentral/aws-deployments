@@ -11,9 +11,11 @@
 - template: src="group_vars_localhosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/localhosts"
 
 # Adding group vars for dynamic groups that will be provisioned
+- template: src="group_vars_clienthosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/clienthosts"
 - template: src="group_vars_apphosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/apphosts"
 - template: src="group_vars_bigips.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/bigips"
 - template: src="group_vars_gtms.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/group_vars/gtms"
+
 
 # Adding hosts file from template
 - template: src="{{ deployment_model }}-hosts.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/hosts"

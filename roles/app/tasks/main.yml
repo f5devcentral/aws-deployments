@@ -10,6 +10,8 @@
      - launch_containers
   register: launched_containers
 
+- debug: var=launched_containers
+
 # - name: Add Pool Members to Dynamic Group to Merge all Pool Members
 #   add_host: groups=bigip_pool_members name="{{ item.Config.Hostname }}" ip={{private_ip}} port={{ item.NetworkSettings['Ports']['8000/tcp'][0]['HostPort'] }} description="Name={{item.Name}}, Container Hostname={{item.Config.Hostname}}, Image={{ item.Config.Image }}"
 #   with_items: launched_containers.ansible_facts.docker_containers

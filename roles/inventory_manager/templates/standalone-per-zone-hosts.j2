@@ -44,7 +44,7 @@ zone{{ loop.index }}-gtms
 {% for zone in zones %}
 [zone{{ loop.index }}-az-managers]
 zone{{ loop.index }}-az-manager
-zone{{ loop.index }}-clienthost1-manager
+zone{{ loop.index }}-clienthost-manager
 zone{{ loop.index }}-apphost1-manager
 zone{{ loop.index }}-bigip1-manager
 zone{{ loop.index }}-gtm1-manager
@@ -84,7 +84,7 @@ zone{{ outer_loop.index }}-gtm{{ loop.index }}-manager
 {% endfor %}
 
 [clienthost-managers]
-clienthost-manager
+zone1-clienthost-manager
 
 
 ; group vars

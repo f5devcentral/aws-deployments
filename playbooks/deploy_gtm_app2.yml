@@ -89,7 +89,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["VipEip"]}}:80","translationAddress":"{{hostvars[item]["VipPrivateIp"]}}"}'
           collection_path='mgmt/tm/gtm/server/~Common~ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal/virtual-servers'
           resource_key="name"
@@ -106,7 +106,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"{{vip_id}}_pool_AZ1","loadBalancingMode":"round-robin","members":[{"name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal:{{vip_id}}"}]}'
           collection_path='mgmt/tm/gtm/pool'
           resource_key="name"
@@ -118,7 +118,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"{{vip_id}}_pool_AZ2","loadBalancingMode":"round-robin","members":[{"name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal:{{vip_id}}"}]}'
           collection_path='mgmt/tm/gtm/pool'
           resource_key="name"
@@ -131,7 +131,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"{{vip_id}}.example.com","poolLbMode":"round-robin","ipv6NoErrorResponse":"enabled","pools":[{"name":"{{vip_id}}_pool_AZ1"},{"name":"{{vip_id}}_pool_AZ2"}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"
@@ -143,7 +143,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"demo.example.com","poolLbMode":"round-robin","ipv6NoErrorResponse":"enabled","pools":[{"name":"{{vip_id}}_pool_AZ1"},{"name":"{{vip_id}}_pool_AZ2"}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"

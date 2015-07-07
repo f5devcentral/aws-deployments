@@ -123,6 +123,6 @@
      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
   tasks:
     - name: deploy eips
-      include: "{{ install_path }}/roles/bigip_infra/tasks/deploy_eip.yml"
+      include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
 
 

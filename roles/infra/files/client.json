@@ -2,19 +2,15 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "AWS CloudFormation Template for Client/Jumpbox Host Instance.  **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
   "Parameters": {
-    "envName": {
-      "Type": "String",
-      "Description": "Environment name from f5Aws tool deployment."
-    },
-  	"vpc": {
+    "vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within working region."
     },
-  	"ClientSubnet": {
-  		"Description": "Subnet for Client/Jumpbox",
-  		"Type": "AWS::EC2::Subnet::Id",
-  		"ConstraintDescription": "Must be an existing subnet"
-  	},
+    "clientSubnet": {
+      "Description": "Subnet for Client/Jumpbox",
+      "Type": "AWS::EC2::Subnet::Id",
+      "ConstraintDescription": "Must be an existing subnet"
+    },
     "instanceType": {
       "Description": "Client/Jumpbox EC2 instance type",
       "Type": "String",
@@ -49,7 +45,7 @@
   "Mappings": {
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "AMI": " ami-d05e75b8"
+        "AMI": "ami-d05e75b8"
       },
       "us-west-1": {
         "AMI": "ami-df6a8b9b"
@@ -92,16 +88,10 @@
             "ToPort": "-1",
             "CidrIp": "0.0.0.0/0"
           }
-        ],
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
         ]
       }
     },
-    "WebServerInstance": {
+    "ClientInstance": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
         "ImageId": {
@@ -119,18 +109,12 @@
         "KeyName": {
           "Ref": "keyName"
         },
-	"NetworkInterfaces": [ {
-	   "AssociatePublicIpAddress": "true",
+  "NetworkInterfaces": [ {
+     "AssociatePublicIpAddress": "true",
            "DeviceIndex": "0",
            "GroupSet": [{ "Ref" : "ClientSecurityGroup" }],
-           "SubnetId": { "Ref" : "ClientSubnet" }
-        } ],
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
-        ]
+           "SubnetId": { "Ref" : "clientSubnet" }
+        } ]
       }
     }
   },

@@ -18,6 +18,13 @@
         ansible_ssh_user="ubuntu"
       with_items: output['results']
 
+# Need to wait for port 22 to open up
+- hosts: clienthosts
+  gather_facts: False
+  tasks:
+    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+  sudo: false
+
 # Now launch containers inside them
 # Amazon amis we're using already have docker installed so no need for install_docker role
 - hosts: clienthosts
@@ -25,7 +32,7 @@
   vars:
     ansible_sudo: True
   roles:
-    - jumpbox
+    # - jumpbox
     - client
 
 # Modify Jmeter Scripts to hit vips or wideips

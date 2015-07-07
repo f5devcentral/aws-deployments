@@ -2,15 +2,12 @@
 # networking defaults
 vpc_cidr_prefix: "172.16"
 
-#default rest user
-bigip_rest_user: "restadmin"
-
 # defaults for all bigips deployed
 # note: need m3.2xlarge to provision AVR
 bigip_version: "11.6"
 bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
-bigip_license_package: "good"
+bigip_license_package: "better"
 bigip_instance_type: "m3.2xlarge"
 
 # defaults for all gtms deployed

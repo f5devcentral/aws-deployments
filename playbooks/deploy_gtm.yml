@@ -16,41 +16,6 @@
     - name: deploy eips
       include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
 
-
-# We need some way to add the managemnt ips to the bigips group
-# Unfortunately, the add_hosts directive in ansible does not actually
-# execute on a per-host basis within a playbook (i.e. only adds one host per play).
-
-# ex. doesn't work
-# - hosts: gtm-managers
-#   gather_facts: no
-#   vars_files:
-#      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
-#   tasks:
-#
-#     - add_host: name="{{ stack_outputs.ManagementInterfacePublicIp }}" group=gtms
-#         ExternalInterfacePublicIp="{{ stack_outputs.ExternalInterfacePublicIp }}"
-#         ExternalInterfacePrivateIp="{{ stack_outputs.ExternalInterfacePrivateIp }}"
-#         RegKey={{RegKey}}
-#
-# as only one bigip-manager will be added
-
-# Here we solve this problem by looping through JSON results from previous
-# provisioning steps by the bigip-managers group
-
-# First we have to insert REG_KEY from inventory/hosts into JSON output of CFTs
-- hosts: gtm-managers
-  gather_facts: no
-  tasks:
-    - name: Check to make sure Key doesnt already exist
-      shell: "egrep -c RegKey ~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json"
-      register: regkey_count
-      ignore_errors: True
-
-    - name: Append reg_key to cft output in order add reg_key to appropriate host in dynamic bigip group below
-      replace: dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json regexp='}$' replace=', "RegKey":"{{RegKey}}"}'
-      when: regkey_count.stdout|int < 1
-
 - hosts: 
    localhost
   gather_facts: no
@@ -94,8 +59,6 @@
   roles:
     # adds users via tmsh
     - bigip_base 
-    # licenses bigip
-    - bigip_license
     # adds json so ansible doesn't puke
     #- bigip_jsonify
     # provisions system globals like ntp, dns, snmp, syslog, db keys  
@@ -116,7 +79,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"gtm_listener_udp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"udp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"udp_gtm_dns"}]}'
           collection_path='mgmt/tm/gtm/listener'
           resource_key="name"
@@ -126,7 +89,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"gtm_listener_tcp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"tcp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"tcp"}]}'
           collection_path='mgmt/tm/gtm/listener'
           resource_key="name"
@@ -136,7 +99,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"name":"{{region}}"}'
           collection_path='mgmt/tm/gtm/datacenter'
           resource_key="name"
@@ -148,8 +111,6 @@
 # msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
 # Using ignore errors for now
 
-
-
     # NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
     - name: Setup the BIGIP-Object for BIGIPs (Standalone BIGIP1)
       delegate_to: localhost
@@ -157,7 +118,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
           collection_path='mgmt/tm/gtm/server'
           resource_key="name"
@@ -169,7 +130,7 @@
           state=present
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_pass }}"
+          password="{{ bigip_rest_password }}"
           payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
           collection_path='mgmt/tm/gtm/server'
           resource_key="name"
@@ -188,22 +149,19 @@
 - hosts: gtms
   gather_facts: no
   tasks:
-
     #./gtm_expect.py admin 1.1.1.1 bigip_add admin 2.2.2.2 'mypassword'
     # Note, in production, you really want to use MGMT ports for inital gtm_add/bigip_add functions 
     # as they requires ssh and you only want to expose 4353 (big3d communication) on any pubic self-ips 
     - name: Run bigip_add on all bigips with expect script
-      script: ../roles/gtm_cluster/files/gtm_expect.py admin {{inventory_hostname}} bigip_add admin {{item}} \'{{ bigip_rest_pass }}\'
+      script: ../roles/gtm_cluster/files/gtm_expect.py admin {{inventory_hostname}} bigip_add admin {{item}} \'{{ bigip_rest_password }}\'
       with_items: groups['bigips']
       delegate_to: localhost
-
 
 - hosts: localhost
   gather_facts: no
   tasks:
-
     #./gtm_expect.py admin 1.1.1.1 gtm_add admin 2.2.2.2 'mypassword'
     - name: Run gtm_add with expect script from one seed gtm
-      script: ../roles/gtm_cluster/files/gtm_expect.py admin {{groups['gtms'][0]}} gtm_add admin {{groups['gtms'][1]}} \'{{ bigip_rest_pass }}\'
+      script: ../roles/gtm_cluster/files/gtm_expect.py admin {{groups['gtms'][0]}} gtm_add admin {{groups['gtms'][1]}} \'{{ bigip_rest_password }}\'
       run_once: true
       ignore_errors: true

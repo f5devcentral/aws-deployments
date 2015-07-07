@@ -124,16 +124,16 @@
     resource_key="name"
 
 
-# # Example of provisioning modules...
-# - name: Provisioning AVR 
-#   delegate_to: localhost
-#   bigip_config:
-#     state=present
-#     host={{ inventory_hostname }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     payload='{"level":"nominal"}'
-#     collection_path='mgmt/tm/sys/provision/avr'
+# Example of provisioning modules...
+- name: Provisioning AVR 
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"level":"nominal"}'
+    collection_path='mgmt/tm/sys/provision/avr'
 
 # - name: Pausing for module provisining to complete
 #   pause: seconds=30
