@@ -11,10 +11,14 @@
       with_items: groups['bigip-managers']
 
     - add_host: group=bigips name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
+        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
         VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"  
+        ansible_ssh_user="admin" 
+
       with_items: output['results']
 
     # Re-Creating docker host temp group from data persisted to disk
@@ -25,6 +29,8 @@
     - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
         WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
         WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
+        ansible_ssh_user="ec2-user"
+
       with_items: output['results']
 
 # Loading docker provisioning data
@@ -117,6 +123,6 @@
      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
   tasks:
     - name: deploy eips
-      include: "{{ install_path }}/roles/bigip_app/tasks/deploy_eip.yml"
+      include: "{{ install_path }}/roles/bigip_infra/tasks/deploy_eip.yml"
 
 

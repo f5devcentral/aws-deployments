@@ -1,0 +1,27 @@
+# Make some basic iControlRest calls to setup network elements on BIG-IP
+# A more polished implementation might include custom ansible modules for these
+# steps. 
+
+# Instead we use iControlRest (nearly) directly.  We wrap the iCR calls to 
+# provide a bit of idempotence.  See library/bigip_config
+---
+
+# ----------------------------------------------------------------------
+# Provisions GTM 
+# ----------------------------------------------------------------------
+
+- name: Provision GTM
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_pass }}
+    payload='{"level":"nominal"}'
+    collection_path='mgmt/tm/sys/provision/gtm'
+
+- name: Pause and wait for module provisining to complete
+  pause: seconds=60
+  tags:
+      - pause
+

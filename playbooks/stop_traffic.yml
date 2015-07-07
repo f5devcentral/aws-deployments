@@ -1,0 +1,29 @@
+---
+# Now that instances created, add its IP to the dynamic clienthosts group
+# so we can configure it 
+- hosts:
+   localhost
+  gather_facts: no
+  tasks:
+
+    # Re-Create a client host temp group from data persisted to disk
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['clienthost-managers']
+      delegate_to: localhost
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}" group=clienthosts
+        ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
+        ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
+        ansible_ssh_user="ubuntu"
+      with_items: output['results']
+
+# Upload & launch Jmeter test client in background
+- hosts: clienthosts
+  gather_facts: False
+  tasks:
+
+    - name: Kill Jmeter 
+      shell: kill `ps -ef | egrep jmeter | egrep -v egrep | awk '{print $2}'`
+
+   

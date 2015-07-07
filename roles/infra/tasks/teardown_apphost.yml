@@ -1,5 +1,5 @@
 ---
-- name: Deleting app hosts cfn stack
+- name: Deleting app hosts cfn stack(s)
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=absent

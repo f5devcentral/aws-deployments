@@ -23,7 +23,8 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
-    payload='{"name":"public", "address":"{{ ExternalInterfacePrivateIp }}/24", "vlan":"public", "trafficGroup":"traffic-group-local-only"}'
+    payload='{"name":"public", "address":"{{ ExternalInterfacePrivateIp }}/24", "vlan":"public", "trafficGroup":"traffic-group-local-only", "allowService":["tcp:4353"]}'
+
     collection_path='mgmt/tm/net/self'
     resource_key="name"
 

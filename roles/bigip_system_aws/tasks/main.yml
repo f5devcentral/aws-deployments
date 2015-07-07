@@ -11,7 +11,7 @@
     host={{ inventory_hostname }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
-    payload='{"awsAccessKey":"1234", "awsSecretKey":"1234"}'
+    payload='{"awsAccessKey":"{{ f5_aws_access_key }}", "awsSecretKey":"{{ f5_aws_secret_key }}"}'
     collection_path='mgmt/tm/sys/global-settings'
 
 - name: Disabling dhcp

@@ -1,10 +1,4 @@
 ---
-# Deploy the docker host AMIs via CFT
-- hosts: apphost-managers
-  gather_facts: no
-  tasks:
-    - name: deploy app hosts 
-      include: "{{ install_path }}/roles/infra/tasks/deploy_apphost.yml"
 
 # We need some way to add the docker hosts to the apphost group
 # Unfortunately, the add_hosts directive in ansible does not actually

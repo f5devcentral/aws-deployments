@@ -1,41 +1,92 @@
 ---
+# Attach an EIP to the GTM Listener
+# This is not quite a normal VIP like we provision an EIP on a per-app basis in LTM 
+# GTM CFT should probably just create 2 EIPs automatically. 
+# 1 for the Self-IP (currently done in CFT)
+# 1 for GTM Listener VIP
+
+- hosts: gtm-managers
+  gather_facts: no
+  vars:
+    vip_id: "Vip1"
+  #Grab Interface IDs and Secondary IPs from each BIGIP
+  vars_files:
+     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
+  tasks:
+    - name: deploy eips
+      include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
+
+
+# We need some way to add the managemnt ips to the bigips group
+# Unfortunately, the add_hosts directive in ansible does not actually
+# execute on a per-host basis within a playbook (i.e. only adds one host per play).
+
+# ex. doesn't work
+# - hosts: gtm-managers
+#   gather_facts: no
+#   vars_files:
+#      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
+#   tasks:
+#
+#     - add_host: name="{{ stack_outputs.ManagementInterfacePublicIp }}" group=gtms
+#         ExternalInterfacePublicIp="{{ stack_outputs.ExternalInterfacePublicIp }}"
+#         ExternalInterfacePrivateIp="{{ stack_outputs.ExternalInterfacePrivateIp }}"
+#         RegKey={{RegKey}}
+#
+# as only one bigip-manager will be added
+
+# Here we solve this problem by looping through JSON results from previous
+# provisioning steps by the bigip-managers group
+
+# First we have to insert REG_KEY from inventory/hosts into JSON output of CFTs
 - hosts: gtm-managers
   gather_facts: no
   tasks:
-    - name: deploy gtms
-      include: "{{ install_path }}/roles/infra/tasks/deploy_gtm.yml"
+    - name: Check to make sure Key doesnt already exist
+      shell: "egrep -c RegKey ~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json"
+      register: regkey_count
+      ignore_errors: True
 
+    - name: Append reg_key to cft output in order add reg_key to appropriate host in dynamic bigip group below
+      replace: dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json regexp='}$' replace=', "RegKey":"{{RegKey}}"}'
+      when: regkey_count.stdout|int < 1
 
-# We need some way to add the managemnt ips to the gtms group
-# Unfortunately, the add_hosts directive in ansible does not actually
-# execute on a per-host basis within a playbook.  
-# Here we solve this problem by looping through JSON results from previous 
-# provisioning steps by the bigip-managers group
 - hosts: 
    localhost
   gather_facts: no
   tasks:
+    #Gather GTM data
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['gtm-managers']
       delegate_to: localhost
 
     - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=gtms
+        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
+        RegKey="{{ item.stdout | from_json | attr('get')('RegKey') }}"
+        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
+        region="{{region}}"
+        ansible_ssh_user="admin"
+      with_items: output['results']
+# 
+    #Gather BIGIP Data and re-create group
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['bigip-managers']
+      delegate_to: localhost
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
+        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
+        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
+        region="{{region}}"
+        ansible_ssh_user="admin"
       with_items: output['results']
 
-# Need to wait for port 22 to open up
-- hosts: gtms
-  gather_facts: False
-  tasks:
-    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
-    # - raw: "run /util bash -c 'cat /var/prompt/ps1'"
-    - raw: "run /util bash -c 'cat /var/prompt/ps1'"
-      until: (result.stdout.find("Active") != -1)
-      register: result
-      retries: 40
-  sudo: false
+
 
 # Basic device setup using tmsh to enable further provisioning
 - hosts: gtms
@@ -43,6 +94,8 @@
   roles:
     # adds users via tmsh
     - bigip_base 
+    # licenses bigip
+    - bigip_license
     # adds json so ansible doesn't puke
     #- bigip_jsonify
     # provisions system globals like ntp, dns, snmp, syslog, db keys  
@@ -50,13 +103,107 @@
     # sets AWS keys and disables DHCP
     - bigip_system_aws
     # sets vlans, self-ips, routes
-    - gtm_base
     - gtm_network
+    # provisions GTM 
+    - gtm_system
 
 - hosts: gtms
   gather_facts: no
-  roles:
-    # Cluster the GTMs  
-    - gtm_cluster
+  tasks:
+    - name: Setup the GTM UDP Listener
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          payload='{"name":"gtm_listener_udp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"udp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"udp_gtm_dns"}]}'
+          collection_path='mgmt/tm/gtm/listener'
+          resource_key="name"
+    - name: Setup the GTM TCP Listener
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          payload='{"name":"gtm_listener_tcp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"tcp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"tcp"}]}'
+          collection_path='mgmt/tm/gtm/listener'
+          resource_key="name"
+    - name: Setup the Datacenter
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          payload='{"name":"{{region}}"}'
+          collection_path='mgmt/tm/gtm/datacenter'
+          resource_key="name"
+      ignore_errors: true
+# TODO: Investigate why subsequent calls of above result in: 
+# failed: [54.86.187.122 -> localhost] => {"failed": true, "name": "mgmt/tm/gtm/datacenter", "rc": 1}
+# failed: [54.174.171.63 -> localhost] => {"failed": true, "name": "mgmt/tm/gtm/datacenter", "rc": 1}
+# msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
+# msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
+# Using ignore errors for now
 
 
+
+    # NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
+    - name: Setup the BIGIP-Object for BIGIPs (Standalone BIGIP1)
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+          collection_path='mgmt/tm/gtm/server'
+          resource_key="name"
+      with_items: groups['bigips']
+    # NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
+    - name: Setup the BIGIP-Object for GTMs (Standalone BIGIP1)
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host="{{ inventory_hostname }}"
+          user="{{ bigip_rest_user }}"
+          password="{{ bigip_rest_pass }}"
+          payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+          collection_path='mgmt/tm/gtm/server'
+          resource_key="name"
+      with_items: groups['gtms']
+  # TODO
+  # Cluster the GTMs, gtm_add, bigip_add, etc.  
+  # Note, as these are interactive CLI tools, we'll need to leverage expect scripts
+  # ex. http://marvelley.com/blog/2014/04/23/handling-interactive-ansible-tasks/
+  # NOTE: expect modules don't exist in anywhere on bigip
+  # #which expect
+  # /usr/bin/which: no expect in (/usr/kerberos/sbin:/usr/kerberos/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin) 
+  # [admin@localhost:Active:Standalone] tmp # ./gtm_add_expect.pl
+  # Can't locate Expect.pm in @INC
+  # So will just run it locally
+
+- hosts: gtms
+  gather_facts: no
+  tasks:
+
+    #./gtm_expect.py admin 1.1.1.1 bigip_add admin 2.2.2.2 'mypassword'
+    # Note, in production, you really want to use MGMT ports for inital gtm_add/bigip_add functions 
+    # as they requires ssh and you only want to expose 4353 (big3d communication) on any pubic self-ips 
+    - name: Run bigip_add on all bigips with expect script
+      script: ../roles/gtm_cluster/files/gtm_expect.py admin {{inventory_hostname}} bigip_add admin {{item}} \'{{ bigip_rest_pass }}\'
+      with_items: groups['bigips']
+      delegate_to: localhost
+
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+    #./gtm_expect.py admin 1.1.1.1 gtm_add admin 2.2.2.2 'mypassword'
+    - name: Run gtm_add with expect script from one seed gtm
+      script: ../roles/gtm_cluster/files/gtm_expect.py admin {{groups['gtms'][0]}} gtm_add admin {{groups['gtms'][1]}} \'{{ bigip_rest_pass }}\'
+      run_once: true
+      ignore_errors: true

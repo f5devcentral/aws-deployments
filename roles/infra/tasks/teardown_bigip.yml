@@ -1,5 +1,5 @@
 ---
-- name: Deleting bigip cfn stack(s)
+- name: Deleting BIG-IP cfn stack(s)
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=absent

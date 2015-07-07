@@ -1,4 +1,6 @@
 - apt: update_cache=yes
+  ignore_errors: True
+
 
 - name: Install list of packages Required for Traffic Generation Client
   apt: pkg={{item}} state=installed

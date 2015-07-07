@@ -1,0 +1,7 @@
+---
+- hosts: vpc-manager
+  gather_facts: no
+  tasks:
+    - name: deploy vpc
+      include: "{{ install_path }}/roles/infra/tasks/deploy_vpc.yml"
+

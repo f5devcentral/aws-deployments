@@ -37,8 +37,13 @@ from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
 
-__version__ = "0.1"
+__version__ = "0.2"
 __prog__ = "f5aws"
+
+# set of variables which must be defined in ~/.f5aws
+REQUIRED_VARS = ['install_path', 'ssh_key',
+  'bigip_rest_user', 'bigip_rest_password',
+  'f5_aws_access_key', 'f5_aws_secret_key']
 
 def colorize(lead, num, color):
   """ Print 'lead' = 'num' in 'color' """
@@ -83,19 +88,18 @@ class F5Aws(object):
   """
   def __init__(self):
     try:
-      # load settings stored in a file configured by user (e.g ~/.f5aws)
+      # load settings stored in a file configured by user
       global_vars_path = '~/.{}'.format(__prog__)
       fd = open(os.path.expanduser(global_vars_path), 'r')
-      self.yaml_settings = dict(yaml.load(fd))
+      self.settings = dict(yaml.load(fd))
     
-      required_vars = ['install_path', 'f5_aws_access_key', 'f5_aws_secret_key']
-      for v in required_vars:
+      for v in REQUIRED_VARS:
         if self.settings.get(v, None) is None:
           raise Exception('Required variable "{}" not found in {}'.format(v, global_vars_path))
 
-      self.yaml_settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))  #~/vars/
-      self.yaml_settings['env_path'] = self.yaml_settings['vars_path'] + '/env'
-      self.yaml_settings['bin_path'] = self.yaml_settings['install_path'] + '/bin' #~/workspace/f5aws/bin
+      self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))
+      self.settings['env_path'] = self.settings['vars_path'] + '/env'
+      self.settings['bin_path'] = self.settings['install_path'] + '/bin' 
       
       #make the /env/ directory if it does not exist
       os.makedirs(self.settings['env_path'])
@@ -116,7 +120,8 @@ class F5Aws(object):
       raise ValidationError('The environment name must match the following regexp: "[a-zA-z]{1}[a-zA-Z0-9-]*" ')
 
     # check to make sure this inventory does not already exist
-    if os.path.isdir(self.settings['install_path']) and not options.force:
+    print self.settings['env_path']
+    if os.path.isdir((self.settings['env_path'] +'/'+ options.env_name)) and not options.force:
       raise ValidationError('There is already an environment with name "%s".  Use -f, --force to update the inventory variables for this environment. ' % options.env_name)
 
     # uses the inventory included in this repository 
@@ -131,14 +136,23 @@ class F5Aws(object):
         See individual playbooks for more info. 
     """
     playbooks = [
-      'deploy_vpc.yml',
-      'deploy_az.yml',
-      'deploy_app.yml',
+      # 'deploy_vpc_cft.yml',
+      # 'deploy_az_cft.yml',
+      # 'deploy_bigip_cft.yml',
+      # 'deploy_gtm_cft.yml',
+      # 'deploy_app_cft.yml',
+      #'deploy_client_cft.yml',
+      # 'deploy_app.yml',
       'deploy_bigip.yml',
-      'deploy_gtm.yml',
       'deploy_bigip_app1.yml',
       'deploy_bigip_app2.yml',
-#      'deploy_client.yml'
+      'deploy_gtm.yml',
+      'deploy_gtm_app1.yml',
+      'deploy_gtm_app2.yml',
+      #'deploy_client.yml',
+      'launch_traffic.yml'
+      # 'stop_traffic.yml'
+
     ]
 
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
@@ -595,13 +609,16 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
           extra_vars = utils.combine_vars(extra_vars,
             utils.parse_kv(extra_vars_opt))
 
-    # read vault_pass from a file
-    if not options.ask_vault_pass and options.vault_password_file:
-        vault_pass = utils.read_vault_file(options.vault_password_file)
-
     if getattr(options, 'env_name', None) is not None:
       extra_vars['env_name'] = options.env_name
-    extra_vars['install_path'] = self.settings['install_path']
+
+    # pass along our project variables to ansible
+    #  some playbooks will need access keys and passwords during runtime 
+    for v in REQUIRED_VARS:
+      extra_vars[v] = self.settings[v]
+
+    # cloudformation templates will need just the key name, without any extension
+    extra_vars['ssh_key_name'] = self.settings['ssh_key'].split('/')[-1].split('.')[0]
 
     # Since we have forked and modified ansible-playbook book
     #  we have copied over many of these default variables. 

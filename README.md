@@ -33,7 +33,12 @@ aws_secret_access_key = <my secret key>
 
 ```
 # location of top-level f5aws project directory
-install_path: 'path to your install'
+install_path: '</path/to/your/project/install>'
+ssh_key: '</path/to/your/private/key>'
+bigip_rest_user: '<bigip rest user name>'
+bigip_rest_password: '<bigip rest password>'
+f5_aws_access_key: '<your aws access key>'
+f5_aws_secret_key: '<your aws secret key>'
 ```
 
 4) Install the project requirements, i.e.:
@@ -46,15 +51,15 @@ install_path: 'path to your install'
 1) To create a new environment, use the init.yml playbook with the inventory provided as part of this repository. 
 This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.  The full_key_path parameter may include a . extension (e.g. ".pem").  You must choose the availability zones in which you want to deploy. 
  
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "full_key_path": "/full/path/to/your/key", "zones": ["eu-west-1a","eu-west-1b"],"bigip_rest_password": "****"}'```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "zones": ["eu-west-1a","eu-west-1b"],}'```
 
  Note that the length of list passed to the "zones" variable must not strictly be 2.  This is also possible:
 
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "full_key_path": "/full/path/to/your/key", "zones": ["eu-west-1a","eu-west-1b", "eu-west-1c"],"bigip_rest_password": "****"}'```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "zones": ["eu-west-1a","eu-west-1b", "eu-west-1c"]}'```
 
 So you can deploy a standalone via: 
 
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "full_key_path": "/full/path/to/your/key", "zones": ["eu-west-1c"],"bigip_rest_password": "****"}'```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1",  "zones": ["eu-west-1c"]}'```
 
 2) Deploy and manage the environment you instantiated in step 1: 
 

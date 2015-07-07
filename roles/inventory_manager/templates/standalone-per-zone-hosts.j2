@@ -94,11 +94,7 @@ env_name={{ env_name }}
 deployment_model={{ deployment_model }}
 region={{ region }}
 vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
-key_name={{ full_key_path|attr('split')('/')|attr('pop')()|attr('split')('.')|attr('__getitem__')(0) }}
-bigip_rest_user={{ bigip_rest_user }}
-bigip_rest_password={{ bigip_rest_password }}
-f5_aws_access_key={{ f5_aws_access_key  }}
-f5_aws_secret_key={{ f5_aws_secret_key  }}
+key_name={{ ssh_key_name }}
 
 {% for zone in zones %}
 [zone{{ loop.index }}:vars]

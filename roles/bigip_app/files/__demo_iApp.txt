@@ -32,7 +32,7 @@
             "rows": [
                 {
                     "row": [
-                        "aws.demo.f5example.com"
+                        "demo.example.com"
                     ]
                 }
             ]

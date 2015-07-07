@@ -1,9 +1,4 @@
----
-- hosts: bigip-managers
-  gather_facts: no
-  tasks:
-    - name: deploy bigips
-      include: "{{ install_path }}/roles/infra/tasks/deploy_bigip.yml"
+
 
 # We need some way to add the management ips to the bigips group
 # Unfortunately, the add_hosts directive in ansible does not actually
@@ -19,9 +14,12 @@
       delegate_to: localhost
 
     - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
+        RegKey="{{ item.stdout | from_json | attr('get')('RegKey') }}"
       with_items: output['results']
 
 

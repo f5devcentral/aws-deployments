@@ -1,12 +1,18 @@
 #This playbook dismantles all deployed EC2 resources. 
 ---
-- hosts: gtm-managers
-  vars: 
-     vip_id: Vip1
+- hosts: zone1-clienthost-manager
   gather_facts: no
-  tasks: 
-    - name: teardown eip associated with Vip1
-      include: "{{ install_path }}/roles/gtm_app/tasks/teardown_eip.yml"
+  tasks:
+    - name: teardown client
+      include: "{{ install_path }}/roles/infra/tasks/teardown_client.yml"
+
+# - hosts: gtm-managers
+#   vars: 
+#      vip_id: Vip1
+#   gather_facts: no
+#   tasks: 
+#     - name: teardown eip associated with Vip1
+#       include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
 
 - hosts: gtm-managers
   gather_facts: no
@@ -14,21 +20,21 @@
     - name: teardown gtms
       include: "{{ install_path }}/roles/infra/tasks/teardown_gtm.yml"
 
-- hosts: bigip-managers
-  vars: 
-     vip_id: Vip2
-  gather_facts: no
-  tasks: 
-    - name: teardown eip associated with Vip2
-      include: "{{ install_path }}/roles/bigip_app/tasks/teardown_eip.yml"
+# - hosts: bigip-managers
+#   vars: 
+#      vip_id: Vip2
+#   gather_facts: no
+#   tasks: 
+#     - name: teardown eip associated with Vip2
+#       include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
 
-- hosts: bigip-managers
-  vars: 
-     vip_id: Vip1
-  gather_facts: no
-  tasks: 
-    - name: teardown eip associated with Vip1
-      include: "{{ install_path }}/roles/bigip_app/tasks/teardown_eip.yml"
+# - hosts: bigip-managers
+#   vars: 
+#      vip_id: Vip1
+#   gather_facts: no
+#   tasks: 
+#     - name: teardown eip associated with Vip1
+#       include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
 
 - hosts: bigip-managers
   gather_facts: no

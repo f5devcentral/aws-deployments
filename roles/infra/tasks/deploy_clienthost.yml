@@ -11,9 +11,6 @@
     template={{ install_path }}/roles/infra/files/client.json
   when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
 
-# We could have used the ec2 module here from ansible. It works well when 
-#  deploying "generic" compute resources but we'll use cloudformation
-#  instead for consistency. 
 - name: Launching client hosts
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
