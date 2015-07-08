@@ -1,34 +1,29 @@
 ---
-
-# We need some way to add the docker hosts to the apphost group
-# Unfortunately, the add_hosts directive in ansible does not actually
-# execute on a per-host basis within a playbook.  
-# Here we solve this problem by looping through JSON results from previous task
+# Dynamically populate the host groups with host vars
 - hosts:
    localhost
   gather_facts: no
   tasks:
-    # Re-Create a docker host temp group from data persisted to disk
+    # apphosts host group
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['apphost-managers']
       delegate_to: localhost 
-
     - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
         WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
         WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
         ansible_ssh_user="ec2-user"
       with_items: output['results']
 
-# Need to wait for port 22 to open up
+# Wait for hosts to become ready
 - hosts: apphosts
   gather_facts: False
   tasks:
-    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+    - name:  Wait for ssh port to open
+      local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
   sudo: false
 
-# Now launch containers inside them
-# Amazon amis we're using already have docker installed so no need for install_docker role
+# Create docker containers on the application hosts
 - hosts: apphosts
   gather_facts: False
   vars:
@@ -37,19 +32,11 @@
     - docker_base
     - app
 
-# New play so don't use sudo when caching containers to disk
+# New set of tasks without sudo
 - hosts: apphosts
   gather_facts: False
   tasks:
-    # - name: debug docker host variables
-    #   #debug: var=docker_containers
-    #   tags:
-    #       - debug
-    #       - launch_containers
-
     - name: Store docker containers from jinja template
       local_action: template src=../roles/app/templates/docker_containers.cfg.j2  dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml
-
-#cache it here or in from within app role task itself?
 
 

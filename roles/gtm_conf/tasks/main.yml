@@ -1,0 +1,63 @@
+---
+- name: Configure GTM UDP Listener
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host="{{ inventory_hostname }}"
+      user="{{ bigip_rest_user }}"
+      password="{{ bigip_rest_password }}"
+      payload='{"name":"gtm_listener_udp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"udp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"udp_gtm_dns"}]}'
+      collection_path='mgmt/tm/gtm/listener'
+      resource_key="name"
+
+- name: Configure GTM TCP Listener
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host="{{ inventory_hostname }}"
+      user="{{ bigip_rest_user }}"
+      password="{{ bigip_rest_password }}"
+      payload='{"name":"gtm_listener_tcp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"tcp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"tcp"}]}'
+      collection_path='mgmt/tm/gtm/listener'
+      resource_key="name"
+
+- name: Setup the Datacenter
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host="{{ inventory_hostname }}"
+      user="{{ bigip_rest_user }}"
+      password="{{ bigip_rest_password }}"
+      payload='{"name":"{{region}}"}'
+      collection_path='mgmt/tm/gtm/datacenter'
+      resource_key="name"
+  ignore_errors: true
+  # TODO: Investigate why subsequent calls of above result in: 
+  #   failed: [54.86.187.122 -> localhost] => {"failed": true, "name": "mgmt/tm/gtm/datacenter", "rc": 1}
+  #   msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
+
+# NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
+- name: Setup the BIGIP-Object for BIGIPs (Standalone BIGIP1)
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host="{{ inventory_hostname }}"
+      user="{{ bigip_rest_user }}"
+      password="{{ bigip_rest_password }}"
+      payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+      collection_path='mgmt/tm/gtm/server'
+      resource_key="name"
+  with_items: groups['bigips']
+# NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
+
+- name: Setup the BIGIP-Object for GTMs (Standalone BIGIP1)
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host="{{ inventory_hostname }}"
+      user="{{ bigip_rest_user }}"
+      password="{{ bigip_rest_password }}"
+      payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+      collection_path='mgmt/tm/gtm/server'
+      resource_key="name"
+  with_items: groups['gtms']

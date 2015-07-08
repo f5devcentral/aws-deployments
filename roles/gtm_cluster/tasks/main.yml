@@ -1,28 +1,23 @@
 ---
-
 # ----------------------------------------------------------------------
 # Add GTMs and BIGIPs to the gtm sync group
 # ----------------------------------------------------------------------
 
+# In the following two tasks, the deployed gtms are clustered. 
+# As these are interactive CLI tools on BIG-IP, we'll need to leverage expect scripts,
+# ex. http://marvelley.com/blog/2014/04/23/handling-interactive-ansible-tasks/
+# NOTE: expect modules don't exist in anywhere on bigip, so we'll do this as a local action
 
-# 
-# - name: Add GTMs to a sync group 
-#   bigip_config:
-#     state=present
-#     host={{ inventory_hostname }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     payload='{"key":"value"}'
-#     collection_path='mgmt/tm/util'
-# 
-# - name: Add BIG-IPs to a sync group 
-#   bigip_config:
-#     state=present
-#     host={{ inventory_hostname }}
-#     user={{ bigip_rest_user }}
-#     password={{ bigip_rest_password }}
-#     payload='{"key":"value"}'
-#     collection_path='mgmt/tm/util'
-# 
-# 
+#./gtm_expect.py admin 1.1.1.1 bigip_add admin 2.2.2.2 'mypassword'
+# Note, in production, you really want to use MGMT ports for inital gtm_add/bigip_add functions 
+# as they requires ssh and you only want to expose 4353 (big3d communication) on any pubic self-ips 
+- name: Run bigip_add on all bigips with expect script
+  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{inventory_hostname}} bigip_add admin {{item}} \'{{ bigip_rest_password }}\'
+  with_items: groups['bigips']
+  delegate_to: localhost
 
+- name: Run gtm_add with expect script from one seed gtm
+  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{groups['gtms'][0]}} gtm_add admin {{groups['gtms'][1]}} \'{{ bigip_rest_password }}\'
+  run_once: true
+  ignore_errors: true
+  delegate_to: localhost

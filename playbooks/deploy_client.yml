@@ -1,29 +1,27 @@
 ---
-
-# Now that instances created, add them / their IPs to the dynamic apphosts group
-# so we can configure them 
+# Dynamically populate the host groups with host vars
 - hosts:
    localhost
   gather_facts: no
   tasks:
-    # Re-Create a docker host temp group from data persisted to disk
+     # clienthosts group
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['clienthost-managers']
       delegate_to: localhost
-
     - add_host: name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}" group=clienthosts
         ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
         ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
-        ansible_ssh_user="ubuntu"
       with_items: output['results']
 
-# Need to wait for port 22 to open up
+# Wait for hosts to become ready
 - hosts: clienthosts
   gather_facts: False
-  tasks:
-    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
   sudo: false
+  tasks:
+    - name: Wait for ssh port to open
+      local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+  
 
 # Now launch containers inside them
 # Amazon amis we're using already have docker installed so no need for install_docker role
@@ -32,7 +30,6 @@
   vars:
     ansible_sudo: True
   roles:
-    # - jumpbox
     - client
 
 # Modify Jmeter Scripts to hit vips or wideips

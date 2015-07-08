@@ -1,9 +1,5 @@
-
-
-# We need some way to add the management ips to the bigips group
-# Unfortunately, the add_hosts directive in ansible does not actually
-# execute on a per-host basis within a playbook.  
-# Here we solve this problem by looping through JSON results from previous task
+---
+# Dynamically populate the host groups with host vars
 - hosts: 
    localhost
   gather_facts: no
@@ -19,21 +15,20 @@
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
         InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
-        RegKey="{{ item.stdout | from_json | attr('get')('RegKey') }}"
       with_items: output['results']
 
-
-# Need to wait for port 22 to open up
+# Wait for hosts to become ready
 - hosts: bigips
   gather_facts: False
+  sudo: false
   tasks:
-    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
-    # - raw: "run /util bash -c 'cat /var/prompt/ps1'"
-    - raw: "run /util bash -c 'cat /var/prompt/ps1'"
+    - name:  Wait for ssh port to open
+      local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+    - name: Wait until BIG-IP is ready for provisioning
+      raw: "run /util bash -c 'cat /var/prompt/ps1'"
       until: (result.stdout.find("Active") != -1)
       register: result
       retries: 40
-  sudo: false
 
 # Basic device setup using tmsh to enable further provisioning
 - hosts: bigips
@@ -42,7 +37,7 @@
     # adds users via tmsh
     - bigip_base 
     # adds json so ansible doesn't puke
-    #- bigip_jsonify
+    - bigip_jsonify
     # provisions system globals like ntp, dns, snmp, syslog, db keys  
     - bigip_system
     # sets AWS keys and disables DHCP
