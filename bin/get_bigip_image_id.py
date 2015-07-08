@@ -1,20 +1,19 @@
-#get_aws_image_ids.py
+#get_bigip_image_id.py
 
 
 """
-Tool to look up the ami-id of big-ip in the Amazon EC2 marketplace. 
-Requires that aws executable is in the path.
+Script to look up the ami-id of big-ip in the Amazon EC2 marketplace. 
 
 Use examples
 
 Look up the 11.6, Best, Hourly AMI. If multiple AMIs are returned with a version matching 11.6,
 the latest matching version will be used.  
-python get_aws_image_ids.py --region us-west-1 --license hourly --package best --throughput 1gbps --version 11.6
+python get_bigip_image_id.py --region us-west-1 --license hourly --package best --throughput 1gbps --version 11.6
 
-python get_aws_image_ids.py --region us-west-1 --license hourly --package best --throughput 1gbps --version 11.6 --oldest
+python get_bigip_image_id.py --region us-west-1 --license hourly --package best --throughput 1gbps --version 11.6 --oldest
 
 BYOL images do not have defined throughput:
-python get_aws_image_ids.py --region us-west-1 --license byol --package best  --version 11.6
+python get_bigip_image_id.py --region us-west-1 --license byol --package best  --version 11.6
 """
 
 import sys
