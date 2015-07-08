@@ -1,24 +1,5 @@
 ---
-# TODO: playbooks should be idempotent
-# PLAY [clienthosts] ************************************************************
-
-# TASK: [Kill Jmeter] ***********************************************************
-# failed: [52.5.203.103] => {"changed": true, "cmd": "kill `ps -ef | egrep jmeter | egrep -v egrep | awk '{print $2}'`", "delta": "0:00:00.008302", "end": "2015-07-08 20:22:59.721526", "rc": 2, "start": "2015-07-08 20:22:59.713224", "warnings": []}
-# stderr: /bin/sh: 1: kill: Usage: kill [-s sigspec | -signum | -sigspec] [pid | job]... or
-# kill -l [exitstatus]
-
-# FATAL: all hosts have already failed -- aborting
-
-# PLAY RECAP ********************************************************************
-#            to retry, use: --limit @/Users/mutzel/stop_traffic.retry
-
-# 52.5.203.103               : ok=0    changed=0    unreachable=0    failed=1
-# localhost                  : ok=2    changed=1    unreachable=0    failed=0
-#
-
-
-# Now that instances created, add its IP to the dynamic clienthosts group
-# so we can configure it 
+# Recreate dynamic clienthosts group
 - hosts:
    localhost
   gather_facts: no
@@ -36,7 +17,7 @@
         ansible_ssh_user="ubuntu"
       with_items: output['results']
 
-# Upload & launch Jmeter test client in background
+# Kill Jmeter test clients
 - hosts: clienthosts
   gather_facts: False
   tasks:
