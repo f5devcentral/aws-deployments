@@ -42,6 +42,7 @@
   tasks:
 
     - name: Kill Jmeter 
-      shell: kill `ps -ef | egrep jmeter | egrep -v egrep | awk '{print $2}'`
+      #shell: kill `ps -ef | egrep jmeter | egrep -v egrep | awk '{print $2}'`
+      shell: killall java
 
    

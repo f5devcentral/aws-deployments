@@ -15,7 +15,7 @@
       PrivateIpAddress: "{{ stack_outputs[vip_id] }}"
   register: eip_results
 
-- debug: var=eip_results
+#- debug: var=eip_results
 
 - name: create a file in which to persist results
   copy: content="{{ eip_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-{{vip_id}}.yml
