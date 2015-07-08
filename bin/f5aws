@@ -600,6 +600,16 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     parser_remove.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be deleted')
 
+    parser_start_traffic = subparsers.add_parser('start_traffic',
+      help='Begins jmeter client on clienthost in a single availability zone')
+    parser_start_traffic.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='Name of environment to which jmeter client should run traffic')
+
+    parser_stop_traffic = subparsers.add_parser('stop_traffic',
+      help='Stops jmeter client ')
+    parser_stop_traffic.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='Name of environment')
+
     options = parser.parse_args()
 
     for i in range(options.verbose):

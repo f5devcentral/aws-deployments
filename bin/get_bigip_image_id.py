@@ -9,9 +9,9 @@ Use examples
 
 Look up the 11.6, Best, Hourly AMI. If multiple AMIs are returned with a version matching 11.6,
 the latest matching version will be used.  
-python get_aws_image_ids.py --region us-west-1 --license hourly --package best --throughput 1000 --version 11.6
+python get_aws_image_ids.py --region us-west-1 --license hourly --package best --throughput 1gbps --version 11.6
 
-python get_aws_image_ids.py --region us-west-1 --license hourly --package best --throughput 1000 --version 11.6 --oldest
+python get_aws_image_ids.py --region us-west-1 --license hourly --package best --throughput 1gbps --version 11.6 --oldest
 
 BYOL images do not have defined throughput:
 python get_aws_image_ids.py --region us-west-1 --license byol --package best  --version 11.6
@@ -19,10 +19,12 @@ python get_aws_image_ids.py --region us-west-1 --license byol --package best  --
 
 import sys
 import json
-import subprocess
 import re
 import argparse
 import collections
+
+import boto
+import boto.ec2
 
 REGIONS = [
 	'ap-northeast-1',
@@ -37,7 +39,7 @@ REGIONS = [
 
 class ImageFinder(object):
 	def __init__(self):
-		self.throughput_map = {'1gbps': '1000', '200mbps':'200', '25mbps':'25'}
+		pass
 
 	def searchitem(self, keys, name):
 		value = None
@@ -60,8 +62,8 @@ class ImageFinder(object):
 		  '--region', region, '--filter',
 		  'Name=name,Values=\'F5*\'', '--output=json']
 		
-		resp_s = subprocess.check_output(arg_s)
-		resp_var = json.loads(resp_s)
+		conn = boto.ec2.connect_to_region(region)
+		images = conn.get_all_images(filters={'name':'F5*'})
 
 		#dimensions
 		packages = ['good', 'better', 'best']
@@ -72,18 +74,18 @@ class ImageFinder(object):
 		  '[0-9]+[.][0-9]+[.][0-9]+[-][0-9]+[.][0-9]+[-hf]*[0-9]*' # 11.4.1-649.0-hf5
 		]
 
-		images=[]
-		for i in resp_var['Images']:
+		structured = []
+		for i in images:
 			try:
-				image_name = i['Name'].lower()
-				image_id = i['ImageId']
+				image_name = i.name.lower()
+				image_id = i.id.lower()
 
 				license = self.searchitem(licenses, image_name)
 				version = self.searchitem(versions, image_name)
 				throughput = self.searchitem(throughputs, image_name)
 				package = self.searchitem(packages, image_name)
 
-				images.append({
+				structured.append({
 					'name': image_name,
 					'id': image_id,
 					'version': version,
@@ -94,7 +96,7 @@ class ImageFinder(object):
 			except Exception, e:
 				print 'Failed processing image "{}". Will not be added to index. Error was {}'.format(image_name, e)
 
-		return images
+		return structured
 
 	def find(self, **kwargs):
 		images = self.getImagesForRegion(region=kwargs['region'])
