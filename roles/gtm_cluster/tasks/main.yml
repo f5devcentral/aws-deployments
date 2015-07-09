@@ -16,8 +16,14 @@
   with_items: groups['bigips']
   delegate_to: localhost
 
-- name: Run gtm_add with expect script from one seed gtm
-  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{groups['gtms'][0]}} gtm_add admin {{groups['gtms'][1]}} \'{{ bigip_rest_password }}\'
+# Need to only run when > 1 GTM deployed
+- name: Run gtm_add to all GTMs with expect script from one seed gtm
+  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{groups['gtms'][0]}} gtm_add admin {{item.1}} \'{{ bigip_rest_password }}\'
+  delegate_to: localhost
+  with_indexed_items: groups['gtms']
+  #when: item.0 > 0 and length(groups['gtms'])|num > 1
+  #when index > 0
+  when: item.0 > 0 
   run_once: true
   ignore_errors: true
-  delegate_to: localhost
+

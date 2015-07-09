@@ -20,6 +20,11 @@ password = sys.argv[6]
 # print "password: " + password
 # 
 
+if host == peer_host:
+  print "Exiting. Not running as target and destination are the same"
+  sys.exit()
+
+
 MY_TIMEOUT=15
 SSH_NEWKEY = 'Are you sure you want to continue connecting'
 

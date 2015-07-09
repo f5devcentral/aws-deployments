@@ -1,0 +1,64 @@
+---
+# Dynamically populate the host groups with host vars
+- hosts: 
+   localhost
+  gather_facts: no
+  tasks:
+    # bigips host group
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['bigip-managers']
+      delegate_to: localhost
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
+        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
+        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
+        region="{{region}}"
+      with_items: output['results']
+
+    # gtms host group
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['gtm-managers']
+      delegate_to: localhost
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=gtms
+        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
+        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
+        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
+        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
+        region="{{region}}"
+      with_items: output['results']
+
+
+    # Re-Create clienthost temp group from data persisted to disk
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['clienthost-managers']
+      delegate_to: localhost
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}" group=clienthosts
+        ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
+        ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
+        ansible_ssh_user="ubuntu"
+      with_items: output['results']
+
+    - debug: msg="Deployment Summary->"
+
+    - debug: msg="Bigips->"
+    - debug: msg="Username-> restadmin"
+
+    - debug: msg="MGMT = {{ inventory_hostname }}\n"
+      with_items: groups['bigips']
+
+    - debug: msg="GTMs->"
+    - debug: msg="Username-> restadmin"
+    - debug: msg="{{ inventory_hostname }}"
+      with_items: groups['gtms']
+
+    - debug: msg="Client->"
+    - debug: msg="Username-> ubuntu"
+    - debug: msg="{{ inventory_hostname }}"
+      with_items: groups['clienthosts']
