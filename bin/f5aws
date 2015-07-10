@@ -47,6 +47,19 @@ REQUIRED_VARS = ['install_path', 'ssh_key',
   'f5_aws_access_key', 'f5_aws_secret_key']
 LOCK_TIMEOUT = 10 # seconds
 
+# decorate the methods which update an environment 
+#  so they can run safely
+def safe(func):
+  def inner(*args, **kwargs):
+    f = '/Users/mutzel/vars/f5aws/lock/'+args[2]['env_name']
+    lock = lockfile.LockFile(f)
+    lock.acquire()
+    try:
+        return func(*args, **kwargs)
+    finally:
+        lock.release()
+  return inner
+
 def colorize(lead, num, color):
   """ Print 'lead' = 'num' in 'color' """
   if num != 0 and ANSIBLE_COLOR and color is not None:
@@ -109,6 +122,7 @@ class F5Aws(object):
     except OSError:
       pass
 
+  @safe
   def cmd_init(self, options, extra_vars):
     """
         To instantiate a new environment, we create a set
@@ -131,6 +145,7 @@ class F5Aws(object):
     inventory_path = self.settings['install_path']+'/inventory/hosts'
     self.run_playbooks(playbooks, inventory_path, options, extra_vars)
 
+  @safe
   def cmd_deploy(self, options, extra_vars):
     """
         Deploy an environment based on the set of inventory files 
@@ -140,35 +155,30 @@ class F5Aws(object):
 
 
     """
-    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
-    try:
-      with flock.acquire(timeout=LOCK_TIMEOUT):
+    playbooks = [
+      'deploy_vpc_cft.yml',
+      'deploy_az_cft.yml',
+      'deploy_bigip_cft.yml',
+      'deploy_gtm_cft.yml',
+      'deploy_app_cft.yml',
+      'deploy_client_cft.yml',
+      'deploy_app.yml',
+      'deploy_bigip.yml',
+      'deploy_bigip_app1.yml',
+      'deploy_bigip_app2.yml',
+      'deploy_gtm.yml',
+      'deploy_gtm_app1.yml',
+      'deploy_gtm_app2.yml',
+      'deploy_client.yml'
+    ]
 
-        playbooks = [
-          'deploy_vpc_cft.yml',
-          'deploy_az_cft.yml',
-          'deploy_bigip_cft.yml',
-          'deploy_gtm_cft.yml',
-          'deploy_app_cft.yml',
-          'deploy_client_cft.yml',
-          'deploy_app.yml',
-          'deploy_bigip.yml',
-          'deploy_bigip_app1.yml',
-          'deploy_bigip_app2.yml',
-          'deploy_gtm.yml',
-          'deploy_gtm_app1.yml',
-          'deploy_gtm_app2.yml',
-          'deploy_client.yml'
-        ]
-
-        # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
-        inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-        self.run_playbooks(playbooks, inventory_path, options, extra_vars)
-      
-        self.display_login(options.env_name)
-    except lockfile.LockTimeout:
-      raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
-
+    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+    inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(playbooks, inventory_path, options, extra_vars)
+  
+    self.display_login(options.env_name)
+    
+  @safe
   def cmd_teardown(self, options, extra_vars):
     """
       Complete teardown a deployed environment.
@@ -184,6 +194,7 @@ class F5Aws(object):
     except lockfile.LockTimeout:
       raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
 
+  @safe
   def cmd_remove(self, options, extra_vars):
     """
       Deletes all inventory files for a deployment from ~/vars/f5aws/env/<env name>
@@ -405,6 +416,8 @@ class F5Aws(object):
       datetime.timedelta(seconds=int(tend-tstart))), color='green')
 
     return 0
+
+
 
   def get_envs(self):
     """
@@ -745,6 +758,8 @@ class F5Aws(object):
       display("Failed while processing input arguments: %s" % e, color='red', stderr=True)
     #except Exception as e:
     #  display("Caught an unhandle exception: %s" % e, color='red', stderr=True)
+
+
 
 if __name__ == "__main__":
   display(" ", log_only=True)
