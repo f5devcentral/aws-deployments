@@ -45,12 +45,12 @@ http://docs.vagrantup.com/v2/installation/
 
 An example of copying your your AWS SSH private key over to vagrant guest:
 
-```
-user1@desktop:demo $scp -P 2222 ~/.ssh/AWS-SSH-KEY.pem vagrant@127.0.0.1:~/.ssh/AWS-SSH-KEY.pem
+
+```user1@desktop:demo $scp -P 2222 ~/.ssh/AWS-SSH-KEY.pem vagrant@127.0.0.1:~/.ssh/AWS-SSH-KEY.pem
 Warning: Permanently added '[127.0.0.1]:2222' (RSA) to the list of known hosts.
 vagrant@127.0.0.1's password:
-AWS-SSH-KEY.pem            100% 1696     1.7KB/s   00:00
-```
+AWS-SSH-KEY.pem            100% 1696     1.7KB/s   00:00```
+
 
 
 ### Usage:
