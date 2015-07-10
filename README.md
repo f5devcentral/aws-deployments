@@ -22,19 +22,19 @@ As of now, these deployment models are:
 Install virtual box
 https://www.virtualbox.org/wiki/Downloads
 
-Install vagrant (testing using 1.7.2)
+Install vagrant (testing using 1.7.2)<br>
 http://docs.vagrantup.com/v2/installation/
 
-2) Clone this code to your desktop:
+2) Clone this code to your desktop:<br>
 ```git clone https://github.com/cmutzel/aws-deployments.git```
 
-3) Setup the virtualbox host with vagrant:
-```cd aws-deployments/vagrant```
+3) Setup the virtualbox host with vagrant: <br>
+```cd aws-deployments/vagrant```<br>
 ```vagrant up```
 
 4) When prompted by the vagrant, choose network interface attached to the internet.
 
-5) Once the virtual box has started, login to the machine:
+5) Once the virtual box has started, login to the machine:<br>
 ```vagrant ssh```
 
 6) Edit/Copy (manually with VIM/Nano or SCP) your credentials and environment variables over to your vagrant guest:
