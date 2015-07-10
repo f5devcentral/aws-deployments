@@ -25,7 +25,7 @@ if host == peer_host:
   sys.exit()
 
 
-MY_TIMEOUT=15
+MY_TIMEOUT=30
 SSH_NEWKEY = 'Are you sure you want to continue connecting'
 
 print "SSH'ing to : " + user + "@" + host

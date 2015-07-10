@@ -1,0 +1,19 @@
+---
+install_path: '/home/vagrant/automation_project/aws-deployments'
+
+### Credentials ###
+
+ssh_key:  ~/.ssh/<your_aws_key_here>.pem
+bigip_rest_user: 'your_username_here'
+bigip_rest_password: 'your_password_here'
+
+
+# These are the AWS keys that will be placed on the BIGIP if there's a cluster.
+# (ex. Used to reassign secondary IPs associated with VIPs, change route tables, etc)
+# Best Practice is using separate keys for BIGIP IAM user with limited permissions to modify those network elements
+# http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_IAM.html
+# Otherwise, you can set the same keys you have configured for BOTO environment
+# If you aren't testing a cluster, you can just leave them as empty quotes
+
+f5_aws_access_key: 'your_bigip_user_access_key_here'
+f5_aws_secret_key: 'your_bigip_user_secret_key_here'

@@ -37,7 +37,7 @@
     # adds users via tmsh
     - bigip_base 
     # adds json so ansible doesn't puke
-    #- bigip_jsonify
+    - bigip_jsonify
     # provisions system globals like ntp, dns, snmp, syslog, db keys  
     - bigip_system
     # sets AWS keys and disables DHCP
