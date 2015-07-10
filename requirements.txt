@@ -1,7 +1,11 @@
 # We need the backports for the python ssl built-in library 
 # See top of ./library/bigip_facts.py for details.
 python 2.7.9
+
+boto
 suds
 bigsuds
-ansible
 lockfile
+pexpect
+requests
+ansible 1.8.2

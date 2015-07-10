@@ -102,7 +102,7 @@
     # TODO:
     # "Setting SSL Profiles"
     # "Setting Remote Logging Profiles"
-# 
+ 
     - name: Setup Analytics Profile
       delegate_to: localhost
       bigip_config:
@@ -114,7 +114,6 @@
           resource_key="name"
           payload='{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
       ignore_errors: True
-    ##### UPLOAD DATAGROUP #####
  
     - name: Upload Datagroup ... background for sorry page
       delegate_to: localhost
@@ -127,6 +126,7 @@
           resource_key="name"
           payload='{"name":"background_image","type":"string","records":[{"name":"{{background_image}}"}]}'
       ignore_errors: True
+
     - name: Upload Datagroup ... image for sorry page
       delegate_to: localhost
       bigip_config:
@@ -138,6 +138,7 @@
           resource_key="name"
           payload='{"name":"sorry_images","type":"string","records":[{"name":"{{sorry_image}}"}]}'
       ignore_errors: True
+    
     ##### UPLOAD RULES #####
     - name: Upload iRules ... sorry_page_rule
       delegate_to: localhost
@@ -149,7 +150,7 @@
           collection_path='mgmt/tm/ltm/rule'
           resource_key="name"
           payload='{"name":"__sorry_page_rule","apiAnonymous":"{{sorry_page_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
- 
+    
     - name: Upload iRules ... snat_random_rule
       delegate_to: localhost
       bigip_config:
@@ -161,6 +162,7 @@
           resource_key="name"
           payload='{"name":"__snat_random_rule","apiAnonymous":"{{snat_random_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
           #payload='{"name":"__snat_random_rule","apiAnonymous":"{{lookup('file', install_path + '/roles/bigip_app/files/__snat_random_rule.tcl')|replace("\n","\\n")|replace("\"","\\\"")}}"}'
+    
     - name: Upload iRules ... demo_analytics_rule
       delegate_to: localhost
       bigip_config:
@@ -171,6 +173,7 @@
           collection_path='mgmt/tm/ltm/rule'
           resource_key="name"
           payload='{"name":"__demo_analytics_rule","apiAnonymous":"{{demo_analytics_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
+    
     #Deploy VIPs
     - name: Setup the HTTP Virtual
       delegate_to: localhost
@@ -182,6 +185,7 @@
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
           payload='{"name":"{{vip_id}}","destination":"/Common/{{VipAddress}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'
+
     - name: Setup the HTTPS Virtual
       delegate_to: localhost
       bigip_config:
@@ -192,6 +196,7 @@
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
           payload='{"name":"{{vip_id}}_SSL_Offload","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"},{"name":"clientssl","context":"clientside"}]}'
+
     - name: Setup the iApp
       delegate_to: localhost
       bigip_config:
@@ -203,6 +208,7 @@
           collection_path='mgmt/tm/sys/application/service'
           resource_key="name"
       ignore_errors: true
+
 # Finally attach an EIP to the Vip / Application
 - hosts: bigip-managers
   gather_facts: no

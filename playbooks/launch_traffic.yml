@@ -18,11 +18,21 @@
         ansible_ssh_user="ubuntu"
       with_items: output['results']
 
-# Upload & launch Jmeter test client in background
+# Launch Jmeter test client in background
 - hosts: clienthosts
   gather_facts: False
   tasks:
 
+    #Make sure only one jmeter is launched
+    - 
+
+    - name: Grab number of jmeter processes lauched to make sure not launching more than 1
+      shell: "ps -ef | egrep -v egrep | egrep -c jmeter"
+      ignore_errors: true
+      register: jmeter_count
+
+
     - name: Launch jmeter script in background
       shell: nohup jmeter -n -t ~/simple-load-generation.jmx &
+      when: jmeter_count.stdout|int < 1
    
