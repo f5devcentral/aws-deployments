@@ -39,9 +39,9 @@ http://docs.vagrantup.com/v2/installation/
 
 6) Edit/Copy (manually with VIM/Nano or SCP) your credentials and environment variables over to your vagrant guest:
 
-```~/.ssh/<your_aws_ssh_key>``` 
-```~/.aws/credentials```  
-```~/.f5aws```
+- ~/.ssh/<your_aws_ssh_key>
+- ~/.aws/credentials
+- ~/.f5aws
 
 An example of copying your your AWS SSH private key over to vagrant guest:
 
