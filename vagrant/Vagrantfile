@@ -95,11 +95,11 @@ Vagrant.configure(2) do |config|
      cd automation_project
      /usr/local/lib/python2.7.9/bin/virtualenv -p /usr/local/lib/python2.7.9/bin/python2.7 venv
      source venv/bin/activate
-     pip install boto --upgrade
-     pip install suds --upgrade
-     pip install bigsuds --upgrade
-     pip install pexpect --upgrade
-     pip install requests --upgrade
+     pip install boto=2.38.0
+     pip install suds=0.4
+     pip install bigsuds=1.0.1
+     pip install pexpect=3.3
+     pip install requests=2.7.0
      pip install ansible==1.8.2
      git clone git://github.com/cmutzel/aws-deployments.git
    SHELL
