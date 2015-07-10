@@ -18,32 +18,39 @@ As of now, these deployment models are:
 
 
 ### Install/Setup:
-1) Download this code somewhere to your system
+1) Install Virtual Box and Vagrant 
+Install virtual box
+https://www.virtualbox.org/wiki/Downloads
 
-2) Setup boto per requirements, i.e. create ~/.aws folder with correct contents
-(http://boto.readthedocs.org/en/latest/boto_config_tut.html):
+Install vagrant (testing using 1.7.2)
+http://docs.vagrantup.com/v2/installation/
+
+2) Clone this code to your desktop:
+```git clone https://github.com/cmutzel/aws-deployments.git```
+
+3) Setup the virtualbox host with vagrant:
+```cd aws-deployments/vagrant```
+```vagrant up```
+
+4) When prompted by the vagrant, choose network interface attached to the internet.
+
+5) Once the virtual box has started, login to the machine:
+```vagrant ssh```
+
+6) Edit/Copy (manually with VIM/Nano or SCP) your credentials and environment variables over to your vagrant guest:
+
+```~/.ssh/<your_aws_ssh_key>``` 
+```~/.aws/credentials```  
+```~/.f5aws```
+
+An example of copying your your AWS SSH private key over to vagrant guest:
 
 ```
-[default]
-aws_access_key_id = <my access key>
-aws_secret_access_key = <my secret key>
+user1@desktop:demo $scp -P 2222 ~/.ssh/AWS-SSH-KEY.pem vagrant@127.0.0.1:~/.ssh/AWS-SSH-KEY.pem
+Warning: Permanently added '[127.0.0.1]:2222' (RSA) to the list of known hosts.
+vagrant@127.0.0.1's password:
+AWS-SSH-KEY.pem            100% 1696     1.7KB/s   00:00
 ```
-
-3) Create ~/.f5aws with the following contents
-
-```
-# location of top-level f5aws project directory
-install_path: '</path/to/your/project/install>'
-ssh_key: '</path/to/your/private/key>'
-bigip_rest_user: '<bigip rest user name>'
-bigip_rest_password: '<bigip rest password>'
-f5_aws_access_key: '<your aws access key>'
-f5_aws_secret_key: '<your aws secret key>'
-```
-
-4) Install the project requirements, i.e.:
-
-```pip install requirements.txt```
 
 
 ### Usage:
@@ -51,15 +58,15 @@ f5_aws_secret_key: '<your aws secret key>'
 1) To create a new environment, use the 'init' command.
 This will initialize the set of ansible variables necessary for deployment (known as an 'inventory'. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.You must choose the availability zones in which you want to deploy. 
  
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c"]}'```
 
  Note that the length of list passed to the "zones" variable must not strictly be 2.  This is also possible:
 
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "zones": ["eu-west-1a","eu-west-1b", "eu-west-1c"]}'```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c", "us-east-1d"]}'```
 
 So you can deploy a standalone via: 
 
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1",  "zones": ["eu-west-1c"]}'```
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "us-east-1",  "zones": ["us-east-1c"]}'```
 
 2) Deploy and manage the environment you instantiated in step 1.  This creates all the resources associated with environment, including AWS EC2 hosts, a VPC, configuration objects on BIG-IP and GTM, and docker containers.  
 
@@ -75,12 +82,12 @@ So you can deploy a standalone via:
 
 5) List additional details about an environment via the info command, which has three subcommands:
 
-# display login information for hosts deployed in ec2
+- display login information for hosts deployed in ec2<br>
 ```./bin/f5aws info login <your env>```
 
-# print the ansible inventory (dynamic inventory groups like bigips, apphosts, gtms, etc are not printed)
+- print the ansible inventory (dynamic inventory groups like bigips, apphosts, gtms, etc are not printed)<br>
 ```./bin/f5aws info login <your env>```
 
-# print the status of deployed infrastructure and output from cloudformation stacks
+- print the status of deployed infrastructure and output from cloudformation stacks<br>
 ```./bin/f5aws info resources <your env>```
 

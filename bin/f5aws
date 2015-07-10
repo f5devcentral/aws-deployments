@@ -51,13 +51,13 @@ LOCK_TIMEOUT = 10 # seconds
 #  so they can run safely
 def safe(func):
   def inner(*args, **kwargs):
-    f = '/Users/mutzel/vars/f5aws/lock/'+args[2]['env_name']
-    lock = lockfile.LockFile(f)
-    lock.acquire()
-    try:
-        return func(*args, **kwargs)
-    finally:
-        lock.release()
+    # f = args[2]['env_name']
+    # lock = lockfile.LockFile(f)
+    # lock.acquire()
+    # try:
+    return func(*args, **kwargs)
+    # finally:
+    # lock.release()
   return inner
 
 def colorize(lead, num, color):
@@ -184,15 +184,12 @@ class F5Aws(object):
       Complete teardown a deployed environment.
       Does not remove the inventory files in ~/vars/f5aws/env/<env name>
     """
-    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
-    try:
-      with flock.acquire(timeout=LOCK_TIMEOUT):
-        playbooks = ['teardown_all.yml']
+ 
+    playbooks = ['teardown_all.yml']
 
-        inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-        self.run_playbooks(playbooks, inventory_path, options, extra_vars)
-    except lockfile.LockTimeout:
-      raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
+    inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(playbooks, inventory_path, options, extra_vars)
+
 
   @safe
   def cmd_remove(self, options, extra_vars):
@@ -201,34 +198,27 @@ class F5Aws(object):
       This environment should already have been torn down using `teardown`
     """
     env = extra_vars['env_name']
+    inventory, resources, statuses = self.get_environment_info(env)
+    
+    okToRemove = True
+    stillExist = []
+    for r in resources: 
+      if statuses[r]['state'] == 'deployed':
+        okToRemove = False
+        stillExist.append(r)
 
-    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
-    try:
-      with flock.acquire(timeout=LOCK_TIMEOUT):
+    if okToRemove is True:
+      playbooks = ['remove.yml']
 
-        inventory, resources, statuses = self.get_environment_info(env)
-        
-        okToRemove = True
-        stillExist = []
-        for r in resources: 
-          if statuses[r]['state'] == 'deployed':
-            okToRemove = False
-            stillExist.append(r)
-
-        if okToRemove is True:
-          playbooks = ['remove.yml']
-
-         # uses the inventory included in this repository 
-          inventory_path = self.settings['install_path']+'/inventory/hosts'
-          self.run_playbooks(playbooks, inventory_path, options, extra_vars)
-        else:
-          msg = """Cannot remove environment '%s' until all resources have been de-provisioned.
-  The following resources still exist: %s. 
-  Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
-          display(msg, color='red', stderr=True)
-    except lockfile.LockTimeout:
-      raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
-
+     # uses the inventory included in this repository 
+      inventory_path = self.settings['install_path']+'/inventory/hosts'
+      self.run_playbooks(playbooks, inventory_path, options, extra_vars)
+    else:
+      msg = """Cannot remove environment '%s' until all resources have been de-provisioned.
+The following resources still exist: %s. 
+Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
+      display(msg, color='red', stderr=True)
+  
   def cmd_list(self, options, extra_vars):
     """
       Implements a command line method to list all environments that have been instantiated using `init`.
