@@ -174,9 +174,8 @@ class F5Aws(object):
 
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
     inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-    self.run_playbooks(playbooks, inventory_path, options, extra_vars)
-  
-    self.display_login(options.env_name)
+    if self.run_playbooks(playbooks, inventory_path, options, extra_vars) == 0:
+      self.display_login(options.env_name)
     
   @safe
   def cmd_teardown(self, options, extra_vars):
