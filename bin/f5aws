@@ -17,7 +17,8 @@ import yaml
 import itertools
 import re
 import json
-import ConfigParser
+import lockfile
+import time, datetime
 
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
@@ -44,6 +45,7 @@ __prog__ = "f5aws"
 REQUIRED_VARS = ['install_path', 'ssh_key',
   'bigip_rest_user', 'bigip_rest_password',
   'f5_aws_access_key', 'f5_aws_secret_key']
+LOCK_TIMEOUT = 10 # seconds
 
 def colorize(lead, num, color):
   """ Print 'lead' = 'num' in 'color' """
@@ -98,8 +100,9 @@ class F5Aws(object):
           raise Exception('Required variable "{}" not found in {}'.format(v, global_vars_path))
 
       self.settings['vars_path'] = os.path.expanduser('~/vars/{}'.format(__prog__))
-      self.settings['env_path'] = self.settings['vars_path'] + '/env'
-      self.settings['bin_path'] = self.settings['install_path'] + '/bin' 
+      self.settings['lock_path'] = self.settings['vars_path'] + '/lock/'
+      self.settings['env_path'] = self.settings['vars_path'] + '/env/'
+      self.settings['bin_path'] = self.settings['install_path'] + '/bin/' 
       
       #make the /env/ directory if it does not exist
       os.makedirs(self.settings['env_path'])
@@ -121,50 +124,65 @@ class F5Aws(object):
 
     # check to make sure this inventory does not already exist
     print self.settings['env_path']
-    if os.path.isdir((self.settings['env_path'] +'/'+ options.env_name)) and not options.force:
+    if os.path.isdir((self.settings['env_path'] + options.env_name)) and not options.force:
       raise ValidationError('There is already an environment with name "%s".  Use -f, --force to update the inventory variables for this environment. ' % options.env_name)
 
     # uses the inventory included in this repository 
-    inventory = self.settings['install_path']+'/inventory/hosts'
-    self.run_playbooks(playbooks, inventory, options, extra_vars)
+    inventory_path = self.settings['install_path']+'/inventory/hosts'
+    self.run_playbooks(playbooks, inventory_path, options, extra_vars)
 
   def cmd_deploy(self, options, extra_vars):
     """
         Deploy an environment based on the set of inventory files 
         created by the 'init' command.
 
-        See individual playbooks for more info. 
-    """
-    playbooks = [
-      'deploy_vpc_cft.yml',
-      'deploy_az_cft.yml',
-      'deploy_bigip_cft.yml',
-      'deploy_gtm_cft.yml',
-      'deploy_app_cft.yml',
-      'deploy_client_cft.yml',
-      'deploy_app.yml',
-      'deploy_bigip.yml',
-      'deploy_bigip_app1.yml',
-      'deploy_bigip_app2.yml',
-      'deploy_gtm.yml',
-      'deploy_gtm_app1.yml',
-      'deploy_gtm_app2.yml',
-      'deploy_client.yml'
-    ]
+        See individual playbooks for more info.
 
-    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
-    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-    self.run_playbooks(playbooks, inventory, options, extra_vars)
+
+    """
+    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
+    try:
+      with flock.acquire(timeout=LOCK_TIMEOUT):
+
+        playbooks = [
+          'deploy_vpc_cft.yml',
+          'deploy_az_cft.yml',
+          'deploy_bigip_cft.yml',
+          'deploy_gtm_cft.yml',
+          'deploy_app_cft.yml',
+          'deploy_client_cft.yml',
+          'deploy_app.yml',
+          'deploy_bigip.yml',
+          'deploy_bigip_app1.yml',
+          'deploy_bigip_app2.yml',
+          'deploy_gtm.yml',
+          'deploy_gtm_app1.yml',
+          'deploy_gtm_app2.yml',
+          'deploy_client.yml'
+        ]
+
+        # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+        inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+        self.run_playbooks(playbooks, inventory_path, options, extra_vars)
+      
+        self.display_login(options.env_name)
+    except lockfile.LockTimeout:
+      raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
 
   def cmd_teardown(self, options, extra_vars):
     """
       Complete teardown a deployed environment.
       Does not remove the inventory files in ~/vars/f5aws/env/<env name>
     """
-    playbooks = ['teardown_all.yml']
-    
-    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-    self.run_playbooks(playbooks, inventory, options, extra_vars)
+    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
+    try:
+      with flock.acquire(timeout=LOCK_TIMEOUT):
+        playbooks = ['teardown_all.yml']
+
+        inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+        self.run_playbooks(playbooks, inventory_path, options, extra_vars)
+    except lockfile.LockTimeout:
+      raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
 
   def cmd_remove(self, options, extra_vars):
     """
@@ -172,28 +190,34 @@ class F5Aws(object):
       This environment should already have been torn down using `teardown`
     """
     env = extra_vars['env_name']
-    resources, statuses = self.get_env_status(env)
-    
-    okToRemove = True
-    stillExist = []
-    for r in resources: 
-      if statuses[r]['state'] == 'deployed':
-        okToRemove = False
-        stillExist.append(r)
 
-    if okToRemove is True:
-      playbooks = ['remove.yml']
+    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
+    try:
+      with flock.acquire(timeout=LOCK_TIMEOUT):
 
-     # uses the inventory included in this repository 
-      inventory = self.settings['install_path']+'/inventory/hosts'
-      self.run_playbooks(playbooks, inventory, options, extra_vars)
-    else:
-      msg = """Cannot remove environment '%s' until all resources have been de-provisioned.
-The following resources still exist: %s. 
-Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
-
-      display(msg, color='red', stderr=True)
+        inventory, resources, statuses = self.get_environment_info(env)
         
+        okToRemove = True
+        stillExist = []
+        for r in resources: 
+          if statuses[r]['state'] == 'deployed':
+            okToRemove = False
+            stillExist.append(r)
+
+        if okToRemove is True:
+          playbooks = ['remove.yml']
+
+         # uses the inventory included in this repository 
+          inventory_path = self.settings['install_path']+'/inventory/hosts'
+          self.run_playbooks(playbooks, inventory_path, options, extra_vars)
+        else:
+          msg = """Cannot remove environment '%s' until all resources have been de-provisioned.
+  The following resources still exist: %s. 
+  Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
+          display(msg, color='red', stderr=True)
+    except lockfile.LockTimeout:
+      raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
+
   def cmd_list(self, options, extra_vars):
     """
       Implements a command line method to list all environments that have been instantiated using `init`.
@@ -205,18 +229,30 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       display("(none)", color='red', stderr=False) 
     else:
       for env in self.get_envs():
-        self.display_env_info(env)
-        self.display_env_resources(env, False)
-        
-  def cmd_describe(self, options, extra_vars):
+        self.display_basic_info(env)
+    
+  def cmd_inventory(self, options, extra_vars):
+    try:
+      env = extra_vars['env_name']
+      self.display_inventory(env)
+    except IOError:
+      display(" Environment '%s' does not exist" % env, color='red', stderr=True)
+
+  def cmd_resources(self, options, extra_vars):
+    try:
+      env = extra_vars['env_name']
+      self.display_resources(env)
+    except IOError:
+      display(" Environment '%s' does not exist" % env, color='red', stderr=True)
+
+  def cmd_login(self, options, extra_vars):
     """
       Implements command line method to provide more details on the resources associated with 
       a particular deployment (vpc, subnets, bigip, app hosts, etc...)
     """
     try:
       env = extra_vars['env_name']
-      self.display_env_info(env)
-      self.display_env_resources(env, True)
+      self.display_login(env)
     except IOError:
       display(" Environment '%s' does not exist" % env, color='red', stderr=True)
 
@@ -224,25 +260,38 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     """
       Implements command line method to pass traffic through BIG-IP
     """
-    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
-    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-    self.run_playbooks(['launch_traffic.yml'], inventory, options, extra_vars)
-
-    print 'Jmeter now running on clienthost in zone1'
-
+    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
+    try:
+      with flock.acquire(timeout=LOCK_TIMEOUT):
+        # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+        self.run_playbooks(['launch_traffic.yml'], inventory, options, extra_vars)
+        print 'Started jmeter on clienthost'
+    except lockfile.LockTimeout:
+        raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
+    
   def cmd_stop_traffic(self, options, extra_vars):
     """
       Implements command line method to stop jmeter client
     """
-    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
-    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-    self.run_playbooks(['stop_traffic.yml'], inventory, options, extra_vars)
+    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
+    try:
+        with flock.acquire(timeout=LOCK_TIMEOUT):
+          # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+          inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+          self.run_playbooks(['stop_traffic.yml'], inventory, options, extra_vars)
+          print 'Stopped jmeter client.'
+    except lockfile.LockTimeout:
+        raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
 
   def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
     """
       This is a modified version of the function used within ansible-playbook.
       playbooks 
     """
+
+    tstart = time.time()
+
     # get the absolute path for the playbooks
     playbooks = ['{}/playbooks/{}'.format(self.settings['install_path'], pb) for pb in playbooks]
 
@@ -261,7 +310,6 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
     for playbook in playbooks:
       display("Running playbook: %s" % playbook, color='green', stderr=False)
-      #display("Private Key is: %s" % options.private_key_file )
 
       stats = callbacks.AggregateStats()
       playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
@@ -295,61 +343,6 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         vault_password=vault_pass,
         force_handlers=options.force_handlers
       )
-
-      if options.flush_cache:
-        display(callbacks.banner("FLUSHING FACT CACHE"))
-        pb.SETUP_CACHE.flush()
-
-      if options.listhosts or options.listtasks or options.syntax:
-        print ''
-        print 'playbook: %s' % playbook
-        print ''
-        playnum = 0
-        for (play_ds, play_basedir) in zip(pb.playbook, pb.play_basedirs):
-          playnum += 1
-          play = ansible.playbook.Play(pb, play_ds, play_basedir,
-                                        vault_password=pb.vault_password)
-          label = play.name
-          hosts = pb.inventory.list_hosts(play.hosts)
-
-          # Filter all tasks by given tags
-          if pb.only_tags != 'all':
-            if options.subset and not hosts:
-              continue
-            matched_tags, unmatched_tags = play.compare_tags(pb.only_tags)
-
-            # Remove skipped tasks
-            matched_tags = matched_tags - set(pb.skip_tags)
-
-            unmatched_tags.discard('all')
-            unknown_tags = ((set(pb.only_tags) | set(pb.skip_tags)) -
-                            (matched_tags | unmatched_tags))
-
-            if unknown_tags:
-              continue
-
-          if options.listhosts:
-            print '  play #%d (%s): host count=%d' % (playnum, label, len(hosts))
-            for host in hosts:
-                print '    %s' % host
-
-          if options.listtasks:
-              print '  play #%d (%s):' % (playnum, label)
-
-              for task in play.tasks():
-                if (set(task.tags).intersection(pb.only_tags) and not
-                  set(task.tags).intersection(pb.skip_tags)):
-                  if getattr(task, 'name', None) is not None:
-                    # meta tasks have no names
-                    print '    %s' % task.name
-          if options.listhosts or options.listtasks:
-              print ''
-        continue
-
-      if options.syntax:
-        # if we've not exited by now then we are fine.
-        print 'Playbook Syntax is fine'
-        return 0
 
       failed_hosts = []
       unreachable_hosts = []
@@ -406,6 +399,11 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
         display("ERROR: %s" % e, color='red')
         return 1
 
+    # Successfully ran all playbooks
+    tend = time.time()
+    display("Ran playbooks {}. \n Total time was {}".format(playbooks,
+      datetime.timedelta(seconds=int(tend-tstart))), color='green')
+
     return 0
 
   def get_envs(self):
@@ -414,72 +412,148 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     """
     return os.listdir(self.settings['env_path'])
 
-  def display_env_info(self, env):
+  def get_lock_file(self, env):
     """
-    Print deployment variables to stdout
+      Get a consistent file to mutex on
     """
-    env_info = self.get_env_info(env)
-    display(" - %s" % env, color='green', stderr=False)
-    for k in sorted(env_info, key=lambda key: key):
-      display("    %s: %s" % (k, env_info[k]), color='green', stderr=False)
+    return self.settings['lock_path']+'/'+env
 
-  def display_env_resources(self, env, show_resource_vars):  
+  def get_environment_info(self, env):
+    inventory = self.get_inventory(env)
+    resources, statuses = self.get_latest_deploy_results(env, inventory)
+    return inventory, resources, statuses
+
+  def display_basic_info(self, env):
+    inventory, resources, statuses = self.get_environment_info(env)
+    
+    color='green'
+    status='deployed'
+    for k, v in statuses.items():
+      if v != 'deployed':
+        color='red'
+        status='not deployed/error'
+
+    env_info = self.get_env_info(env, inventory)
+    display(" - %s (%s)" % (env, status), color=color, stderr=False)
+    for k in sorted(env_info, key=lambda key: key):
+      display("    %s: %s" % (k, env_info[k]), color=color, stderr=False)
+    
+  def display_inventory(self, env):
+    inventory, resources, statuses = self.get_environment_info(env)
+    display("        %s" % json.dumps(inventory, indent=10), color='green', stderr=False)
+
+  def display_resources(self, env):
     """
       Print information nicely about deployment resources to stdout
     """
-    resources, statuses = self.get_env_status(env, show_resource_vars)
+    inventory, resources, statuses = self.get_environment_info(env)
+
     display("    resources: ", color='green', stderr=False)
     for r in resources:
       if statuses[r]['state'] != 'deployed':
         color='red'
       else: 
         color='green'
+      display("      %s:" % r, color=color, stderr=False)
+      display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
 
-      if show_resource_vars:
-        display("      %s:" % r, color=color, stderr=False)
-        display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
-      else:
-        display("      %s: %s" % (r, statuses[r]), color=color, stderr=False)
+  def display_login(self, env):
+    inventory, resources, statuses = self.get_environment_info(env)
+    inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], env)
+    ansible_inventory = ansible.inventory.Inventory(inventory_path, vault_password=None)
+    
+    #login is a bit more custom - we want to show the login
+    # information for a dynamic set of hosts - bigips, gtms, app hosts, and the client host
+    # this information is compiled from the ansible inventory for this environment
+    # and the output from the cloudformation stacks
+    for group in ['apphosts', 'bigips', 'gtms', 'clienthosts']:
+      print 'Login for %s:' % group
+      group_info = inventory[group]
+    
+      # hostnames are not plural
+      host_type = group[:-1]
 
-  def get_env_info(self, env):
+      #not very efficient, but hey, its a demo
+      for resource_name, status in statuses.items():
+        match = re.match('^zone[0-9]+[/-]{}[0-9]*'.format(host_type),resource_name)
+
+        if match:
+          try:
+            if host_type == 'gtm':
+              print '     {}ssh -i {} {}@{}'.format(
+                self.host_to_az(resource_name, ansible_inventory),
+                group_info['vars']['ansible_ssh_private_key_file'],
+                group_info['vars']['ansible_ssh_user'],
+                status['resource_vars']['ManagementInterfacePublicIp'])
+            elif host_type == 'bigip':
+              print '     {}ssh -i {} {}@{}'.format(
+                self.host_to_az(resource_name, ansible_inventory),
+                group_info['vars']['ansible_ssh_private_key_file'],
+                group_info['vars']['ansible_ssh_user'],
+                status['resource_vars']['ManagementInterfacePublicIp'])
+            elif host_type == 'apphost':
+              print '     {}ssh -i {} {}@{}'.format(
+                self.host_to_az(resource_name, ansible_inventory),
+                group_info['vars']['ansible_ssh_private_key_file'],
+                group_info['vars']['ansible_ssh_user'],
+                status['resource_vars']['WebServerInstancePublicIp'])
+            elif host_type == 'clienthost':
+              print '     {}ssh -i {} {}@{}'.format(
+                self.host_to_az(resource_name, ansible_inventory),
+                group_info['vars']['ansible_ssh_private_key_file'],
+                group_info['vars']['ansible_ssh_user'],
+                status['resource_vars']['ClientInstancePublicIp'])
+          except KeyError:
+            print '     Not deployed/Login information not available.'
+
+  def host_to_az(self, resource_name, ansible_inventory):
+    # traverse the ansible inventory to get the availability zone
+    # for this host
+    try:
+      hostname = resource_name+'-manager'
+      az = ansible_inventory.get_host(hostname).get_variables()['availability_zone']
+      return '{}:   '.format(az)
+    except: 
+      return ''
+
+  def get_env_info(self, env, inventory):
     """Read some information about this @env from the inventory/hosts 
         file.  We do this by parsing the [all:vars] section.
     """
 
-    print 'get_env_info'
-
     env_info = {}
-    # get variables and status information about a deployment
-    # all of these details are stored the ansible hosts file 
-    # It would be nice to use ConfigParser here, but the new
-    #  line characters break it. 
-    with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
-      foundVars = False
-      for l in f.read().split('\n'):
-        if foundVars is False:
-          if 'all:vars' in l:
-            foundVars=True
-        else:
-          # break on the first blank line
-          if l.rstrip().lstrip() == '':
-            break
-          else:
-            result = re.match('^([a-z0-9_\-\.]+)=([a-z0-9_\-\.\/]+)', l)
-            if result:
-              env_info[result.group(1)] = result.group(2)
+    env_info = inventory['all']['vars']
 
-    # don't show the password in the output
+     # don't show the password in the output
     del env_info['env_name']
     env_info['bigip_rest_password'] = '********'
 
     return env_info
 
-  def get_env_status(self, env, show_resource_vars=False):
-    """ 
-      Aggregates and prints the status for an environment
-      and all resources deployed in aws
+  def get_inventory(self, env):
     """
-    managers = self.get_managers(env)
+    Compiles group, host, and variable information using ansible API
+    """
+
+    inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], env)
+    ansible_inventory = ansible.inventory.Inventory(inventory_path, vault_password=None)
+    
+    inventory = {}
+    for group, hosts in ansible_inventory.groups_list().items():
+      inventory[group] = {
+        'hosts': hosts,
+        'vars': ansible_inventory.get_group(group).vars
+      }
+
+    return inventory
+
+  def get_latest_deploy_results(self, env, inventory):
+    """
+      Attempts to read the output from tasks executed under a 'manager'
+      host. 
+    """
+
+    managers = [h for h in inventory['all']['hosts'] if 'manager' in h]
     statuses = {}
     resources = []
     for m in managers:
@@ -493,30 +567,11 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
           latest = yaml.load(f)
           statuses[resource_name] = getattr(self,
               'state_'+latest['invocation']['module_name'],
-              self.raise_not_implemented)(latest, show_resource_vars)
+              self.raise_not_implemented)(latest, True)
       except Exception as e:
-        statuses[resource_name] = {'state': 'not deployed'}
+        statuses[resource_name] = {'state': 'not deployed/error'}
 
     return resources, statuses
-
-  def get_managers(self, env ):
-    """
-      Returns an ordered list of all the 'managers'
-      who report status via a yaml file i the ./<env>/ directory
-      For example, vpc-manager
-    """
-    managers = []
-    
-    with open(self.settings['env_path']+'/'+env+'/inventory/hosts', 'r') as f:
-      for l in f.readlines():
-        rematch = re.match('^([a-z0-9/-]*-manager)$', l.rstrip().lstrip())
-        if rematch:
-          managers.append(rematch.group(1))
-
-    #return the unique set
-    managers = list(set(managers))
-    managers.sort()
-    return managers
 
   def state_cloudformation(self, latest_result, show_resource_vars):
     """
@@ -587,10 +642,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     parser_teardown.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to be de-provisioned. ')
 
-    parser_describe = subparsers.add_parser('describe',
-      help='Show resource variables along with environment information.')
-    parser_describe.add_argument('env_name', metavar='ENVIRONMENT',
-      type=str, help='Name of environment to describe')
+    
     
     parser_list = subparsers.add_parser('list',
       help='List all deployments and corrosponding resource statuses.')
@@ -608,6 +660,26 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     parser_stop_traffic = subparsers.add_parser('stop_traffic',
       help='Stops jmeter client ')
     parser_stop_traffic.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='Name of environment')
+
+    parser_info = subparsers.add_parser('info',
+      help='Show resource variables along with environment information.')
+
+    info_subparsers = parser_info.add_subparsers(dest='cmd', help='sub-command help')
+    
+    parser_inventory = info_subparsers.add_parser('inventory',
+      help='Displays the ansible inventory associated with this environment. Dynamic inventory groups are not shown')
+    parser_inventory.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='Name of environment')
+
+    parser_resources = info_subparsers.add_parser('resources',
+      help='Shows hosts, associated resources and variables that are deployed via CloudFormation')
+    parser_resources.add_argument('env_name', metavar='ENVIRONMENT',
+      type=str, help='Name of environment')
+
+    parser_login = info_subparsers.add_parser('login',
+      help='Displays login information for deployed hosts (bigips, gtms, clienthost, etc')
+    parser_login.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment')
 
     options = parser.parse_args()

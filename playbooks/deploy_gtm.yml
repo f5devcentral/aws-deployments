@@ -16,8 +16,8 @@
     - name: deploy eips
       include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
 
-# Dynamically populate the host groups with host vars
-- hosts: 
+# Dynamically populate the host groups and variables
+- hosts:
    localhost
   gather_facts: no
   tasks:

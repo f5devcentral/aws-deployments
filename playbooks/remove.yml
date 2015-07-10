@@ -1,5 +1,3 @@
-# Removes the inventory for a deployed an environment
-
 ---
 - hosts: localhosts
   gather_facts: False

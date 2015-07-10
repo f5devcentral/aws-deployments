@@ -111,7 +111,6 @@
           collection_path='mgmt/tm/gtm/pool'
           resource_key="name"
       with_items: groups['bigips'][0]
-
     - name: Setup the AZ2 pool
       delegate_to: localhost
       bigip_config:
@@ -123,8 +122,6 @@
           collection_path='mgmt/tm/gtm/pool'
           resource_key="name"
       with_items: groups['bigips'][1]
-
-
     - name: Setup the Wideip
       delegate_to: localhost
       bigip_config:
@@ -135,8 +132,6 @@
           payload='{"name":"{{vip_id}}.example.com","poolLbMode":"round-robin","ipv6NoErrorResponse":"enabled","pools":[{"name":"{{vip_id}}_pool_AZ1"},{"name":"{{vip_id}}_pool_AZ2"}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"
-
-
     - name: Setup the Wideip
       delegate_to: localhost
       bigip_config:
@@ -147,5 +142,3 @@
           payload='{"name":"demo.example.com","poolLbMode":"round-robin","ipv6NoErrorResponse":"enabled","pools":[{"name":"{{vip_id}}_pool_AZ1"},{"name":"{{vip_id}}_pool_AZ2"}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"
-
-

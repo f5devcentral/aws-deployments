@@ -1,6 +1,5 @@
 ---
-#Need to build topology again
-- hosts: 
+# Dynamically populate the host groups and variables- hosts: 
    localhost
   gather_facts: no
   tasks:

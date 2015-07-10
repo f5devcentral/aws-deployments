@@ -1,3 +1,4 @@
+---
 # This playbook creates a inventory for a new deployment, and creates the necessary template and variable files.
 
 #inputs:
@@ -19,7 +20,6 @@
 
 # --Run as 
 # ansible-playbook ./init.yml -i ./inventory/hosts --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "full_key_path": "/full/path/to/your/key", "zones": ["eu-west-1a","eu-west-1b"],"bigip_rest_password": "****"}'
----
 - hosts: localhosts
   gather_facts: False
   roles: 

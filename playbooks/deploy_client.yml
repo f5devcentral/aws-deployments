@@ -1,5 +1,5 @@
 ---
-# Dynamically populate the host groups with host vars
+# Dynamically populate the host groups and variables
 - hosts:
    localhost
   gather_facts: no

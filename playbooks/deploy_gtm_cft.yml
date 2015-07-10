@@ -1,3 +1,4 @@
+---
 - hosts: gtm-managers
   gather_facts: no
   tasks:

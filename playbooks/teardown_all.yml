@@ -1,5 +1,5 @@
-#This playbook dismantles all deployed EC2 resources. 
 ---
+#This playbook dismantles all deployed EC2 resources. 
 - hosts: zone1-clienthost-manager
   gather_facts: no
   tasks:

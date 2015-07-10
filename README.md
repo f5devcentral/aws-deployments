@@ -48,8 +48,8 @@ f5_aws_secret_key: '<your aws secret key>'
 
 ### Usage:
 
-1) To create a new environment, use the init.yml playbook with the inventory provided as part of this repository. 
-This will initialize the set of inventory and ansible variables necessary for deployment. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.  The full_key_path parameter may include a . extension (e.g. ".pem").  You must choose the availability zones in which you want to deploy. 
+1) To create a new environment, use the 'init' command.
+This will initialize the set of ansible variables necessary for deployment (known as an 'inventory'. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.You must choose the availability zones in which you want to deploy. 
  
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1", "zones": ["eu-west-1a","eu-west-1b"]}'```
 
@@ -61,7 +61,7 @@ So you can deploy a standalone via:
 
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "eu-west-1",  "zones": ["eu-west-1c"]}'```
 
-2) Deploy and manage the environment you instantiated in step 1: 
+2) Deploy and manage the environment you instantiated in step 1.  This creates all the resources associated with environment, including AWS EC2 hosts, a VPC, configuration objects on BIG-IP and GTM, and docker containers.  
 
 ```./bin/f5aws deploy <your env>```
 
@@ -73,6 +73,14 @@ So you can deploy a standalone via:
 
 ```./bin/f5aws list```
 
-5) List additional details about a specific environment:
+5) List additional details about an environment via the info command, which has three subcommands:
 
-```./bin/f5aws describe <your env>```
+# display login information for hosts deployed in ec2
+```./bin/f5aws info login <your env>```
+
+# print the ansible inventory (dynamic inventory groups like bigips, apphosts, gtms, etc are not printed)
+```./bin/f5aws info login <your env>```
+
+# print the status of deployed infrastructure and output from cloudformation stacks
+```./bin/f5aws info resources <your env>```
+
