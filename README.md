@@ -19,10 +19,10 @@ As of now, these deployment models are:
 
 ### Install/Setup:
 1) Install Virtual Box and Vagrant 
-Install virtual box
+Install virtual box (tested using 4.3.26)<br>
 https://www.virtualbox.org/wiki/Downloads
 
-Install vagrant (testing using 1.7.2)<br>
+Install vagrant (tested using 1.7.2)<br>
 http://docs.vagrantup.com/v2/installation/
 
 2) Clone this code to your desktop:<br>
@@ -86,7 +86,7 @@ So you can deploy a standalone via:
 ```./bin/f5aws info login <your env>```
 
 - print the ansible inventory (dynamic inventory groups like bigips, apphosts, gtms, etc are not printed)<br>
-```./bin/f5aws info login <your env>```
+```./bin/f5aws info inventory <your env>```
 
 - print the status of deployed infrastructure and output from cloudformation stacks<br>
 ```./bin/f5aws info resources <your env>```

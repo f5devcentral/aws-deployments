@@ -38,7 +38,7 @@ from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
 
-__version__ = "0.2"
+__version__ = "0.8"
 __prog__ = "f5aws"
 
 # set of variables which must be defined in ~/.f5aws
@@ -54,10 +54,10 @@ def safe(func):
     # f = args[2]['env_name']
     # lock = lockfile.LockFile(f)
     # lock.acquire()
-    # try:
+    #try:
     return func(*args, **kwargs)
     # finally:
-    # lock.release()
+    #   lock.release()
   return inner
 
 def colorize(lead, num, color):
@@ -77,7 +77,6 @@ def hostcolor(host, stats, color=True):
       else:
           return "%-37s" % stringc(host, 'green')
   return "%-26s" % host
-
 
 def convert_str(inStr):
   """
@@ -152,8 +151,6 @@ class F5Aws(object):
         created by the 'init' command.
 
         See individual playbooks for more info.
-
-
     """
     playbooks = [
       'deploy_vpc_cft.yml',
@@ -256,34 +253,28 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     except IOError:
       display(" Environment '%s' does not exist" % env, color='red', stderr=True)
 
+  @safe
   def cmd_start_traffic(self, options, extra_vars):
     """
       Implements command line method to pass traffic through BIG-IP
     """
-    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
-    try:
-      with flock.acquire(timeout=LOCK_TIMEOUT):
-        # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
-        inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-        self.run_playbooks(['launch_traffic.yml'], inventory, options, extra_vars)
-        print 'Started jmeter on clienthost'
-    except lockfile.LockTimeout:
-        raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
     
+    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(['launch_traffic.yml'], inventory, options, extra_vars)
+    print 'Started jmeter on clienthost'
+  
+  @safe
   def cmd_stop_traffic(self, options, extra_vars):
     """
       Implements command line method to stop jmeter client
     """
-    flock = lockfile.LockFile(self.get_lock_file(options.env_name))
-    try:
-        with flock.acquire(timeout=LOCK_TIMEOUT):
-          # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
-          inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
-          self.run_playbooks(['stop_traffic.yml'], inventory, options, extra_vars)
-          print 'Stopped jmeter client.'
-    except lockfile.LockTimeout:
-        raise Exceptions.RuntimeError('Lock timeoute while waiting for safe execution')
-
+    
+    # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
+    inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
+    self.run_playbooks(['stop_traffic.yml'], inventory, options, extra_vars)
+    print 'Stopped jmeter client.'
+    
   def run_playbooks(self, playbooks, inventory_path, options, extra_vars):
     """
       This is a modified version of the function used within ansible-playbook.
@@ -413,12 +404,6 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       Gets a list of all deployments
     """
     return os.listdir(self.settings['env_path'])
-
-  def get_lock_file(self, env):
-    """
-      Get a consistent file to mutex on
-    """
-    return self.settings['lock_path']+'/'+env
 
   def get_environment_info(self, env):
     inventory = self.get_inventory(env)
