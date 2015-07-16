@@ -9,8 +9,9 @@
   tags: 
      - launch_containers
   register: launched_containers
-
-#- debug: var=launched_containers
+  until: launched_containers["failed"] == false
+  retries: 5
+  delay: 10
 
 # - name: Add Pool Members to Dynamic Group to Merge all Pool Members
 #   add_host: groups=bigip_pool_members name="{{ item.Config.Hostname }}" ip={{private_ip}} port={{ item.NetworkSettings['Ports']['8000/tcp'][0]['HostPort'] }} description="Name={{item.Name}}, Container Hostname={{item.Config.Hostname}}, Image={{ item.Config.Image }}"
