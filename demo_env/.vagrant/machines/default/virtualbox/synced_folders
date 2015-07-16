@@ -1,0 +1,1 @@
+{"virtualbox":{"/aws-deployments":{"guestpath":"/aws-deployments","hostpath":"/Users/applebaum/shared/git/my-repos/ansible/aws-deployments","disabled":false},"/vagrant":{"guestpath":"/vagrant","hostpath":"/Users/applebaum/shared/git/my-repos/ansible/aws-deployments/vagrant","disabled":false}}}
