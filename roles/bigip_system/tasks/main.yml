@@ -11,6 +11,7 @@
   delegate_to: localhost
   bigip_config: state=present host={{ inventory_hostname }} user={{ bigip_rest_user }} password={{ bigip_rest_password }} payload='{ "value":"false" }' collection_path='mgmt/tm/sys/db/setup.run'
   register: result
+  # TODO: if result is an array then dig into each array else just look for changed = true
   until: result|changed
   retries: 20
   delay: 5
@@ -40,7 +41,6 @@
 #     collection_path='mgmt/tm/sys/dns'
 #   #Really just need to add condition so only runs in certain environments
 #   when: target_env != "AWS"
-
 
 # TODO: define log server ip somewhere (10.0.3.32). Right now, just for pretend...
 - name: Configuring syslog

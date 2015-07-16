@@ -1,5 +1,6 @@
 ---
 # Dynamically populate the host groups and variables- hosts: 
+- hosts: 
    localhost
   gather_facts: no
   tasks:

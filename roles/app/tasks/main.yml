@@ -12,14 +12,3 @@
   until: launched_containers["failed"] == false
   retries: 5
   delay: 10
-
-# - name: Add Pool Members to Dynamic Group to Merge all Pool Members
-#   add_host: groups=bigip_pool_members name="{{ item.Config.Hostname }}" ip={{private_ip}} port={{ item.NetworkSettings['Ports']['8000/tcp'][0]['HostPort'] }} description="Name={{item.Name}}, Container Hostname={{item.Config.Hostname}}, Image={{ item.Config.Image }}"
-#   with_items: launched_containers.ansible_facts.docker_containers
-#   tags:
-#     - launch_containers
-# 
-
-# can't run here because of sudo
-#- name: Store docker containers from jinja template
-#  local_action: template src=docker_containers.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{inventory_hostname}}_docker_containers.yml
