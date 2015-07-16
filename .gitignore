@@ -29,5 +29,8 @@ docsite/_static/websupport.js
 # deb building stuff...
 debian/
 #Vagrant machines
-vagrant/.vagrant
-venv
+**/.vagrant
+#Virtual machines
+**/venv
+#ssh directories
+**/.ssh

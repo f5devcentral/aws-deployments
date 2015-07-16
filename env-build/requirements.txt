@@ -1,7 +1,0 @@
-boto==2.38.0
-suds==0.4
-bigsuds==1.0.1
-pexpect==3.3
-requests==2.7.0
-ansible==1.8.2
-lockfile==0.10.2
