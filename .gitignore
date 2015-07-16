@@ -30,3 +30,4 @@ docsite/_static/websupport.js
 debian/
 #Vagrant machines
 vagrant/.vagrant
+venv

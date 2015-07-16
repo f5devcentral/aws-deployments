@@ -9,7 +9,13 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "f5networks/demo"
+
+  # Bugs that replace insecure public key doesn't seem to work reliably 
+  # in certain version so unfortunately leaving out
+  # https://github.com/mitchellh/vagrant/issues/5186
+  # https://github.com/mitchellh/vagrant/issues/5541
+  config.ssh.insert_key=false
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -23,11 +29,12 @@ Vagrant.configure(2) do |config|
   config.vm.synced_folder "../", "/aws-deployments"
 
   # some bootstrapping to get python 2.7.9 installed
-  config.vm.provision "shell", privileged: true, path: "install_python.sh"
+  #  config.vm.provision "shell", privileged: true, path: "install_python.sh"
 
   # basic ssh and python environment setup
   config.vm.provision "shell", privileged: false, path: "bootstrap.sh"
 
   config.vm.provision "file", source: ".f5aws", destination: "~/.f5aws"
   config.vm.provision "file", source: ".aws/credentials", destination: "~/.aws/credentials"
+
 end
