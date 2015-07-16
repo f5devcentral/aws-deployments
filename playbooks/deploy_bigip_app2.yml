@@ -114,6 +114,11 @@
           resource_key="name"
           payload='{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
       ignore_errors: True
+
+#TODO: REST call for datagroup not idempotent
+#ex.
+#failed: [52.26.61.0 -> localhost] => {"failed": true, "name": "mgmt/tm/ltm/data-group/internal", "rc": 1}
+#msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'"type" may not be specified in the context of the "modify" command. "type" may be specified using the following commands: create, edit, list', u'code': 400}
  
     - name: Upload Datagroup ... background for sorry page
       delegate_to: localhost
@@ -196,6 +201,12 @@
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
           payload='{"name":"{{vip_id}}_SSL_Offload","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"},{"name":"clientssl","context":"clientside"}]}'
+
+#TODO: REST call for datagroup not idempotent
+#ex.
+#failed: [52.25.214.214 -> localhost] => {"failed": true, "name": "mgmt/tm/sys/application/service", "rc": 1}
+#msg: 404 Client Error: Not Found. {u'errorStack': [], u'message': u'01020036:3: The requested Application Service (/Common/demo_iApp) was not found.', u'code': 404}
+...ignoring
 
     - name: Setup the iApp
       delegate_to: localhost

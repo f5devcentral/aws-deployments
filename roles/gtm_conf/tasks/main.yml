@@ -21,6 +21,12 @@
       collection_path='mgmt/tm/gtm/listener'
       resource_key="name"
 
+#TODO: REST call not idempotent 
+#ex.
+#failed: [54.68.213.182 -> localhost] => {"failed": true, "name": "mgmt/tm/gtm/datacenter", "rc": 1}
+#msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
+#...ignoring
+
 - name: Setup the Datacenter
   delegate_to: localhost
   bigip_config:
