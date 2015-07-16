@@ -38,23 +38,27 @@ conn = pexpect.spawn("ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev
 #                   )
 #conn.login(host, user, password)
 
-match_value = conn.expect([SSH_NEWKEY, '[Pp]assword:', pexpect.EOF, pexpect.TIMEOUT], timeout=MY_TIMEOUT);
+match_value = conn.expect([SSH_NEWKEY, '[Pp]assword:', '\(tmos\)#', pexpect.EOF, pexpect.TIMEOUT], timeout=MY_TIMEOUT);
 time.sleep(1)
-print "match_value =" + str(match_value)
+#print "match_value = " + str(match_value)
 if match_value == 0:
     print "Matched new key warning"
     conn.sendline ( "yes" )
 if match_value == 1:
     print "Matched Password prompt. Sending Password"
     conn.sendline ( password )
+if match_value == 2:
+    print "Matched TMSH prompt"
 time.sleep(1)
-#tmsh prompt
-conn.expect('\(tmos\)#', timeout=MY_TIMEOUT)
+
+if match_value != 2:
+   conn.expect('\(tmos\)#', timeout=MY_TIMEOUT)
 #bash prompt
 #conn.expect('~ #', timeout=MY_TIMEOUT)
 #SOL14495: The bigip_add and gtm_add scripts now accept a user name
-print "Matched prompt. Now adding bigip peer with command \"run gtm " + command + " " + peer_user + "@" + peer_host + "\"";
+print "Matched prompt. Now adding bigip peer with command \"run gtm " + command + " -a " + peer_user + "@" + peer_host + "\"";
 conn.sendline("run gtm " + command +  " -a " + peer_user + "@" + peer_host)
+
 if command == "gtm_add":
     conn.expect ('Are you absolutely sure you want to do this?')
     print "Confirming will wipe away this config and use peer GTM's config instead"
@@ -71,6 +75,10 @@ if match_value == 1:
     print "Matched Password prompt. Sending Password"
     conn.sendline ( password )
 
-conn.expect ('==> Done <==', timeout=MY_TIMEOUT)
-print "command " + command + " successful"
+match_value = conn.expect(['==> Done <==', '\(tmos\)#', pexpect.EOF, pexpect.TIMEOUT], timeout=MY_TIMEOUT);
+if match_value == 0:
+   print "Received \"==> Done <==\" : " +  "command " + command + " successful"
+if match_value == 1:
+   print "Reecived tmsh prompt. May need to check results"  
+   
 conn.sendline ('exit')
