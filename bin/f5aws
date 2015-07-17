@@ -173,6 +173,12 @@ class F5Aws(object):
     inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
     if self.run_playbooks(playbooks, inventory_path, options, extra_vars) == 0:
       self.display_login(options.env_name)
+
+    print '\nTo start traffic with the jmeter client, run ./bin/{} {} {}'.format(
+      __prog__, 'start_traffic', options.env_name)
+
+    print '\nYou can re-print the above login information along with the ansible inventory \
+    using "info" command'
     
   @safe
   def cmd_teardown(self, options, extra_vars):
