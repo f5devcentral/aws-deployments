@@ -206,7 +206,6 @@
 #ex.
 #failed: [52.25.214.214 -> localhost] => {"failed": true, "name": "mgmt/tm/sys/application/service", "rc": 1}
 #msg: 404 Client Error: Not Found. {u'errorStack': [], u'message': u'01020036:3: The requested Application Service (/Common/demo_iApp) was not found.', u'code': 404}
-...ignoring
 
     - name: Setup the iApp
       delegate_to: localhost
