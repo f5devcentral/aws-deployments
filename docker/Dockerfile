@@ -4,7 +4,7 @@
 ############################################################
 
 # Set the base image to Ubuntu
-FROM smoothalg/f5demo
+FROM f5networks/demo
 
 # File Author / Maintainer
 MAINTAINER Alex Applebaum a.applebaum@f5.com
