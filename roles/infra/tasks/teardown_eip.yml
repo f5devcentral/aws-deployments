@@ -8,7 +8,7 @@
   register: eip_teardown_results
   ignore_errors: yes
 
-- debug: var=eip_teardown_results
+#- debug: var=eip_teardown_results
 
 - name: create a file in which to persist results
   copy: content="{{ eip_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-{{vip_id}}.yml
