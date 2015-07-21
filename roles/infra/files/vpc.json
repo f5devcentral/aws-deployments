@@ -1,0 +1,63 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS VPC",
+  "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Environment name from f5Aws tool deployment."
+    },
+    "cidrBlock": {
+        "Type": "String",
+        "Description": "CIDR block for the VPC"
+      }
+    },
+  "Resources": {
+    "Vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": { "Ref": "cidrBlock" },
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true",
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "InternetGateWayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        },
+        "VpcId": {
+          "Ref": "Vpc"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "vpcId": {
+      "Description": "Id of VPC",
+      "Value": { "Ref": "Vpc" }
+    },
+    "internetGatewayId": {
+      "Description": "Id of internet gateway attachment",
+      "Value": { "Ref": "InternetGateway" }
+    }
+  }
+}

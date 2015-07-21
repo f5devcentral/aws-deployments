@@ -1,0 +1,333 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploys GTM with interfaces on public and management subnets.",
+  "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Environment name from f5Aws tool deployment."
+    },
+    "vpc": {
+      "Type": "AWS::EC2::VPC::Id",
+      "ConstraintDescription": "Must be an existing VPC within working region."
+    },
+    "availabilityZone": {
+      "Type": "String",
+      "ConstraintDescription": "Must be an availability zone within the region associated with the specific VPC"
+    },
+    "publicSubnet": {
+      "Description": "Public subnet",
+      "Type": "String",
+      "ConstraintDescription": "Must be subnet within specified availability zone"
+    },
+    "managementSubnet": {
+      "Description": "Management subnet",
+      "Type": "String",
+      "ConstraintDescription": "Must be subnet within specified availability zone"
+    },
+    "version": {
+      "Description": "Platform version (i.e. 11.6)",
+      "Type": "String",
+      "ConstraintDescription": "Must be in <major>.<minor>.<maintenance> version format"
+    },
+    "instanceType": {
+      "Description": "EC2 Instance type to be used for BIG-IP",
+      "Type": "String",
+      "Default": "m3.xlarge",
+      "AllowedValues": [
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "m3.large",
+        "m3.xlarge",
+        "m2.xlarge",
+        "m3.2xlarge",
+        "c3.large",
+        "c3.xlarge"
+      ]
+    },
+    "amiId": {
+      "Description": "ID of BIG-IP AMI",
+      "Type": "String"
+    },
+    "keyName": {
+      "Description": "Name of private key for SSH login",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "255",
+      "AllowedPattern": "[\\x20-\\x7E]*"
+    },
+    "region": {
+      "Description": "AWS region within which to deploy BIG-IP",
+      "Type": "String",
+      "AllowedValues": [
+        "ap-northeast-1",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "eu-central-1",
+        "sa-east-1",
+        "us-east-1",
+        "eu-west-1",
+        "eu-east-1",
+        "us-west-1",
+        "us-west-2"
+      ]
+    },
+    "SSHLocation": {
+      "Description": " The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    }
+  },
+  "Resources": {
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "GroupDescription": "Enable SSH & HTTPS & ALL traffic from this security group",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "443",
+            "ToPort": "443",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "udp",
+            "FromPort": "53",
+            "ToPort": "53",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "53",
+            "ToPort": "53",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "4353",
+            "ToPort": "4353",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "InstanceSecurityGroupIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Ref": "InstanceSecurityGroup"
+        },
+        "IpProtocol": "-1",
+        "FromPort": "-1",
+        "ToPort": "-1",
+        "SourceSecurityGroupId": {
+          "Ref": "InstanceSecurityGroup"
+        }
+      }
+    },
+    "ManagementInterface": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "Description": "Management Interface for the BigIP",
+        "GroupSet": [
+          {
+            "Ref": "InstanceSecurityGroup"
+          }
+        ],
+        "SubnetId": {
+          "Ref": "managementSubnet"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "ExternalInterface": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "Description": "External Interface for the BigIP",
+        "GroupSet": [
+          {
+            "Ref": "InstanceSecurityGroup"
+          }
+        ],
+        "SubnetId": {
+          "Ref": "publicSubnet"
+        },
+        "SourceDestCheck": "false",
+        "SecondaryPrivateIpAddressCount": "1",
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "BigipInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Ref": "amiId"
+        },
+        "InstanceType": {
+          "Ref": "instanceType"
+        },
+        "KeyName": {
+          "Ref": "keyName"
+        },
+        "AvailabilityZone": {
+          "Ref": "availabilityZone"
+        },
+        "NetworkInterfaces": [
+          {
+            "Description": "Management Interface",
+            "DeviceIndex": "0",
+            "NetworkInterfaceId": {
+              "Ref": "ManagementInterface"
+            }
+          },
+          {
+            "Description": "External Interface",
+            "DeviceIndex": "1",
+            "NetworkInterfaceId": {
+              "Ref": "ExternalInterface"
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "ManagementIpAddress": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "ExternalSelfEipAddress": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "ManagementIPAssociation": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "ManagementIpAddress",
+            "AllocationId"
+          ]
+        },
+        "NetworkInterfaceId": {
+          "Ref": "ManagementInterface"
+        }
+      }
+    },
+    "ExternalSelfEIPAssociation": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "ExternalSelfEipAddress",
+            "AllocationId"
+          ]
+        },
+        "NetworkInterfaceId": {
+          "Ref": "ExternalInterface"
+        },
+        "PrivateIpAddress": {
+          "Fn::GetAtt": [
+            "ExternalInterface",
+            "PrimaryPrivateIpAddress"
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "BigipInstance": {
+      "Description": "Instance id of Big-IP in Amazon",
+      "Value": {
+        "Ref": "BigipInstance"
+      }
+    },
+    "ManagementInterfacePublicIp": {
+      "Description": "IP address of management port on BIG-IP",
+      "Value": {
+        "Ref": "ManagementIpAddress"
+      }
+    },
+    "ManagementInterfacePrivateIp": {
+      "Description": "Internally routable IP of management interface on BIG-IP",
+      "Value": {
+        "Fn::GetAtt": [
+          "ManagementInterface",
+          "PrimaryPrivateIpAddress"
+        ]
+      }
+    },
+    "ManagementInterfaceId": {
+      "Description": "Management interface ID on BIG-IP",
+      "Value": {
+        "Ref": "ManagementInterface"
+      }
+    },
+    "ExternalInterfacePublicIp": {
+      "Description": "IP Address of External interface attached to BIG-IP",
+      "Value": {
+        "Ref": "ExternalSelfEipAddress"
+      }
+    },
+    "ExternalInterfacePrivateIp": {
+      "Description": "Internally routable IP of public interface on BIG-IP",
+      "Value": {
+        "Fn::GetAtt": [
+          "ExternalInterface",
+          "PrimaryPrivateIpAddress"
+        ]
+      }
+    },
+    "ExternalInterfaceId": {
+      "Description": "External interface ID on BIG-IP",
+      "Value": {
+        "Ref": "ExternalInterface"
+      }
+    },
+    "Vip1": {
+      "Description": "External Interface Secondary IP 1",
+      "Value": {
+        "Fn::Select": [
+          "0",
+          {
+            "Fn::GetAtt": [
+              "ExternalInterface",
+              "SecondaryPrivateIpAddresses"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

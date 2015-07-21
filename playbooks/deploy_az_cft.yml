@@ -1,0 +1,6 @@
+---
+- hosts: az-managers
+  gather_facts: no
+  tasks:
+    - name: deploy availability zones
+      include: "{{ install_path }}/roles/infra/tasks/deploy_az.yml"

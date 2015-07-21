@@ -1,0 +1,6 @@
+---
+## Some initial setup for big ip once we can login.  We need a user for rest calls.  We may also want the default shell
+## to be bash, rather than tmsh.  The latter is difficult to use ansible...
+
+- include: add_rest_user.yml
+- include: modify_admin.yml

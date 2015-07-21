@@ -1,0 +1,13 @@
+---
+- name: Ensure package manager is up-to-date
+  apt: update_cache=yes
+  ignore_errors: True
+
+- name: Install list of packages required for jmeter
+  apt: pkg={{item}} state=installed
+  with_items:
+     - python-setuptools
+     - aptitude
+     - software-properties-common
+     - jmeter
+

@@ -1,0 +1,26 @@
+---
+- name: Wait for BIG-IP to be available
+  local_action: bigip_facts include=system_info
+               server={{ inventory_hostname }}
+               user={{ bigip_rest_user }}
+               password={{ bigip_rest_password }}
+               validate_certs=no
+  delegate_to: localhost
+  register: result
+  until: result.ansible_facts.system_info.product_information.product_version is defined
+
+# - name: Checking if json is available to us
+#   raw: python -c 'import json'
+#   register: has_json
+#   ignore_errors: true
+#   retries: 60
+#   delay: 15
+
+# - name: Checking if simplejson is available to us
+#   raw: python -c 'import simplejson'
+#   register: has_json
+#   ignore_errors: true
+#   when: has_json.rc == 1
+
+# - include: jsonify-the-bigip.yaml
+#   when: "'{{ system_info.product_information.product_version }}' in {{ jsonify_versions }} and {{ has_json.rc }} == 1"

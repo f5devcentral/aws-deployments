@@ -1,0 +1,7 @@
+---
+# Deploy the docker host AMIs via CFT
+- hosts: zone1-clienthost-manager
+  gather_facts: no
+  tasks:
+    - name: deploy client host 
+      include: "{{ install_path }}/roles/infra/tasks/deploy_clienthost.yml"

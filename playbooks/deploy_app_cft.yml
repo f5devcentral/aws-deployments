@@ -1,0 +1,7 @@
+---
+# Deploy the docker host AMIs via CFT
+- hosts: apphost-managers
+  gather_facts: no
+  tasks:
+    - name: deploy app hosts 
+      include: "{{ install_path }}/roles/infra/tasks/deploy_apphost.yml"

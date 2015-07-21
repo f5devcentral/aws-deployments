@@ -1,0 +1,61 @@
+---
+#This playbook dismantles all deployed EC2 resources. 
+- hosts: zone1-clienthost-manager
+  gather_facts: no
+  tasks:
+    - name: Teardown client
+      include: "{{ install_path }}/roles/infra/tasks/teardown_client.yml"
+
+- hosts: gtm-managers
+  vars: 
+     vip_id: Vip1
+  gather_facts: no
+  tasks: 
+    - name: Teardown eip associated with Vip1
+      include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
+
+- hosts: gtm-managers
+  gather_facts: no
+  tasks:
+    - name: Teardown gtms
+      include: "{{ install_path }}/roles/infra/tasks/teardown_gtm.yml"
+
+- hosts: bigip-managers
+  vars: 
+     vip_id: Vip2
+  gather_facts: no
+  tasks: 
+    - name: Teardown eip associated with Vip2
+      include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
+
+- hosts: bigip-managers
+  vars: 
+     vip_id: Vip1
+  gather_facts: no
+  tasks: 
+    - name: Teardown eip associated with Vip1
+      include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
+
+- hosts: bigip-managers
+  gather_facts: no
+  tasks:
+    - name: Teardown bigips
+      include: "{{ install_path }}/roles/infra/tasks/teardown_bigip.yml"
+
+- hosts: apphost-managers
+  gather_facts: no
+  tasks:
+    - name: Teardown apphosts
+      include: "{{ install_path }}/roles/infra/tasks/teardown_apphost.yml"
+
+- hosts: az-managers
+  gather_facts: no
+  tasks:
+    - name: Teardown az
+      include: "{{ install_path }}/roles/infra/tasks/teardown_az.yml"
+
+- hosts: vpc-manager
+  gather_facts: no
+  tasks:
+    - name: Teardown vpc
+      include: "{{ install_path }}/roles/infra/tasks/teardown_vpc.yml"

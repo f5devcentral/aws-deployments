@@ -1,0 +1,14 @@
+---
+# tasks file for app role
+# ensures the set of containers are running
+- docker:
+      image: "{{ image_id }}"
+      count: "{{ container_cnt }}"
+      state: running
+      publish_all_ports: True
+  tags: 
+     - launch_containers
+  register: launched_containers
+  until: launched_containers["failed"] == false
+  retries: 5
+  delay: 10

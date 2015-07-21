@@ -1,0 +1,42 @@
+---
+# Dynamically populate the host groups and variables
+- hosts:
+   localhost
+  gather_facts: no
+  tasks:
+    # apphosts host group
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['apphost-managers']
+      delegate_to: localhost 
+    - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
+        WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
+        WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
+        ansible_ssh_user="ec2-user"
+      with_items: output['results']
+
+# Wait for hosts to become ready
+- hosts: apphosts
+  gather_facts: False
+  tasks:
+    - name:  Wait for ssh port to open
+      local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+  sudo: false
+
+# Create docker containers on the application hosts
+- hosts: apphosts
+  gather_facts: False
+  vars:
+    ansible_sudo: True
+  roles:
+    - docker_base
+    - app
+
+# New set of tasks without sudo
+- hosts: apphosts
+  gather_facts: False
+  tasks:
+    - name: Store docker containers from jinja template
+      local_action: template src=../roles/app/templates/docker_containers.cfg.j2  dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml
+
+

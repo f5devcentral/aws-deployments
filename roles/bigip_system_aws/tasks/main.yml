@@ -1,0 +1,26 @@
+---
+# ---------------------------------
+# AWS-specific system variables
+# ---------------------------------
+
+- name: Adding/updating AWS access and secret keys
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"awsAccessKey":"{{ f5_aws_access_key }}", "awsSecretKey":"{{ f5_aws_secret_key }}"}'
+    collection_path='mgmt/tm/sys/global-settings'
+
+- name: Disabling dhcp
+  delegate_to: localhost
+  bigip_config:
+    state=present
+    host={{ inventory_hostname }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{ "value":"disable" }'
+    collection_path='mgmt/tm/sys/db/dhclient.mgmt'
+
+

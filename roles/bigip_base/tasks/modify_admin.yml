@@ -1,0 +1,8 @@
+---
+
+- name: Updating the admin password
+  raw: modify auth user admin password '{{ bigip_rest_password }}' 
+  ignore_errors: True
+
+- name: Saving tmsh config
+  raw: save sys config 

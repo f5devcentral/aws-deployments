@@ -1,0 +1,6 @@
+---
+- hosts: gtm-managers
+  gather_facts: no
+  tasks:
+    - name: deploy gtms
+      include: "{{ install_path }}/roles/infra/tasks/deploy_gtm.yml"

@@ -1,0 +1,47 @@
+---
+# Dynamically populate the host groups and variables
+- hosts: 
+   localhost
+  gather_facts: no
+  tasks:
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+      register: output
+      with_items: groups['bigip-managers']
+      delegate_to: localhost
+
+    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
+        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
+        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
+        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
+      with_items: output['results']
+
+# Wait for hosts to become ready
+- hosts: bigips
+  gather_facts: False
+  sudo: false
+  tasks:
+    - name:  Wait for ssh port to open
+      local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+    - name: Wait until BIG-IP is ready for provisioning
+      raw: "run /util bash -c 'cat /var/prompt/ps1'"
+      until: (result.stdout.find("Active") != -1)
+      register: result
+      retries: 40
+
+# Basic device setup using tmsh to enable further provisioning
+- hosts: bigips
+  gather_facts: no
+  roles:
+    # adds users via tmsh
+    - bigip_base 
+    # adds json so ansible doesn't puke
+    - bigip_jsonify
+    # provisions system globals like ntp, dns, snmp, syslog, db keys  
+    - bigip_system
+    # sets AWS keys and disables DHCP
+    - bigip_system_aws
+    # sets vlans, self-ips, routes
+    - bigip_network
+

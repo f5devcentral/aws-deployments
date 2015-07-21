@@ -1,0 +1,328 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploys Mgmt, Public, Private, and Application subnets within a VPC",
+  "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Environment name from f5Aws tool deployment."
+    },
+    "vpc": {
+      "Type": "AWS::EC2::VPC::Id",
+      "ConstraintDescription": "Must be an existing VPC within the supplied region."
+    },
+    "availabilityZone": {
+      "Type": "String",
+      "ConstraintDescription": "Must be an availability zone within the region associated with the specific VPC"
+    },
+    "managementSubnetCidr": {
+      "Description": "Management subnet CIDR.",
+      "Type": "String",
+      "ConstraintDescription": "Must be a unique address range within this vpc"
+    },
+    "publicSubnetCidr": {
+      "Description": "Public subnet CIDR.",
+      "Type": "String",
+      "ConstraintDescription": "Must be a unique address range within this vpc"
+    },
+    "privateSubnetCidr": {
+      "Description": "Private subnet CIDR.",
+      "Type": "String",
+      "ConstraintDescription": "Must be a unique address range within this vpc"
+    },
+    "applicationSubnetCidr": {
+      "Description": "Application subnet CIDR.",
+      "Type": "String",
+      "ConstraintDescription": "Must be a unique address range within this vpc"
+    },
+    "internetGateway": {
+      "Description": "Internet gateway attached to the VPC.",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "ManagementSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Ref": "availabilityZone"
+        },
+        "CidrBlock": {
+          "Ref": "managementSubnetCidr"
+        },
+        "Tags": [
+          {
+            "Key": "topology",
+            "Value": "big-ip-vpc"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "PublicSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Ref": "availabilityZone"
+        },
+        "CidrBlock": {
+          "Ref": "publicSubnetCidr"
+        },
+        "Tags": [
+          {
+            "Key": "topology",
+            "Value": "big-ip-vpc"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "PrivateSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Ref": "availabilityZone"
+        },
+        "CidrBlock": {
+          "Ref": "privateSubnetCidr"
+        },
+        "Tags": [
+          {
+            "Key": "topology",
+            "Value": "big-ip-vpc"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "ApplicationSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Ref": "availabilityZone"
+        },
+        "CidrBlock": {
+          "Ref": "applicationSubnetCidr"
+        },
+        "Tags": [
+          {
+            "Key": "topology",
+            "Value": "big-ip-vpc"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "ManagementSubnetRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "ManagementRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "ManagementSubnet"
+        }
+      }
+    },
+    "PublicSubnetRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "PublicSubnet"
+        }
+      }
+    },
+    "PrivateSubnetRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PrivateRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "PrivateSubnet"
+        }
+      }
+    },
+    "ApplicationSubnetRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "ApplicationRouteTable"
+        },
+        "SubnetId": {
+          "Ref": "ApplicationSubnet"
+        }
+      }
+    },
+    "ManagementRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "ManagementRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "ManagementRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "internetGateway"
+        }
+      }
+    },
+    "PublicRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "PublicRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "internetGateway"
+        }
+      }
+    },
+    "PrivateRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "PrivateRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PrivateRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "internetGateway"
+        }
+      }
+    },
+    "ApplicationRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "EnvName",
+            "Value": {"Ref": "envName"}
+          }
+        ]
+      }
+    },
+    "ApplicationRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "ApplicationRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "internetGateway"
+        }
+      }
+     }
+   },
+   "Outputs": {
+    "ManagementSubnet": {
+      "Description": "Id of management subnet",
+      "Value": {
+        "Ref": "ManagementSubnet"
+      }
+    },
+    "PublicSubnet": {
+      "Description": "Id of public subnet",
+      "Value": {
+        "Ref": "PublicSubnet"
+      }
+    },
+    "PrivateSubnet": {
+      "Description": "Id of private subnet",
+      "Value": {
+        "Ref": "PrivateSubnet"
+      }
+    },
+    "ApplicationSubnet": {
+      "Description": "Id of application subnet",
+      "Value": {
+        "Ref": "ApplicationSubnet"
+      }
+    },
+    "ApplicationRouteTable": {
+      "Description": "Application Route Table if BIG-IPs are default Route",
+      "Value": { 
+          "Ref": "ApplicationRouteTable"
+       }
+    }
+  }
+}

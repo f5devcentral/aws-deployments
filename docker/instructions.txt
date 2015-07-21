@@ -1,0 +1,15 @@
+# This directory helps build a docker container to run this demo from.
+# It assumes you:
+#   * have docker installed (example: running from a linux desktop)
+#   * have git cloned aws-deployments
+      and are running these commands from inside this directory "/aws-deployments/docker"
+
+# Step 1: Build the Docker image from the Dockerfile located in this directory
+sudo docker build -t f5demo .
+
+# Step 2: Launch docker container
+sudo docker run -v /aws-deployments:/aws-deployments -i -t f5demo
+
+# Step 3: Now follow instructions from the main repo README
+
+

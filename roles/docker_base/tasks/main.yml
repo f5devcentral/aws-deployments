@@ -1,0 +1,25 @@
+---
+# We shouldn't need the following commented out steps
+#  as docker is already be installed on the ecs optimized
+#  AMIs in Amazon. 
+#
+# - apt: update_cache=yes
+# 
+# - name: Install list of packages
+#   apt: pkg={{item}} state=installed
+#   with_items:
+#      - docker
+#      - docker.io
+#      - python-setuptools
+# 
+- name: Ensuring 'pip' is available for python package upgrades
+  easy_install: name=pip
+
+- name: Ensuring 'pip' up to date
+  pip: name=pip state=present extra_args='--upgrade' executable=/usr/local/bin/pip
+
+# docker  ansible module only compat with version 1.1.0
+#   See; https://github.com/ansible/ansible/issues/10879
+- name: Ensuring correct version of python 'docker' module
+  pip: name=docker-py state=present version=1.1.0 executable=/usr/local/bin/pip
+
