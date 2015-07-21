@@ -178,7 +178,7 @@ class F5Aws(object):
       __prog__, 'start_traffic', options.env_name)
 
     print '\nYou can re-print the above login information along with the ansible inventory \
-    using "info" command'
+using "info" command'
     
   @safe
   def cmd_teardown(self, options, extra_vars):
