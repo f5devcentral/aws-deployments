@@ -57,7 +57,7 @@
           VipPrivateIp: "{{ item.stdout | from_json | attr('get')('privateIpAddress') }}"
           VipEip: "{{ item.stdout | from_json | attr('get')('eipAddress') }}"
       when: item.changed == true
-      with_items: "{{ hostvars[inventory_hostname]['output']['results'] }}"
+      with_items: hostvars[inventory_hostname]['output']['results']
 
 - hosts: gtms
   vars:
@@ -104,7 +104,7 @@
           host="{{ inventory_hostname }}"
           user="{{ bigip_rest_user }}"
           password="{{ bigip_rest_password }}"
-          payload='{"name":"{{vip_id}}.example.com","poolLbMode":"toplogy","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
+          payload='{"name":"{{vip_id}}.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"
 
