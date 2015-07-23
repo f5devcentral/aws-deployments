@@ -16,7 +16,7 @@
     - name: deploy eips
       include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
 
-# Dynamically populate the host groups and variables
+# Dynamically populate groups from persisted results from previous playbooks.
 - hosts:
    localhost
   gather_facts: no
@@ -26,7 +26,8 @@
       register: output
       with_items: groups['gtm-managers']
       delegate_to: localhost
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=gtms
+    - add_host: group=gtms
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" 
         ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
@@ -40,7 +41,8 @@
       register: output
       with_items: groups['bigip-managers']
       delegate_to: localhost
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+    - add_host: group=bigips
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"

@@ -1,5 +1,5 @@
 ---
-# Dynamically populate the host groups and variables
+# Dynamically populate bigip group from persisted results from previous playbooks
 - hosts: 
    localhost
   gather_facts: no
@@ -9,7 +9,8 @@
       with_items: groups['bigip-managers']
       delegate_to: localhost
 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+    - add_host: group=bigips
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
         ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
@@ -18,7 +19,7 @@
       with_items: output['results']
 
 # Wait for hosts to become ready
-- hosts: bigips-managers
+- hosts: bigips
   gather_facts: False
   sudo: false
   tasks:

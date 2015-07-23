@@ -1,16 +1,17 @@
 ---
-
+# Dynamically populate groups from persisted results from previous playbooks.
 - hosts: 
    localhost
   gather_facts: no
   tasks:
-    #Gather GTM variables on disk and re-create gtm group
+
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['gtm-managers']
       delegate_to: localhost
 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=gtms
+    - add_host: group=gtms
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
@@ -21,13 +22,13 @@
         ansible_ssh_user="admin"
       with_items: output['results']
 
-    #Gather BIGIP variables on disk and re-create bigip group
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['bigip-managers']
       delegate_to: localhost
 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+    - add_host: group=bigips
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"

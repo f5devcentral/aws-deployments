@@ -1,4 +1,5 @@
 ---
+# Dynamically populate bigip and apphost groups from persisted results from previous playbooks.
 - hosts: localhost
   vars:
     vip_id: "Vip2"
@@ -8,7 +9,8 @@
       register: output
       with_items: groups['bigip-managers']
 
-    - add_host: group=bigips name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+    - add_host: group=bigips
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
@@ -24,7 +26,8 @@
       register: output
       with_items: groups['apphost-managers']
 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
+    - add_host: group=apphosts 
+        name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
         WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
         WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
         ansible_ssh_user="ec2-user"

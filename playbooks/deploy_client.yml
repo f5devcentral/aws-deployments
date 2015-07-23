@@ -1,16 +1,17 @@
 ---
-# Dynamically populate the host groups and variables
+# Dynamically populate groups from persisted results from previous playbooks.
 - hosts:
    localhost
   gather_facts: no
   tasks:
-    # Re-Create a docker host temp group from data persisted to disk
+
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['clienthost-managers']
       delegate_to: localhost
 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}" group=clienthosts
+    - add_host: group=clienthosts
+        name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
         ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
         ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
         ansible_ssh_user="ubuntu"
@@ -94,7 +95,7 @@
     - name: restart resolvconf
       shell: resolvconf -u 
 
-# Upload & launch Jmeter test client in background
+# Upload Jmeter scripts
 - hosts: clienthosts
   gather_facts: False
   tasks:
@@ -104,8 +105,3 @@
 
     - name: Copy over attack jmeter script
       copy: src=../roles/client/files/attack-site.jmx dest=~/
-# 
-#    - name: Launch jmeter script in background
-#      shell: nohup jmeter -n -t ~/simple-load-generation.jmx &
-# 
-

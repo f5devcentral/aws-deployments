@@ -1,15 +1,17 @@
 ---
-# Dynamically populate the host groups and variables
+# Dynamically populate apphost groups from persisted results from previous playbooks. 
 - hosts:
    localhost
   gather_facts: no
   tasks:
-    # apphosts host group
+
     - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
       register: output
       with_items: groups['apphost-managers']
       delegate_to: localhost 
-    - add_host: name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" group=apphosts
+
+    - add_host: group=apphosts 
+        name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
         WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
         WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
         ansible_ssh_user="ec2-user"
