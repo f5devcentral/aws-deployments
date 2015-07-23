@@ -10,7 +10,7 @@
       delegate_to: localhost
 
     - add_host: group=bigips
-        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" 
         ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
         ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
