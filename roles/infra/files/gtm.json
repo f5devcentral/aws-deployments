@@ -273,6 +273,12 @@
         "Ref": "BigipInstance"
       }
     },
+    "AvailabilityZone": {
+      "Description": "Availability Zone",
+      "Value": {
+        "Ref": "availabilityZone"
+      }
+    },
     "ManagementInterfacePublicIp": {
       "Description": "IP address of management port on BIG-IP",
       "Value": {

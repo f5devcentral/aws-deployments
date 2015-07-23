@@ -18,7 +18,7 @@
       with_items: output['results']
 
 # Wait for hosts to become ready
-- hosts: bigips
+- hosts: bigips-managers
   gather_facts: False
   sudo: false
   tasks:
