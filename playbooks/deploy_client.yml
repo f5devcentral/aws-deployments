@@ -4,18 +4,34 @@
    localhost
   gather_facts: no
   tasks:
-
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+    - set_fact: list=groups['clienthost-managers']
+      when: groups | attr('get')('clienthost-managers','') != ''
+    - set_fact: list=[]
+      when: groups | attr('get')('clienthost-managers','') == ''
+    - name: load the clienthost cft results
+      shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json" #gtm
       register: output
-      with_items: groups['clienthost-managers']
-      delegate_to: localhost
-
+      with_items: list
+      ignore_errors: true
     - add_host: group=clienthosts
         name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
         ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
         ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
         ansible_ssh_user="ubuntu"
-      with_items: output['results']
+      with_items: list
+      when: output|success
+
+    # - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+    #   register: output
+    #   with_items: groups['clienthost-managers']
+    #   delegate_to: localhost
+
+    # - add_host: group=clienthosts
+    #     name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
+    #     ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
+    #     ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
+    #     ansible_ssh_user="ubuntu"
+    #   with_items: output['results']
 
 # Need to wait for port 22 to open up
 - hosts: clienthosts
@@ -48,19 +64,25 @@
     vip_id: "Vip1"
   gather_facts: no
   tasks:
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
+    - set_fact: list=groups['gtm-managers']
+      when: groups | attr('get')('gtm-managers','') != ''
+    - set_fact: list=[]
+      when: groups | attr('get')('gtm-managers','') == ''
+    - name: load the gtm_cft results
+      shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json" #gtm
       register: output
-      with_items: groups['gtm-managers']
-
-    - add_host: group=gtms name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+      with_items: list
+      ignore_errors: true
+    - add_host: group=gtms
+        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
+        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
         ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
         ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
         VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
-        ansible_ssh_user="admin"
-      with_items: output['results']
-
-    - debug: var=groups['gtms']
+        region="{{region}}"
+      with_items: list
+      when: output|success
 
 ### Example Default /etc/resolv.conf in AWS ####
 

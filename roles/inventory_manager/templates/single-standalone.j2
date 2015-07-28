@@ -1,0 +1,77 @@
+; ansible "hosts" inventory for {{ env_name }} 
+; This is an auto-generated file for this deployment. 
+
+; hosts and groups
+
+; our "management hosts" - these don't actually exist,
+;  they are really virtual hosts we use to group variables
+
+[localhosts:children]
+localhost
+managers
+
+
+[managers:children]
+vpc-managers
+apphost-managers
+bigip-managers
+az-managers
+
+; dynamic groups that populate via add_host
+[apphosts]
+[bigips]
+[zone1-apphosts]
+[zone1-bigips]
+
+[zone1:children]
+zone1-az-managers
+zone1-apphosts
+zone1-bigips
+
+[zone1-az-managers]
+zone1-az-manager
+zone1-apphost1-manager
+zone1-bigip1-manager
+
+[vpc-managers]
+vpc-manager
+
+[az-managers]
+zone1-az-manager
+
+[apphost-managers]
+zone1-apphost1-manager
+
+[bigip-managers]
+zone1-bigip1-manager
+
+
+
+; group vars
+
+[all:vars]
+env_name={{ env_name }}
+deployment_model={{ deployment_model }}
+region={{ region }}
+vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
+key_name={{ ssh_key_name }}
+
+
+[zone1:vars]
+zone_id=zone1
+availability_zone={{ zone }}
+zone_cidr_prefix="{{ vpc_cidr_prefix }}.1"
+management_cidr="{{ vpc_cidr_prefix }}.11.0/24"
+private_cidr="{{ vpc_cidr_prefix }}.12.0/24"
+public_cidr="{{ vpc_cidr_prefix }}.13.0/24"
+application_cidr="{{ vpc_cidr_prefix }}.14.0/24"
+bigip_version={{ bigip_version }}
+bigip_license_throughput={{ bigip_license_throughput }}
+bigip_license_model={{ bigip_license_model }}
+bigip_license_package={{ bigip_license_package }}
+bigip_instance_type={{ bigip_instance_type }}
+apphost_instance_type={{ apphost_instance_type }}
+
+[localhost:vars]
+ansible_connection=local
+ansible_python_interpreter="/usr/bin/env python"
