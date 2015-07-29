@@ -1,32 +1,26 @@
 ---
-# Dynamically populate the host groups and variables
-- hosts:
-   localhost
+- hosts: clients
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    # Re-Create a docker host temp group from data persisted to disk
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['clienthost-managers']
-      delegate_to: localhost
-
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}" group=clienthosts
-        ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
-        ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
-        ansible_ssh_user="ubuntu"
-      with_items: output['results']
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePublicIp }}
+        ClientInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePublicIp }}
+        ClientInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePrivateIp }}
 
 # Need to wait for port 22 to open up
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   tasks:
-    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+    - local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
   sudo: false
 
 # Now launch containers inside them
 # Amazon amis we're using already have docker installed so no need for install_docker role
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   vars:
     ansible_sudo: True
   roles:
@@ -42,24 +36,22 @@
 # modify /etc/resolv.conf to resolve example.com at GTM Listener
 # so first need to load GTM listeners again (Vip1)
 
-- hosts: localhost
-  vars:
-    vip_id: "Vip1"
+
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: gtms
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['gtm-managers']
-
-    - add_host: group=gtms name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
-        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
-        ansible_ssh_user="admin"
-      with_items: output['results']
-
-    - debug: var=groups['gtms']
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
+        region="{{region}}"
 
 ### Example Default /etc/resolv.conf in AWS ####
 
@@ -71,8 +63,8 @@
 #
 
 # Modify Nameservers 
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   vars:
     ansible_sudo: True
   tasks:
@@ -80,8 +72,6 @@
       shell: "egrep -c nameserver /etc/resolv.conf"
       ignore_errors: true
       register: nameserver_count
-
-    #- debug: var=nameserver_count.stdout
 
     # Need to place GTMs first. 
     - name: Add example.com nameservers to /etc/resolv.conf if just default one nameserver
@@ -94,9 +84,9 @@
     - name: restart resolvconf
       shell: resolvconf -u 
 
-# Upload & launch Jmeter test client in background
-- hosts: clienthosts
-  gather_facts: False
+# Upload Jmeter scripts
+- hosts: clients
+  gather_facts: no
   tasks:
 
     - name: Copy over simple load generation jmeter script
@@ -104,8 +94,3 @@
 
     - name: Copy over attack jmeter script
       copy: src=../roles/client/files/attack-site.jmx dest=~/
-# 
-#    - name: Launch jmeter script in background
-#      shell: nohup jmeter -n -t ~/simple-load-generation.jmx &
-# 
-

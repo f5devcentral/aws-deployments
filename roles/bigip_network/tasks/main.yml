@@ -7,7 +7,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"private", "interfaces":"1.2"}'
@@ -18,7 +18,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"public", "interfaces":"1.1"}'
@@ -30,7 +30,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"private", "address":"{{ InternalInterfacePrivateIp }}/24", "vlan":"private", "trafficGroup":"traffic-group-local-only"}'
@@ -42,7 +42,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"public", "address":"{{ ExternalInterfacePrivateIp }}/24", "vlan":"public", "trafficGroup":"traffic-group-local-only", "allowService":["tcp:4353"]}'
@@ -55,7 +55,7 @@
 #   delegate_to: localhost
 #   bigip_config:
 #     state=present
-#     host={{ inventory_hostname }}
+#     host={{ ansible_ssh_host }}
 #     user={{ bigip_rest_user }}
 #     password={{ bigip_rest_password }}
 #     payload='{"name":"default_gateway_pool", "members":[{"name":"172.16.2.1:0","address":"172.16.2.1"}, {"name":"172.16.12.1:0","address":"172.16.12.1"}], "monitor":"gateway_icmp"}'
@@ -66,7 +66,7 @@
 #   delegate_to: localhost
 #   bigip_config:
 #     state=present
-#     host={{ inventory_hostname }}
+#     host={{ ansible_ssh_host }}
 #     user={{ bigip_rest_user }}
 #     password={{ bigip_rest_password }}
 #     payload='{ "name":"pool_member_gateway_pool", "members":[{"name":"172.16.3.1:0","address":"172.16.3.1"}, {"name":"172.16.13.1:0","address":"172.16.13.1"}], "monitor":"gateway_icmp" }'
@@ -84,7 +84,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"default_route", "network":"default", "gw":"{{ [ExternalInterfacePrivateIp[0:9],1]|join('.') }}" }'

@@ -1,0 +1,73 @@
+; ansible "hosts" inventory for {{ env_name }} 
+; This is an auto-generated file for this deployment. 
+
+; hosts and groups
+
+vpc-manager
+
+{% for zone in zones %}
+[zone{{ loop.index }}]
+zone{{ loop.index }}-az
+zone{{ loop.index }}-apphost1
+zone{{ loop.index }}-bigip1
+
+{% endfor %}
+
+[vpc]
+
+[vpc:children]
+{% for zone in zones %}
+zone{{ loop.index }}
+{% endfor %}
+
+[azs]
+{% for zone in zones %}
+zone{{ loop.index }}-az
+{% endfor %}
+
+[apphosts]
+{% for zone in zones %}
+{% set outer_loop = loop %}
+{% for apphostnum in range(1, apphosts_per_zone + 1) %}
+zone{{ outer_loop.index }}-apphost{{ loop.index }}
+{% endfor %}
+{% endfor %}
+
+[bigips]
+{% for zone in zones %}
+{% set outer_loop = loop %}
+{% for bigipnum in range(1, standalone_per_az['bigips_per_zone'] + 1) %}
+zone{{ outer_loop.index }}-bigip{{ loop.index }}
+{% endfor %}
+{% endfor %}
+
+; group vars
+
+[all:vars]
+env_name={{ env_name }}
+deployment_model={{ deployment_model }}
+region={{ region }}
+vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
+key_name={{ ssh_key_name }}
+
+{% for zone in zones %}
+[zone{{ loop.index }}:vars]
+zone_id=zone{{ loop.index }}
+availability_zone={{ zone }}
+zone_cidr_prefix="{{ vpc_cidr_prefix }}.{{ loop.index }}"
+management_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}1.0/24"
+private_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}2.0/24"
+public_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}3.0/24"
+application_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}4.0/24"
+bigip_version={{ bigip_version }}
+bigip_license_throughput={{ bigip_license_throughput }}
+bigip_license_model={{ bigip_license_model }}
+bigip_license_package={{ bigip_license_package }}
+bigip_instance_type={{ bigip_instance_type }}
+apphost_instance_type={{ apphost_instance_type }}
+
+{% endfor %}
+
+[localhost:vars]
+ansible_connection=local
+ansible_python_interpreter="/usr/bin/env python"

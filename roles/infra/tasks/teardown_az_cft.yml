@@ -1,0 +1,12 @@
+---
+- name: Deleting availability zone cfn stack(s)
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/az.json
+  register: az_teardown_results
+  ignore_errors: yes
+
+- copy: content="{{ az_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+

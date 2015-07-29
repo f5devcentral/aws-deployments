@@ -1,6 +1,10 @@
 ---
-- hosts: gtm-managers
+- hosts: gtms
   gather_facts: no
+  vars:
+     ansible_connection: local
+     ansible_python_interpreter: "/usr/bin/env python"
   tasks:
-    - name: deploy gtms
-      include: "{{ install_path }}/roles/infra/tasks/deploy_gtm.yml"
+    - name: deploy gtm cft
+      include: "{{ install_path }}/roles/infra/tasks/deploy_gtm_cft.yml"
+      delegate_to: localhost

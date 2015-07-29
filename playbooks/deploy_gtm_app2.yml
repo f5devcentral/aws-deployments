@@ -1,144 +1,115 @@
 ---
-#Need to build topology again
-- hosts: 
-   localhost
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: gtms
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['gtm-managers']
-      delegate_to: localhost
-
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=gtms
-        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        RegKey="{{ item.stdout | from_json | attr('get')('RegKey') }}"
-        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
         region="{{region}}"
-        ansible_ssh_user="admin"
-      with_items: output['results']
 
-    #Gather BIGIP Data and re-create group
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['bigip-managers']
-      delegate_to: localhost
-
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
-        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        region="{{region}}"
-        ansible_ssh_user="admin"
-      with_items: output['results']
-
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}-vip-Vip2.json"
-      register: output
-      with_items: groups['bigip-managers']
-      delegate_to: localhost
-
-    - add_host: name="{{ item.stdout | from_json | attr('get')('eipAddress') }}" group=bigip_vips
-        VipEip="{{ item.stdout | from_json | attr('get')('eipAddress') }}"
-        VipPrivateIp="{{ item.stdout | from_json | attr('get')('privateIpAddress') }}"
-        bigipManager="{{ item.item }}"
-      with_items: output['results']
-
-
-  #Gather EIPs info for VIP 1
-  # Hardcoded for number of bigips  
-  # TODO: Need a more dynamic way to loop through and add each BIGIP's EIP to VIP mapping
-- hosts: bigips[0]
+- hosts: bigips
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}-vip-Vip2.json"
-      register: output
-      with_items: groups['bigip-managers'][0]
-      delegate_to: localhost
-     
-    - set_fact:
-        VipPrivateIp: "{{ output['results'][0]['stdout'] | from_json | attr('get')('privateIpAddress') }}"
-        VipEip: "{{ output['results'][0]['stdout'] | from_json | attr('get')('eipAddress') }}"
-        bigipManager: "{{ output['results'][0]['item'] }}"
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
+        AvailabilityZone={{ hostvars[inventory_hostname].stack_outputs.AvailabilityZone }}
 
 
-- hosts: bigips[1]
+- hosts: bigips
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-Vip2.yml" ]
   tasks:
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}-vip-Vip2.json"
-      register: output
-      with_items: groups['bigip-managers'][1]
-      delegate_to: localhost
-     
-    - set_fact:
-        VipPrivateIp: "{{ output['results'][0]['stdout'] | from_json | attr('get')('privateIpAddress') }}"
-        VipEip: "{{ output['results'][0]['stdout'] | from_json | attr('get')('eipAddress') }}"
-        bigipManager: "{{ output['results'][0]['item'] }}"
+    - name: Gather EIPs for VIP2
+      set_fact:
+        VipPrivateIp={{ hostvars[inventory_hostname].stack_outputs.privateIpAddress }} 
+        VipEip={{ hostvars[inventory_hostname].stack_outputs.eipAddress }} 
 
+# 
+# - hosts: bigips
+#   gather_facts: no
+#   tasks:
+# 
+#     - name: Gather EIPs for VIP1
+#       shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item.1 }}-vip-Vip2.json"
+#       register: output
+#       with_indexed_items: groups['bigip-managers']
+#       when: inventory_hostname == groups['bigips'][item.0] 
+#       delegate_to: localhost
 
 - hosts: gtms
+  gather_facts: no
   vars:
     vip_id: "Vip2"
-  gather_facts: no
   tasks:
     - name: Setup the Virtual Servers
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["VipEip"]}}:80","translationAddress":"{{hostvars[item]["VipPrivateIp"]}}"}'
           collection_path='mgmt/tm/gtm/server/~Common~ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal/virtual-servers'
           resource_key="name"
       with_items: groups['bigips']
+ 
+    - name: Setup the AZ pools
+      delegate_to: localhost
+      bigip_config:
+          state=present
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
+          payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal:{{vip_id}}"}]}'
+          collection_path='mgmt/tm/gtm/pool'
+          resource_key="name"
+      with_items: groups['bigips']
 
-- hosts: gtms
-  vars:
-    vip_id: "Vip2"
-  gather_facts: no
-  tasks:
-    - name: Setup the AZ1 pool
+    #Difficult to selectively grab variables for various hosts and string together in play framework. Easiest way is through a template.
+    - name: Store create wideip pool string from jinja 2 template
+      template: src=../roles/gtm_conf/templates/wideip_pool.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_wideip_pool_string.json
+      delegate_to: localhost
+
+    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_wideip_pool_string.json"
+      register: wideip_pool_string
+      delegate_to: localhost
+
+    - name: Setup the Wideip for VIP2
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
-          payload='{"name":"{{vip_id}}_pool_AZ1","loadBalancingMode":"round-robin","members":[{"name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal:{{vip_id}}"}]}'
-          collection_path='mgmt/tm/gtm/pool'
-          resource_key="name"
-      with_items: groups['bigips'][0]
-    - name: Setup the AZ2 pool
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
-          payload='{"name":"{{vip_id}}_pool_AZ2","loadBalancingMode":"round-robin","members":[{"name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal:{{vip_id}}"}]}'
-          collection_path='mgmt/tm/gtm/pool'
-          resource_key="name"
-      with_items: groups['bigips'][1]
-    - name: Setup the Wideip
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
-          payload='{"name":"{{vip_id}}.example.com","poolLbMode":"round-robin","ipv6NoErrorResponse":"enabled","pools":[{"name":"{{vip_id}}_pool_AZ1"},{"name":"{{vip_id}}_pool_AZ2"}]}'
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
+          payload='{"name":"{{vip_id}}.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"
-    - name: Setup the Wideip
+
+    - name: Setup the Wideip for demo.example.com
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
-          payload='{"name":"demo.example.com","poolLbMode":"round-robin","ipv6NoErrorResponse":"enabled","pools":[{"name":"{{vip_id}}_pool_AZ1"},{"name":"{{vip_id}}_pool_AZ2"}]}'
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
+          payload='{"name":"demo.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"
+

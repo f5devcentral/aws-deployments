@@ -12,13 +12,13 @@
 # Note, in production, you really want to use MGMT ports for inital gtm_add/bigip_add functions 
 # as they requires ssh and you only want to expose 4353 (big3d communication) on any pubic self-ips 
 - name: Run bigip_add on all bigips with expect script
-  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{inventory_hostname}} bigip_add admin {{item}} \'{{ bigip_rest_password }}\'
+  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{ ansible_ssh_host }} bigip_add admin {{hostvars[item]["ansible_ssh_host"]}} \'{{ bigip_rest_password }}\'
   with_items: groups['bigips']
   delegate_to: localhost
 
 # Need to only run when > 1 GTM deployed
 - name: Run gtm_add to all GTMs with expect script from one seed gtm
-  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{groups['gtms'][0]}} gtm_add admin {{item.1}} \'{{ bigip_rest_password }}\'
+  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{hostvars[groups['gtms'][0]]["ansible_ssh_host"]}} gtm_add admin {{hostvars[item.1]["ansible_ssh_host"]}} \'{{ bigip_rest_password }}\'
   delegate_to: localhost
   with_indexed_items: groups['gtms']
   #when: item.0 > 0 and length(groups['gtms'])|num > 1

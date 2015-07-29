@@ -5,55 +5,56 @@
 # 1 for the Self-IP (currently done in CFT)
 # 1 for GTM Listener VIP
 
-- hosts: gtm-managers
+- hosts: gtms
   gather_facts: no
   vars:
-    vip_id: "Vip1"
-  #Grab Interface IDs and Secondary IPs from each BIGIP
+     ansible_connection: local
+     ansible_python_interpreter: "/usr/bin/env python"
+     vip_id: "Vip1"
   vars_files:
      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
   tasks:
     - name: deploy eips
-      include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
+      include: "{{ install_path }}/roles/infra/tasks/deploy_eip_cft.yml"
+      delgate_to: localhost
 
-# Dynamically populate the host groups and variables
-- hosts:
-   localhost
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: gtms
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    # gtms host group
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['gtm-managers']
-      delegate_to: localhost
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=gtms
-        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
         region="{{region}}"
-      with_items: output['results']
 
-    # bigips host group
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['bigip-managers']
-      delegate_to: localhost
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        region="{{region}}"
-      with_items: output['results']
+- hosts: bigips
+  gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
 
 # Wait for hosts to become ready
 - hosts: gtms
-  gather_facts: False
+  gather_facts: no
   sudo: false
   tasks:
     - name:  Wait for ssh port to open
-      local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+      local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
     - name: Wait until BIG-IP is ready for provisioning
       raw: "run /util bash -c 'cat /var/prompt/ps1'"
       until: (result.stdout.find("Active") != -1)

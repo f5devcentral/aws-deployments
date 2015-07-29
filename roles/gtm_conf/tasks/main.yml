@@ -3,9 +3,9 @@
   delegate_to: localhost
   bigip_config:
       state=present
-      host="{{ inventory_hostname }}"
-      user="{{ bigip_rest_user }}"
-      password="{{ bigip_rest_password }}"
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
       payload='{"name":"gtm_listener_udp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"udp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"udp_gtm_dns"}]}'
       collection_path='mgmt/tm/gtm/listener'
       resource_key="name"
@@ -14,9 +14,9 @@
   delegate_to: localhost
   bigip_config:
       state=present
-      host="{{ inventory_hostname }}"
-      user="{{ bigip_rest_user }}"
-      password="{{ bigip_rest_password }}"
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
       payload='{"name":"gtm_listener_tcp","address":"{{VipAddress}}","mask":"255.255.255.255","ipProtocol":"tcp","translateAddress":"disabled","translatePort":"disabled","profiles":[{"name":"dns"},{"name":"tcp"}]}'
       collection_path='mgmt/tm/gtm/listener'
       resource_key="name"
@@ -31,9 +31,9 @@
   delegate_to: localhost
   bigip_config:
       state=present
-      host="{{ inventory_hostname }}"
-      user="{{ bigip_rest_user }}"
-      password="{{ bigip_rest_password }}"
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
       payload='{"name":"{{region}}"}'
       collection_path='mgmt/tm/gtm/datacenter'
       resource_key="name"
@@ -47,9 +47,9 @@
   delegate_to: localhost
   bigip_config:
       state=present
-      host="{{ inventory_hostname }}"
-      user="{{ bigip_rest_user }}"
-      password="{{ bigip_rest_password }}"
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
       payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
       collection_path='mgmt/tm/gtm/server'
       resource_key="name"
@@ -60,9 +60,9 @@
   delegate_to: localhost
   bigip_config:
       state=present
-      host="{{ inventory_hostname }}"
-      user="{{ bigip_rest_user }}"
-      password="{{ bigip_rest_password }}"
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
       payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
       collection_path='mgmt/tm/gtm/server'
       resource_key="name"

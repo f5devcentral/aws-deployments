@@ -13,8 +13,8 @@ These examples are provided in order to demonstrate how BIG-IP can be used to ma
 
 
 As of now, these deployment models are:
-
--standalone-per-zone
+-single-standalone (single big-ip and application server in one availability zone)
+-standalone-per-zone (big-ips in multiple availability zones, fronted by big-ip running gtm in each AZ, application hosts in each AZ, and a host in the external subnet for traffic generation)
 
 
 ### Install/Setup:
@@ -60,13 +60,14 @@ This will initialize the set of ansible variables necessary for deployment (know
  
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c"]}'```
 
- Note that the length of list passed to the "zones" variable must not strictly be 2.  This is also possible:
+ Note that the length of list passed to the "zones" variable must not strictly be 2, i.e. 3 is also possible:
 
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c", "us-east-1d"]}'```
 
-So you can deploy a standalone via: 
+You can also try out the single-standalone deployment model (no gtm, no client host for generating traffic)
 
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "us-east-1",  "zones": ["us-east-1c"]}'```
+```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "single-standalone", "region": "us-east-1", "zone": "us-east-1c"}'```
+
 
 2) Deploy and manage the environment you instantiated in step 1.  This creates all the resources associated with environment, including AWS EC2 hosts, a VPC, configuration objects on BIG-IP and GTM, and docker containers.  
 

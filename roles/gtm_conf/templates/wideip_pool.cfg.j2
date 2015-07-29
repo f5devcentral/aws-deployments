@@ -1,0 +1,1 @@
+{% for host in groups['bigips'] %}{% if hostvars[host]['AvailabilityZone'] is defined %}{"name":"{{vip_id}}_pool_{{hostvars[host]['AvailabilityZone']}}"}{% endif %}{% if not loop.last %},{% endif %}{% endfor %}

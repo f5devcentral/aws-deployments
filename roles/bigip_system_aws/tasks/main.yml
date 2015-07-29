@@ -7,7 +7,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"awsAccessKey":"{{ f5_aws_access_key }}", "awsSecretKey":"{{ f5_aws_secret_key }}"}'
@@ -17,7 +17,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{ "value":"disable" }'

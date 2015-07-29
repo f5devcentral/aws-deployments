@@ -9,7 +9,13 @@
 #  provision using REST completes. 
 - name: Disabling Setup Utility in GUI
   delegate_to: localhost
-  bigip_config: state=present host={{ inventory_hostname }} user={{ bigip_rest_user }} password={{ bigip_rest_password }} payload='{ "value":"false" }' collection_path='mgmt/tm/sys/db/setup.run'
+  bigip_config: 
+    state=present
+    host={{ ansible_ssh_host }} 
+    user={{ bigip_rest_user }} 
+    password={{ bigip_rest_password }} 
+    payload='{"value":"false"}'
+    collection_path='mgmt/tm/sys/db/setup.run'
   register: result
   # TODO: if result is an array then dig into each array else just look for changed = true
   until: result|changed
@@ -23,7 +29,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"servers":["0.pool.ntp.org","1.pool.ntp.org"],"timezone":"America/Los_Angeles"}'
@@ -34,7 +40,7 @@
 #   delegate_to: localhost
 #   bigip_config:
 #     state=present
-#     host={{ inventory_hostname }}
+#     host={{ ansible_ssh_host }}
 #     user={{ bigip_rest_user }}
 #     password={{ bigip_rest_password }}
 #     payload='{"nameServers":["4.2.2.1"]}'
@@ -47,7 +53,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"include":"destination loghost { udp( 10.0.3.32 port (514));};"}'
@@ -59,7 +65,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"allow":["ALL"]}'
@@ -69,7 +75,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"allow":["ALL"]}'
@@ -79,7 +85,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"allowedAddresses":[ "{{ vpc_cidr }}" ]}'
@@ -91,7 +97,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"fastL4-route-friendly","resetOnTimeout":"disabled","looseInitialization":"enabled","looseClose":"enabled"}'
@@ -105,7 +111,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"tcp-ssl-wan-optimized", "defaultsFrom":"/Common/tcp-wan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
@@ -116,7 +122,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"name":"tcp-ssl-lan-optimized", "defaultsFrom":"/Common/tcp-lan-optimized", "nagle":"disabled", "delayedAcks":"disabled", "ackOnPush":"disabled"}'
@@ -129,7 +135,7 @@
   delegate_to: localhost
   bigip_config:
     state=present
-    host={{ inventory_hostname }}
+    host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"level":"nominal"}'

@@ -1,7 +1,7 @@
 ---
 - name: Wait for BIG-IP to be available
   local_action: bigip_facts include=system_info
-               server={{ inventory_hostname }}
+               server={{ ansible_ssh_host }}
                user={{ bigip_rest_user }}
                password={{ bigip_rest_password }}
                validate_certs=no

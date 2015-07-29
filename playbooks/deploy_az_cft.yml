@@ -1,6 +1,11 @@
 ---
-- hosts: az-managers
+- hosts: azs
   gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
-    - name: deploy availability zones
-      include: "{{ install_path }}/roles/infra/tasks/deploy_az.yml"
+
+    - name: deploy availability zone cft
+      include: "{{ install_path }}/roles/infra/tasks/deploy_az_cft.yml"
+      delegate_to: localhost
