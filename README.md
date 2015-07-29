@@ -12,9 +12,9 @@ Further, this library shows how BIG-IP can be orchestrated using open-source con
 These examples are provided in order to demonstrate how BIG-IP can be used to manage the availability, performance, and security of applications running in AWS and other public cloud environments.
 
 
-As of now, these deployment models are:
--single-standalone (single big-ip and application server in one availability zone)
--standalone-per-zone (big-ips in multiple availability zones, fronted by big-ip running gtm in each AZ, application hosts in each AZ, and a host in the external subnet for traffic generation)
+As of now, these deployment models are:<br>
+-single-standalone (single big-ip and application server in one availability zone) <br>
+-standalone-per-zone (big-ips in multiple availability zones, fronted by big-ip running gtm in each AZ, application hosts in each AZ, and a host in the external subnet for traffic generation)<br>
 
 
 ### Install/Setup:
