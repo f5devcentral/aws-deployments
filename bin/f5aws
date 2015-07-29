@@ -153,20 +153,20 @@ class F5Aws(object):
         See individual playbooks for more info.
     """
     playbooks = [
-#       'deploy_vpc_cft.yml',
-#       'deploy_az_cft.yml',
-#       'deploy_bigip_cft.yml',
-#       'deploy_gtm_cft.yml',
-#       'deploy_app_cft.yml',
-#       'deploy_client_cft.yml',
-#       'deploy_app.yml',
-#       'deploy_bigip.yml',
-#       'deploy_bigip_app1.yml',
-#       'deploy_bigip_app2.yml',
-#       'deploy_gtm.yml',
-#       'deploy_gtm_app1.yml',
-#       'deploy_gtm_app2.yml',
-#       'deploy_client.yml'
+      'deploy_vpc_cft.yml',
+      'deploy_az_cft.yml',
+      'deploy_bigip_cft.yml',
+      'deploy_gtm_cft.yml',
+      'deploy_app_cft.yml',
+      'deploy_client_cft.yml',
+      'deploy_app.yml',
+      'deploy_bigip.yml',
+      'deploy_bigip_app1.yml',
+      'deploy_bigip_app2.yml',
+      'deploy_gtm.yml',
+      'deploy_gtm_app1.yml',
+      'deploy_gtm_app2.yml',
+      'deploy_client.yml'
     ]
 
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
