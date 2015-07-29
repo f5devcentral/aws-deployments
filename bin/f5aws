@@ -422,7 +422,11 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     color='green'
     status='deployed'
     for k, v in statuses.items():
-      if v != 'deployed':
+      try:
+        if v['state'] != 'deployed':
+          color='red'
+          status='not deployed/error'
+      except KeyError: 
         color='red'
         status='not deployed/error'
 
