@@ -3,88 +3,56 @@
 
 ; hosts and groups
 
-; our "management hosts" - these don't actually exist,
-;  they are really virtual hosts we use to group variables
-
-[localhosts:children]
-localhost
-managers
-
-
-[managers:children]
-vpc-managers
-apphost-managers
-bigip-managers
-az-managers
-gtm-managers
-clienthost-managers
-
-; dynamic groups that populate via add_host
-[clienthosts]
-[apphosts]
-[bigips]
-[gtms]
-{% for zone in zones %}
-[zone{{ loop.index }}-clienthosts]
-[zone{{ loop.index }}-apphosts]
-[zone{{ loop.index }}-bigips]
-[zone{{ loop.index }}-gtms]
-{% endfor %}
-
-{% for zone in zones %}
-[zone{{ loop.index }}:children]
-zone{{ loop.index }}-az-managers
-zone{{ loop.index }}-clienthosts
-zone{{ loop.index }}-apphosts
-zone{{ loop.index }}-bigips
-zone{{ loop.index }}-gtms
-
-{% endfor %}
-
-{% for zone in zones %}
-[zone{{ loop.index }}-az-managers]
-zone{{ loop.index }}-az-manager
-zone{{ loop.index }}-clienthost-manager
-zone{{ loop.index }}-apphost1-manager
-zone{{ loop.index }}-bigip1-manager
-zone{{ loop.index }}-gtm1-manager
-
-{% endfor %}
-
-[vpc-managers]
 vpc-manager
 
-[az-managers]
 {% for zone in zones %}
-zone{{ loop.index }}-az-manager
+[zone{{ loop.index }}]
+zone{{ loop.index }}-az
+zone{{ loop.index }}-client
+zone{{ loop.index }}-apphost1
+zone{{ loop.index }}-bigip1
+zone{{ loop.index }}-gtm1
+
 {% endfor %}
 
-[apphost-managers]
+[vpc]
+
+[vpc:children]
+{% for zone in zones %}
+zone{{ loop.index }}
+{% endfor %}
+
+[azs]
+{% for zone in zones %}
+zone{{ loop.index }}-az
+{% endfor %}
+
+[apphosts]
 {% for zone in zones %}
 {% set outer_loop = loop %}
 {% for apphostnum in range(1, apphosts_per_zone + 1) %}
-zone{{ outer_loop.index }}-apphost{{ loop.index }}-manager
+zone{{ outer_loop.index }}-apphost{{ loop.index }}
 {% endfor %}
 {% endfor %}
 
-[bigip-managers]
+[bigips]
 {% for zone in zones %}
 {% set outer_loop = loop %}
 {% for bigipnum in range(1, standalone_per_az['bigips_per_zone'] + 1) %}
-zone{{ outer_loop.index }}-bigip{{ loop.index }}-manager
+zone{{ outer_loop.index }}-bigip{{ loop.index }}
 {% endfor %}
 {% endfor %}
 
-[gtm-managers]
+[gtms]
 {% for zone in zones %}
 {% set outer_loop = loop %}
 {% for gtmnum in range(1, standalone_per_az['gtms_per_zone'] + 1) %}
-zone{{ outer_loop.index }}-gtm{{ loop.index }}-manager
+zone{{ outer_loop.index }}-gtm{{ loop.index }}
 {% endfor %}
 {% endfor %}
 
-[clienthost-managers]
-zone1-clienthost-manager
+[clients]
+zone1-client
 
 
 ; group vars
@@ -116,7 +84,7 @@ gtm_license_model={{ gtm_license_model }}
 gtm_license_package={{ gtm_license_package }}
 gtm_instance_type={{ gtm_instance_type }}
 apphost_instance_type={{ apphost_instance_type }}
-clienthost_instance_type={{ clienthost_instance_type }}
+client_instance_type={{ client_instance_type }}
 
 {% endfor %}
 

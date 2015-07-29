@@ -1,61 +1,85 @@
 ---
 #This playbook dismantles all deployed EC2 resources. 
-- hosts: zone1-clienthost-manager
+- hosts: zone1-client
   gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
     - name: Teardown client
-      include: "{{ install_path }}/roles/infra/tasks/teardown_client.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_client_cft.yml"
 
-- hosts: gtm-managers
+- hosts: gtms
   vars: 
-     vip_id: Vip1
+    vip_id: Vip1
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   gather_facts: no
   tasks: 
     - name: Teardown eip associated with Vip1
-      include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_eip_cft.yml"
 
-- hosts: gtm-managers
+- hosts: gtms
   gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
     - name: Teardown gtms
-      include: "{{ install_path }}/roles/infra/tasks/teardown_gtm.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_gtm_cft.yml"
 
-- hosts: bigip-managers
-  vars: 
-     vip_id: Vip2
+- hosts: bigips
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
+    vip_id: Vip2
   gather_facts: no
   tasks: 
     - name: Teardown eip associated with Vip2
-      include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_eip_cft.yml"
 
-- hosts: bigip-managers
-  vars: 
-     vip_id: Vip1
+- hosts: bigips
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
+    vip_id: Vip1
   gather_facts: no
   tasks: 
     - name: Teardown eip associated with Vip1
-      include: "{{ install_path }}/roles/infra/tasks/teardown_eip.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_eip_cft.yml"
 
-- hosts: bigip-managers
+- hosts: bigips
   gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
     - name: Teardown bigips
-      include: "{{ install_path }}/roles/infra/tasks/teardown_bigip.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_bigip_cft.yml"
 
-- hosts: apphost-managers
+- hosts: apphosts
   gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
     - name: Teardown apphosts
-      include: "{{ install_path }}/roles/infra/tasks/teardown_apphost.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_apphost_cft.yml"
 
-- hosts: az-managers
+- hosts: azs
   gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
     - name: Teardown az
-      include: "{{ install_path }}/roles/infra/tasks/teardown_az.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_az_cft.yml"
 
 - hosts: vpc-manager
   gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
     - name: Teardown vpc
-      include: "{{ install_path }}/roles/infra/tasks/teardown_vpc.yml"
+      include: "{{ install_path }}/roles/infra/tasks/teardown_vpc_cft.yml"

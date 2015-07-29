@@ -1,29 +1,31 @@
 ---
-# Dynamically populate apphost groups from persisted results from previous playbooks. 
-- hosts:
-   localhost
-  gather_facts: no
-  tasks:
 
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['apphost-managers']
-      delegate_to: localhost 
+- hosts: apphosts
+  gather_facts: False
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks: 
+#  
+#     - name: Add CFT variables to host
+#       set_fact: item.key  = item.value
+#       with_dict: hostvars[inventory_hostname].stack_outputs
+# 
+    - name: Add CFT output variables to host from persisted results from previous playbooks 
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
+        WebServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
+        WebServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePrivateIp }}
 
-    - add_host: group=apphosts 
-        name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
-        WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
-        WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
-        ansible_ssh_user="ec2-user"
-      with_items: output['results']
+
 
 # Wait for hosts to become ready
 - hosts: apphosts
   gather_facts: False
-  tasks:
-    - name:  Wait for ssh port to open
-      local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
   sudo: false
+  tasks:
+
+    - name:  Wait for ssh port to open
+      local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
 
 # Create docker containers on the application hosts
 - hosts: apphosts

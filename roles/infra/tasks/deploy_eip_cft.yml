@@ -1,0 +1,22 @@
+---  
+- name: Create EIP for a Private IP
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}-vip-{{vip_id}}"
+    state=present
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/eip.json
+  args:
+    template_parameters:
+      vpc: "{{ vpc_id }}"
+      NetworkInterfaceId: "{{ stack_outputs['ExternalInterfaceId'] }}"
+      #CFT not able to OUTPUT ExternalSecondaryIps attribute as not string
+      #PrivateIPAddress: "{{ stack_outputs["ExternalSecondaryIps"][vip_id] }}"
+      #test first with hardcoded index
+      PrivateIpAddress: "{{ stack_outputs[vip_id] }}"
+  register: eip_results
+
+#- debug: var=eip_results
+
+- name: create a file in which to persist results
+  copy: content="{{ eip_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-{{vip_id}}.yml
+- copy: content="{{ eip_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-{{vip_id}}.json

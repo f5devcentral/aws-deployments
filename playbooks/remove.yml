@@ -2,5 +2,5 @@
 - hosts: localhosts
   gather_facts: False
   tasks:
-    - name: deploy vpc
+    - name: teardown env
       include: "{{ install_path }}/roles/inventory_manager/tasks/teardown.yml"

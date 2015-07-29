@@ -1,7 +1,10 @@
 ---
 - hosts: vpc-manager
   gather_facts: no
+  vars: 
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/env python
   tasks:
-    - name: deploy vpc
-      include: "{{ install_path }}/roles/infra/tasks/deploy_vpc.yml"
-
+    - name: deploy vpc cft
+      include: "{{ install_path }}/roles/infra/tasks/deploy_vpc_cft.yml"
+      delegate_to: localhost

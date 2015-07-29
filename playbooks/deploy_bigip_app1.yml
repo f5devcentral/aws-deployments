@@ -1,46 +1,31 @@
 ---
-# Dynamically populate bigip and apphost groups from persisted results from previous playbooks. 
-- hosts: localhost
-  vars:
-    vip_id: "Vip1"
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: bigips
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['bigip-managers']
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
+        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
 
-    - add_host: group=bigips 
-        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        InternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('InternalInterfacePrivateIp') }}"
-        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"  
-        ansible_ssh_user="admin" 
-
-      with_items: output['results']
-
-    # Re-Creating docker host temp group from data persisted to disk
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['apphost-managers']
-
-    - add_host: group=apphosts 
-        name="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}" 
-        WebServerInstancePublicIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePublicIp') }}"
-        WebServerInstancePrivateIp="{{ item.stdout | from_json | attr('get')('WebServerInstancePrivateIp') }}"
-        ansible_ssh_user="ec2-user"
-
-      with_items: output['results']
-
-# Loading docker provisioning data
 - hosts: apphosts
   gather_facts: no
   vars_files:
-    - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml"
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml" ]
   tasks:
-    - debug: var=apphosts
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
+        WebServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
+        WebServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePrivateIp }}
 
 # Now that topology and variables are finally loaded again
 # Deploy App Stuff Here....
@@ -74,9 +59,9 @@
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
           payload='{{lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')}}'
@@ -85,9 +70,9 @@
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
           payload='{"name":"syslog_pool","members":[{"name":"10.0.3.32:514","address":"10.0.3.32"},{"name":"10.0.3.33:514","address":"10.0.3.33"}],"monitor":"tcp"}'
@@ -96,9 +81,9 @@
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           payload='{"name":"{{vip_id}}","destination":"/Common/{{VipAddress}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
@@ -107,23 +92,25 @@
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           collection_path='mgmt/tm/ltm/virtual'
           resource_key="name"
           payload='{"name":"{{vip_id}}_SSL_Offload","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"}, "profiles":[{"name":"http"},{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"},{"name":"clientssl","context":"clientside"}]}'
 
 # Attach an EIP to the Vip / Application
-- hosts: bigip-managers
+- hosts: bigips
   gather_facts: no
   vars:
-    vip_id: "Vip1"
+     ansible_connection: local
+     ansible_python_interpreter: "/usr/bin/env python"
+     vip_id: "Vip1"
   #Grab Interface IDs and Secondary IPs from each BIGIP
   vars_files:
      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
   tasks:
     - name: deploy eips
-      include: "{{ install_path }}/roles/infra/tasks/deploy_eip.yml"
+      include: "{{ install_path }}/roles/infra/tasks/deploy_eip_cft.yml"
 
 

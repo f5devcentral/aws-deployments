@@ -1,80 +1,70 @@
 ---
-# Dynamically populate groups from persisted results from previous playbooks.
-# This is a bit more complicated than the rest of our dynamic group 
-#  population because there may or may not be GTMs deployed, based
-#  on the topology.  In the case that there are no members in the gtm-managers
-#  group, we need to make sure that ansible fails nicely. 
-- hosts: 
-   localhost
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: gtms
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    - set_fact: list=groups['gtm-managers']
-      when: groups | attr('get')('gtm-managers','') != ''
-    - set_fact: list=[]
-      when: groups | attr('get')('gtm-managers','') == ''
-    - name: load the gtm_cft results
-      shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json" #gtm
-      register: output
-      with_items: list
-      ignore_errors: true
-    - add_host: group=gtms
-        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
-        region="{{region}}"
-      with_items: list
-      when: output|success
-    # bigips host group
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['bigip-managers']
-      delegate_to: localhost
-    - add_host: name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}" group=bigips
-        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        AvailabilityZone="{{ item.stdout | from_json | attr('get')('AvailabilityZone') }}"
-        region="{{region}}"
-        ansible_ssh_user="admin"
-      with_items: output['results']
-
-- hosts: bigips
-  gather_facts: no
-  tasks:
-
-    - name: Gather EIPs for VIP1
-      shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item.1 }}-vip-Vip1.json"
-      register: output
-      with_indexed_items: groups['bigip-managers']
-      when: inventory_hostname == groups['bigips'][item.0] 
-      delegate_to: localhost
-
-- hosts: bigips
-  gather_facts: no
-  tasks:
-    - name: Add EIP to VIP mapping to bigip host vars
+    - name: Add CFT output variables to host from persisted results from previous playbooks
       set_fact:
-          VipPrivateIp: "{{ item.stdout | from_json | attr('get')('privateIpAddress') }}"
-          VipEip: "{{ item.stdout | from_json | attr('get')('eipAddress') }}"
-      when: item.changed == true
-      with_items: hostvars[inventory_hostname]['output']['results']
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
+        region="{{region}}"
+
+- hosts: bigips
+  gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
+        AvailabilityZone={{ hostvars[inventory_hostname].stack_outputs.AvailabilityZone }}
+
+
+- hosts: bigips
+  gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-Vip1.yml" ]
+  tasks:
+    - name: Gather EIPs for VIP1
+      set_fact:
+        VipPrivateIp={{ hostvars[inventory_hostname].stack_outputs.privateIpAddress }} 
+        VipEip={{ hostvars[inventory_hostname].stack_outputs.eipAddress }} 
+
+# 
+# - hosts: bigips
+#   gather_facts: no
+#   tasks:
+# 
+#     - name: Gather EIPs for VIP1
+#       shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item.1 }}-vip-Vip1.json"
+#       register: output
+#       with_indexed_items: groups['bigip-managers']
+#       when: inventory_hostname == groups['bigips'][item.0] 
+#       delegate_to: localhost
 
 - hosts: gtms
+  gather_facts: no
   vars:
     vip_id: "Vip1"
-  gather_facts: no
   tasks:
     - name: Setup the Virtual Servers
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["VipEip"]}}:80","translationAddress":"{{hostvars[item]["VipPrivateIp"]}}"}'
           collection_path='mgmt/tm/gtm/server/~Common~ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal/virtual-servers'
           resource_key="name"
@@ -84,9 +74,9 @@
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal:{{vip_id}}"}]}'
           collection_path='mgmt/tm/gtm/pool'
           resource_key="name"
@@ -105,9 +95,9 @@
       delegate_to: localhost
       bigip_config:
           state=present
-          host="{{ inventory_hostname }}"
-          user="{{ bigip_rest_user }}"
-          password="{{ bigip_rest_password }}"
+          host={{ ansible_ssh_host }}
+          user={{ bigip_rest_user }}
+          password={{ bigip_rest_password }}
           payload='{"name":"{{vip_id}}.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"

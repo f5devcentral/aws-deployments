@@ -1,49 +1,26 @@
 ---
-# Dynamically populate groups from persisted results from previous playbooks.
-- hosts:
-   localhost
+- hosts: clients
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    - set_fact: list=groups['clienthost-managers']
-      when: groups | attr('get')('clienthost-managers','') != ''
-    - set_fact: list=[]
-      when: groups | attr('get')('clienthost-managers','') == ''
-    - name: load the clienthost cft results
-      shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json" #gtm
-      register: output
-      with_items: list
-      ignore_errors: true
-    - add_host: group=clienthosts
-        name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
-        ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
-        ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
-        ansible_ssh_user="ubuntu"
-      with_items: list
-      when: output|success
-
-    # - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-    #   register: output
-    #   with_items: groups['clienthost-managers']
-    #   delegate_to: localhost
-
-    # - add_host: group=clienthosts
-    #     name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
-    #     ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
-    #     ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
-    #     ansible_ssh_user="ubuntu"
-    #   with_items: output['results']
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePublicIp }}
+        ClientInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePublicIp }}
+        ClientInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePrivateIp }}
 
 # Need to wait for port 22 to open up
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   tasks:
-    - local_action: wait_for host={{ inventory_hostname }} search_regex=OpenSSH delay=10 port=22
+    - local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
   sudo: false
 
 # Now launch containers inside them
 # Amazon amis we're using already have docker installed so no need for install_docker role
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   vars:
     ansible_sudo: True
   roles:
@@ -59,30 +36,22 @@
 # modify /etc/resolv.conf to resolve example.com at GTM Listener
 # so first need to load GTM listeners again (Vip1)
 
-- hosts: localhost
-  vars:
-    vip_id: "Vip1"
+
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: gtms
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-    - set_fact: list=groups['gtm-managers']
-      when: groups | attr('get')('gtm-managers','') != ''
-    - set_fact: list=[]
-      when: groups | attr('get')('gtm-managers','') == ''
-    - name: load the gtm_cft results
-      shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json" #gtm
-      register: output
-      with_items: list
-      ignore_errors: true
-    - add_host: group=gtms
-        name="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePublicIp') }}"
-        ManagementInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ManagementInterfacePrivateIp') }}"
-        ExternalInterfacePublicIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePublicIp') }}"
-        ExternalInterfacePrivateIp="{{ item.stdout | from_json | attr('get')('ExternalInterfacePrivateIp') }}"
-        VipAddress="{{ item.stdout | from_json | attr('get')('Vip1') }}"
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
         region="{{region}}"
-      with_items: list
-      when: output|success
 
 ### Example Default /etc/resolv.conf in AWS ####
 
@@ -94,8 +63,8 @@
 #
 
 # Modify Nameservers 
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   vars:
     ansible_sudo: True
   tasks:
@@ -103,8 +72,6 @@
       shell: "egrep -c nameserver /etc/resolv.conf"
       ignore_errors: true
       register: nameserver_count
-
-    #- debug: var=nameserver_count.stdout
 
     # Need to place GTMs first. 
     - name: Add example.com nameservers to /etc/resolv.conf if just default one nameserver
@@ -118,8 +85,8 @@
       shell: resolvconf -u 
 
 # Upload Jmeter scripts
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   tasks:
 
     - name: Copy over simple load generation jmeter script

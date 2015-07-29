@@ -1,0 +1,48 @@
+---
+- name: Determining state of deployed cloudformation stacks
+  shell: "python {{ install_path }}/bin/get_cfn_stack_state.py {{ region }} {{ env_name }}-{{ inventory_hostname }}"
+  register: initial_cfn_state
+
+- name: Teardown previous stack if necessary
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/gtm.json
+  when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
+
+# Run python script to find out which AMI we should use based on user inputs
+#  This is easier than the ugly mapping sections in CloudFormation templates
+#  with high cardinality
+- shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ gtm_version }} --license {{ gtm_license_model }} --package {{ gtm_license_package }} --throughput {{ gtm_license_throughput }} --matchone"
+  register: output
+
+- name: Launching a gtm in each AZ
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=present
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/gtm.json
+  args:
+    tags: 
+      envName: "{{ env_name }}"
+      host: "{{ inventory_hostname }}"
+      instanceType: "GTM"
+    template_parameters:
+      envName: "{{ env_name }}"
+      region: "{{ region }}"
+      vpc: "{{ vpc_id }}"
+      availabilityZone: "{{ availability_zone }}"
+      managementSubnet: "{{ management_subnet }}"
+      publicSubnet: "{{ public_subnet }}"
+      instanceType: "{{ gtm_instance_type }}"
+      amiId: "{{ output['stdout'] }}" #us-east-1. eventually we'll want to leverage the mappings in cft
+      version: "{{ gtm_version }}"
+      keyName: "{{ key_name }}"
+  register: gtm_deploy_results 
+
+- name: Persisting variable data
+  copy: content="{{ gtm_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+- copy: content="{{ gtm_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json
+
+

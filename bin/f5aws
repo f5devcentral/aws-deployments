@@ -153,20 +153,20 @@ class F5Aws(object):
         See individual playbooks for more info.
     """
     playbooks = [
-      'deploy_vpc_cft.yml',
-      'deploy_az_cft.yml',
-      'deploy_bigip_cft.yml',
-      'deploy_gtm_cft.yml',
-      'deploy_app_cft.yml',
-      'deploy_client_cft.yml',
-      'deploy_app.yml',
-      'deploy_bigip.yml',
-      'deploy_bigip_app1.yml',
-      'deploy_bigip_app2.yml',
-      'deploy_gtm.yml',
-      'deploy_gtm_app1.yml',
-      'deploy_gtm_app2.yml',
-      'deploy_client.yml'
+#       'deploy_vpc_cft.yml',
+#       'deploy_az_cft.yml',
+#       'deploy_bigip_cft.yml',
+#       'deploy_gtm_cft.yml',
+#       'deploy_app_cft.yml',
+#       'deploy_client_cft.yml',
+#       'deploy_app.yml',
+#       'deploy_bigip.yml',
+#       'deploy_bigip_app1.yml',
+#       'deploy_bigip_app2.yml',
+#       'deploy_gtm.yml',
+#       'deploy_gtm_app1.yml',
+#       'deploy_gtm_app2.yml',
+#       'deploy_client.yml'
     ]
 
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
@@ -174,11 +174,11 @@ class F5Aws(object):
     if self.run_playbooks(playbooks, inventory_path, options, extra_vars) == 0:
       self.display_login(options.env_name)
 
-      print '\nTo start traffic with the jmeter client, run ./bin/{} {} {}'.format(
-        __prog__, 'start_traffic', options.env_name)
+    print '\nTo start traffic with the jmeter client, run ./bin/{} {} {}'.format(
+      __prog__, 'start_traffic', options.env_name)
 
-      print '\nYou can re-print the above login information along with the ansible inventory \
-  using "info" command'
+    print '\nYou can re-print the above login information along with the ansible inventory \
+using "info" command\n'
     
   @safe
   def cmd_teardown(self, options, extra_vars):
@@ -268,7 +268,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
     inventory = '%s/%s/inventory/hosts' % (self.settings['env_path'], options.env_name)
     self.run_playbooks(['launch_traffic.yml'], inventory, options, extra_vars)
-    print 'Started jmeter on clienthost'
+    print 'Started jmeter on client'
   
   @safe
   def cmd_stop_traffic(self, options, extra_vars):
@@ -403,6 +403,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
     return 0
 
+
+
   def get_envs(self):
     """
       Gets a list of all deployments
@@ -416,7 +418,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
   def display_basic_info(self, env):
     inventory, resources, statuses = self.get_environment_info(env)
-    
+
     color='green'
     status='deployed'
     for k, v in statuses.items():
@@ -449,6 +451,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       display("        %s" % json.dumps(statuses[r], indent=10), color=color, stderr=False)
 
   def display_login(self, env):
+
     inventory, resources, statuses = self.get_environment_info(env)
     inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], env)
     ansible_inventory = ansible.inventory.Inventory(inventory_path, vault_password=None)
@@ -457,54 +460,57 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     # information for a dynamic set of hosts - bigips, gtms, app hosts, and the client host
     # this information is compiled from the ansible inventory for this environment
     # and the output from the cloudformation stacks
-    for group in ['apphosts', 'bigips', 'gtms', 'clienthosts']:
-      try:
-        print 'Login for %s:' % group
-        group_info = inventory[group]
-      
-        # hostnames are not plural
-        host_type = group[:-1]
+    for group in ['apphosts', 'bigips', 'gtms', 'clients']:
 
-        #not very efficient, but hey, its a demo
-        for resource_name, status in statuses.items():
-          match = re.match('^zone[0-9]+[/-]{}[0-9]*'.format(host_type),resource_name)
+       try:
+          if inventory[group]:
+	      print 'Login for %s:' % group
+	      group_info = inventory[group]
+	    
+	      # hostnames are not plural
+	      host_type = group[:-1]
 
-          if match:
-            try:
-              if host_type == 'gtm':
-                print '     {}ssh -i {} {}@{}'.format(
-                  self.host_to_az(resource_name, ansible_inventory),
-                  group_info['vars']['ansible_ssh_private_key_file'],
-                  group_info['vars']['ansible_ssh_user'],
-                  status['resource_vars']['ManagementInterfacePublicIp'])
-              elif host_type == 'bigip':
-                print '     {}ssh -i {} {}@{}'.format(
-                  self.host_to_az(resource_name, ansible_inventory),
-                  group_info['vars']['ansible_ssh_private_key_file'],
-                  group_info['vars']['ansible_ssh_user'],
-                  status['resource_vars']['ManagementInterfacePublicIp'])
-              elif host_type == 'apphost':
-                print '     {}ssh -i {} {}@{}'.format(
-                  self.host_to_az(resource_name, ansible_inventory),
-                  group_info['vars']['ansible_ssh_private_key_file'],
-                  group_info['vars']['ansible_ssh_user'],
-                  status['resource_vars']['WebServerInstancePublicIp'])
-              elif host_type == 'clienthost':
-                print '     {}ssh -i {} {}@{}'.format(
-                  self.host_to_az(resource_name, ansible_inventory),
-                  group_info['vars']['ansible_ssh_private_key_file'],
-                  group_info['vars']['ansible_ssh_user'],
-                  status['resource_vars']['ClientInstancePublicIp'])
-            except KeyError:
-              print '     Not deployed/Login information not available.'
-      except KeyError:
-        print '     Not deployed/Login information not available.'
+	      #not very efficient, but hey, its a demo
+	      for resource_name, status in statuses.items():
+		match = re.match('^zone[0-9]+[/-]{}[0-9]*'.format(host_type),resource_name)
+
+		if match:
+		  try:
+		    if host_type == 'gtm':
+		      print '     {}ssh -i {} {}@{}'.format(
+			self.host_to_az(resource_name, ansible_inventory),
+			group_info['vars']['ansible_ssh_private_key_file'],
+			group_info['vars']['ansible_ssh_user'],
+			status['resource_vars']['ManagementInterfacePublicIp'])
+		    elif host_type == 'bigip':
+		      print '     {}ssh -i {} {}@{}'.format(
+			self.host_to_az(resource_name, ansible_inventory),
+			group_info['vars']['ansible_ssh_private_key_file'],
+			group_info['vars']['ansible_ssh_user'],
+			status['resource_vars']['ManagementInterfacePublicIp'])
+		    elif host_type == 'apphost':
+		      print '     {}ssh -i {} {}@{}'.format(
+			self.host_to_az(resource_name, ansible_inventory),
+			group_info['vars']['ansible_ssh_private_key_file'],
+			group_info['vars']['ansible_ssh_user'],
+			status['resource_vars']['WebServerInstancePublicIp'])
+		    elif host_type == 'client':
+		      print '     {}ssh -i {} {}@{}'.format(
+			self.host_to_az(resource_name, ansible_inventory),
+			group_info['vars']['ansible_ssh_private_key_file'],
+			group_info['vars']['ansible_ssh_user'],
+			status['resource_vars']['ClientInstancePublicIp'])
+		  except KeyError:
+		    print '     Not deployed/Login information not available.'
+       except KeyError:
+           print ''
+	   #print '     Not deployed/Login information not available.'
 
   def host_to_az(self, resource_name, ansible_inventory):
     # traverse the ansible inventory to get the availability zone
     # for this host
     try:
-      hostname = resource_name+'-manager'
+      hostname = resource_name
       az = ansible_inventory.get_host(hostname).get_variables()['availability_zone']
       return '{}:   '.format(az)
     except: 
@@ -547,13 +553,15 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       host. 
     """
 
-    managers = [h for h in inventory['all']['hosts'] if 'manager' in h]
+    hosts = [h for h in inventory['all']['hosts']]
     statuses = {}
     resources = []
-    for m in managers:
+    for m in hosts:
       # for each resource, we will get the results from
       #  most recent manager execution for that resource
-      resource_name = m[:-8]
+      #resource_name = m[:-8]
+      resource_name = m[:]
+
       resources.append(resource_name)
       try:
         fname = '{}/{}/{}.yml'.format(self.settings['env_path'], env, m)
@@ -647,7 +655,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       type=str, help='Name of environment to be deleted')
 
     parser_start_traffic = subparsers.add_parser('start_traffic',
-      help='Begins jmeter client on clienthost in a single availability zone')
+      help='Begins jmeter client on client in a single availability zone')
     parser_start_traffic.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment to which jmeter client should run traffic')
 
@@ -672,7 +680,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       type=str, help='Name of environment')
 
     parser_login = info_subparsers.add_parser('login',
-      help='Displays login information for deployed hosts (bigips, gtms, clienthost, etc')
+      help='Displays login information for deployed hosts (bigips, gtms, client, etc')
     parser_login.add_argument('env_name', metavar='ENVIRONMENT',
       type=str, help='Name of environment')
 
@@ -739,6 +747,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       display("Failed while processing input arguments: %s" % e, color='red', stderr=True)
     #except Exception as e:
     #  display("Caught an unhandle exception: %s" % e, color='red', stderr=True)
+
+
 
 if __name__ == "__main__":
   display(" ", log_only=True)

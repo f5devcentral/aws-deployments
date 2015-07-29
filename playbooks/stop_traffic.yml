@@ -1,25 +1,18 @@
 ---
-# Dynamically populate groups from persisted results from previous playbooks.
-- hosts:
-   localhost
+- hosts: clients
   gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
   tasks:
-
-    - shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{ item }}.json"
-      register: output
-      with_items: groups['clienthost-managers']
-      delegate_to: localhost
-
-    - add_host: group=clienthosts
-        name="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}" group=clienthosts
-        ClientInstancePublicIp="{{ item.stdout | from_json | attr('get')('ClientInstancePublicIp') }}"
-        ClientInstancePrivateIp="{{ item.stdout | from_json | attr('get')('ClientInstancePrivateIp') }}"
-        ansible_ssh_user="ubuntu"
-      with_items: output['results']
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePublicIp }}
+        ClientInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePublicIp }}
+        ClientInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePrivateIp }}
 
 # Kill Jmeter test clients
-- hosts: clienthosts
-  gather_facts: False
+- hosts: clients
+  gather_facts: no
   tasks:
 
     - name: Kill Jmeter 

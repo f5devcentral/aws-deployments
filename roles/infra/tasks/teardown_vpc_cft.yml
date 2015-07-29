@@ -1,0 +1,11 @@
+---
+- name: Deleting VPC cfn stack
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/vpc.json
+  register: vpc_teardown_results
+  ignore_errors: yes
+
+- copy: content="{{ vpc_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml

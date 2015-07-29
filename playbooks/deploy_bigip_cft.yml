@@ -1,6 +1,11 @@
 ---
-- hosts: bigip-managers
+- hosts: bigips
   gather_facts: no
+  vars: 
+     ansible_connection: local
+     ansible_python_interpreter: "/usr/bin/env python"
   tasks:
-    - name: deploy bigips
-      include: "{{ install_path }}/roles/infra/tasks/deploy_bigip.yml"
+
+    - name: deploy bigip cft
+      include: "{{ install_path }}/roles/infra/tasks/deploy_bigip_cft.yml"
+      delegate_to: localhost

@@ -1,0 +1,14 @@
+---  
+- name: Delete EIP for a Private IP
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}-vip-{{vip_id}}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/eip.json
+  register: eip_teardown_results
+  ignore_errors: yes
+
+#- debug: var=eip_teardown_results
+
+- name: create a file in which to persist results
+  copy: content="{{ eip_teardown_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-{{vip_id}}.yml

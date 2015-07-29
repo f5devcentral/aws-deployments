@@ -1,7 +1,11 @@
 ---
-# Deploy the docker host AMIs via CFT
-- hosts: zone1-clienthost-manager
+# Deploy the client ami via CFT
+- hosts: zone1-client
   gather_facts: no
+  vars:
+     ansible_connection: local
+     ansible_python_interpreter: "/usr/bin/env python"
   tasks:
-    - name: deploy client host 
-      include: "{{ install_path }}/roles/infra/tasks/deploy_clienthost.yml"
+    - name: deploy client cft 
+      include: "{{ install_path }}/roles/infra/tasks/deploy_client_cft.yml"
+      delegate_to: localhost
