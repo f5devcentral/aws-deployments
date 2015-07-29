@@ -26,7 +26,7 @@ Install vagrant (tested using 1.7.2)<br>
 http://docs.vagrantup.com/v2/installation/
 
 2) Clone this code to your desktop:<br>
-```git clone https://github.com/cmutzel/aws-deployments.git```
+```git clone https://github.com/F5Networks/aws-deployments.git```
 
 3) Setup the virtualbox host with vagrant: <br>
 ```cd aws-deployments/vagrant```<br>
