@@ -16,6 +16,10 @@ As of now, these deployment models are:<br>
 -single-standalone (single big-ip and application server in one availability zone) <br>
 -standalone-per-zone (big-ips in multiple availability zones, fronted by big-ip running gtm in each AZ, application hosts in each AZ, and a host in the external subnet for traffic generation)<br>
 
+#### Support
+
+This code is provided as is and should be used as a reference only.  It is not provided as a production-ready tool and F5 support will not field requests for this work.  
+
 
 ### Install/Setup:
 1) Install Virtual Box and Vagrant 
