@@ -23,7 +23,7 @@
       local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
     - name: Wait until BIG-IP is ready for provisioning
       raw: "run /util bash -c 'cat /var/prompt/ps1'"
-      until: (result.stdout.find("Active") != -1)
+      until: (result.stdout.find("Active") != -1 or result.stdout.find("Standby") != -1)
       register: result
       retries: 40
 
