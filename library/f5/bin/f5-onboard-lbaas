@@ -1,6 +1,0 @@
-#!/bin/bash
-source odk-utils
-source f5-onboard-utils
-source $F5_ONBOARD_LIBEXEC_DIR/lbaas/run-command.sh
-
-run_command $*
