@@ -13,6 +13,7 @@
         ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
         ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
         VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
+        DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
         region="{{region}}"
 
 - hosts: bigips
@@ -29,9 +30,10 @@
         ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
         AvailabilityZone={{ hostvars[inventory_hostname].stack_outputs.AvailabilityZone }}
+        DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
 
 
-- hosts: bigips
+- hosts: bigip-cluster-seeds
   gather_facts: no
   vars_files:
    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-Vip2.yml" ]
@@ -66,7 +68,7 @@
           user={{ bigip_rest_user }}
           password={{ bigip_rest_password }}
           payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["VipEip"]}}:80","translationAddress":"{{hostvars[item]["VipPrivateIp"]}}"}'
-          collection_path='mgmt/tm/gtm/server/~Common~ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal/virtual-servers'
+          collection_path='mgmt/tm/gtm/server/~Common~{{DeviceName}}/virtual-servers'
           resource_key="name"
       with_items: groups['bigips']
  
@@ -77,7 +79,7 @@
           host={{ ansible_ssh_host }}
           user={{ bigip_rest_user }}
           password={{ bigip_rest_password }}
-          payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal:{{vip_id}}"}]}'
+          payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"{{DeviceName}}:{{vip_id}}"}]}'
           collection_path='mgmt/tm/gtm/pool'
           resource_key="name"
       with_items: groups['bigips']

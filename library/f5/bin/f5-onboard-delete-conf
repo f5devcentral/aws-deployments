@@ -1,0 +1,23 @@
+#!/bin/bash
+source f5-onboard-utils
+
+if [ $# -lt 2 ]; then
+    echo "usage: f5-onboard-delete-state <collection> <entity>"
+    echo "Examples:"
+    echo "$ f5-onboard-delete-state clusters admin1"
+    exit 1
+fi
+
+# 
+# Name value pairs (NAME=VALUE) are stored in a file with this name:
+# $F5_ONBOARD_CONF_DIR/$COLLECTION/$ENTITY
+# 
+
+COLLECTION=$1
+ENTITY=$2
+
+ENTITY_DATAFILE=$F5_ONBOARD_CONF_VARS_DIR/$COLLECTION/$ENTITY
+
+echo $ENTITY_DATAFILE
+read line
+rm -f $ENTITY_DATAFILE

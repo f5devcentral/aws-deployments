@@ -1,0 +1,43 @@
+#!/bin/bash
+
+F5_ONBOARD_CONF_VARS_DIR=$HOME/.f5-onboard/conf/vars
+
+if [ "$1" = '--usage' ]; then
+    echo "usage: f5-onboard-get-conf <collection> <entity> <variable-name>"
+    echo "variables are name-value pairs that belong to an entity"
+    echo "that is part of a collection"
+    echo "Examples:"
+    echo "$ f5-onboard-get-conf deployments f5-onboard-maas DEPLOYMENT_TYPE"
+    echo "$ f5-onboard-get-conf deployments f5-onboard-maas DEPLOYMENT_NAME"
+    echo "$ f5-onboard-get-conf deployments f5-onboard-maas "
+    echo "$ f5-onboard-get-conf deployments "
+    echo "$ f5-onboard-get-conf "
+    exit 1
+fi
+
+# 
+# Name value pairs (NAME=VALUE) are stored in a file with this name:
+# $F5_ONBOARD_CONF_VARS_DIR/$COLLECTION_DIR/$ENTITY_NAME
+# 
+if [ $# -lt 1 ]; then
+    ls -1 $F5_ONBOARD_CONF_VARS_DIR
+    exit $?
+fi
+COLLECTION=$1
+if [ $# -lt 2 ]; then
+    ls -1 $F5_ONBOARD_CONF_VARS_DIR/$COLLECTION
+    exit $?
+fi
+ENTITY=$2
+if [ $# -lt 3 ]; then
+    cat $F5_ONBOARD_CONF_VARS_DIR/$COLLECTION/$ENTITY
+    exit $?
+fi
+VARIABLE_NAME=$3
+
+ENTITY_DATAFILE="$F5_ONBOARD_CONF_VARS_DIR/$COLLECTION/$ENTITY"
+
+if [ -f $ENTITY_DATAFILE ]; then
+    set -o pipefail  # uses grep exit code on grep failure
+    grep -e "^$VARIABLE_NAME=" $ENTITY_DATAFILE | cut -d= -f2-
+fi

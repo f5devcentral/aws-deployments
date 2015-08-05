@@ -1,0 +1,4 @@
+---
+cluster_device_names: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['DeviceName'] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+cluster_mgmt_ips: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['ManagementInterfacePrivateIp'] }} {% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+

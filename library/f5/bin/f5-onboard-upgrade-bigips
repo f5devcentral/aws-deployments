@@ -1,0 +1,54 @@
+#!/bin/bash
+source odk-utils
+source f5-onboard-utils
+
+function show_usage {
+    echo "Usage: "
+    echo "f5-onboard-upgrade-bigips \\"
+    echo "    --keystone-addr <addr> \\"
+    echo "    --admin-password <pw> \\"
+    echo "    --bigip-image <img> \\"
+    echo "    --num-bigips <num> \\"
+}
+
+# Parse command line switches
+while [ $# -gt 0 ]; do
+   case "$1" in
+       --keystone-addr)  KEYSTONE=$2 ; shift 2 ;;
+       --admin-password) ADMIN_PASSWORD=$2 ; shift 2 ;;
+       --bigip-image)    BIGIP_IMAGE=$2 ; shift 2 ;;
+       --num-bigips)     NUM_BIGIPS=$2 ; shift 2 ;;
+       *)    show_usage; exit 1;;
+   esac
+done
+
+if [ -z "KEYSTONE_ADDRESS" -o \
+     -z "ADMIN_PASSWORD" -o \
+     -z "BIGIP_IMAGE" -o \
+     -z "NUM_BIGIPS" ]; then
+    show_usage
+    exit 1
+fi
+
+
+# Determine if image has a hotfix patch.  If so, perform upgrade
+IFS='-' read -a image_components <<< "$BIGIP_IMAGE"
+if [ -n "${image_components[3]}" ]; then
+    base_full=${image_components[1]}
+    hotfix_build=${image_components[3]}
+    IFS='.' read -a base_components <<< "$base_full"
+    base_version="${base_components[0]}.${base_components[1]}.${base_components[2]}"
+    base_build="${base_components[3]}.${base_components[4]}.${base_components[5]}"
+
+    set -x
+    stdbuf -o 0 -e 0 \
+      python $F5_ONBOARD_BIGIP_PY_DIR/upgrade.py $KEYSTONE_ADDRESS \
+                                --admin-password $KEYSTONE_PASSWORD \
+                                --num-bigips $NUM_BIGIPS \
+                                --base-version $base_version \
+                                --base-build $base_build \
+                                --hotfix-build $hotfix_build
+    set +x
+fi
+
+

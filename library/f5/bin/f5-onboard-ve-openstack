@@ -1,0 +1,5 @@
+#!/bin/bash
+source f5-onboard-utils
+source $F5_ONBOARD_LIBEXEC_DIR/ve/openstack/run-command.sh
+
+run_command $*

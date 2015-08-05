@@ -161,6 +161,7 @@ class F5Aws(object):
       'deploy_client_cft.yml',
       'deploy_app.yml',
       'deploy_bigip.yml',
+      'cluster_bigips.yml',
       'deploy_bigip_app1.yml',
       'deploy_bigip_app2.yml',
       'deploy_gtm.yml',
@@ -174,7 +175,7 @@ class F5Aws(object):
     if self.run_playbooks(playbooks, inventory_path, options, extra_vars) == 0:
       self.display_login(options.env_name)
 
-    print '\nTo start traffic with the jmeter client, run ./bin/{} {} {}'.format(
+    print '\nIf you\'ve deployed a client, you can start traffic by running:\n./bin/{} {} {}'.format(
       __prog__, 'start_traffic', options.env_name)
 
     print '\nYou can re-print the above login information along with the ansible inventory \
@@ -468,7 +469,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
        try:
           if inventory[group]:
-	      print 'Login for %s:' % group
+	      print '\nLogin for %s:' % group
 	      group_info = inventory[group]
 	    
 	      # hostnames are not plural
@@ -505,7 +506,8 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 			group_info['vars']['ansible_ssh_user'],
 			status['resource_vars']['ClientInstancePublicIp'])
 		  except KeyError:
-		    print '     Not deployed/Login information not available.'
+                    print ''
+		    #print '     Not deployed/Login information not available.'
        except KeyError:
            print ''
 	   #print '     Not deployed/Login information not available.'

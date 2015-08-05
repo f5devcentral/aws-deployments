@@ -1,0 +1,43 @@
+#
+# Utility Script for other F5 Onboarding Scripts
+#
+# Usage:
+# source f5-onboard-utils
+
+dev_mode=`f5-onboard-get-conf singletons globals dev_mode`
+if [ -z "$dev_mode" ]; then
+    F5_ONBOARD_BIN_DIR="/usr/bin"
+    F5_ONBOARD_LIB_DIR="/usr/lib/f5-onboard"
+    # executables not intended for direct usage
+    F5_ONBOARD_LIBEXEC_DIR="/usr/libexec/f5-onboard"
+    if [ -d '/usr/lib/python2.7/site-packages/f5/onboard' ]; then
+        F5_ONBOARD_PY_DIR="/usr/lib/python2.7/site-packages/f5/onboard"
+    elif [ -d '/usr/local/lib/python2.7/dist-packages/f5/onboard' ]; then
+        F5_ONBOARD_PY_DIR="/usr/local/lib/python2.7/dist-packages/f5/onboard"
+    else
+        F5_ONBOARD_PY_DIR="/usr/lib/python2.7/dist-packages/f5/onboard"
+    fi
+else
+    F5_ONBOARD_UTILS="`which f5-onboard-utils`"
+    F5_ONBOARD_BIN_DIR="`dirname \"$F5_ONBOARD_UTILS\"`"
+    F5_ONBOARD_DIR="$F5_ONBOARD_BIN_DIR/.."
+    F5_ONBOARD_LIB_DIR="$F5_ONBOARD_DIR/lib"
+    # executables not intended for direct usage
+    F5_ONBOARD_LIBEXEC_DIR="$F5_ONBOARD_DIR/libexec"
+    F5_ONBOARD_PY_DIR="$F5_ONBOARD_BIN_DIR/../python/f5/onboard"
+fi
+
+F5_ONBOARD_BIGIP_PY_DIR="$F5_ONBOARD_PY_DIR/bigip"
+F5_ONBOARD_BIGIQ_PY_DIR="$F5_ONBOARD_PY_DIR/bigiq"
+
+
+F5_ONBOARD_TMP_DIR="$HOME/.f5-onboard/tmp"
+F5_ONBOARD_STATE_DIR="$HOME/.f5-onboard/state"
+F5_ONBOARD_CONF_DIR="$HOME/.f5-onboard/conf"
+F5_ONBOARD_CONF_VARS_DIR="$HOME/.f5-onboard/conf/vars"
+
+
+F5_ONBOARD_IMAGE_DIR="$HOME/.f5-onboard/images/patched"
+
+SCALEN_DEFAULT_SIZE=4
+BIGIQ_SCALEN_DEFAULT_SIZE=4

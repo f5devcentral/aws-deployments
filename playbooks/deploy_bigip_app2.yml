@@ -2,9 +2,10 @@
 # Add CFT output variables to host from persisted results from previous playbooks
 - hosts: bigips
   gather_facts: no
+  connection: local
   vars_files:
-   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
-  tasks:
+      - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  pre_tasks:
     - name: Add CFT output variables to host from persisted results from previous playbooks
       set_fact:
         ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
@@ -14,6 +15,20 @@
         ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
         VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip2 }}
+        DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
+
+- hosts: bigip-clusters
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: re-create a dynamic group of seed devices using first member of each group
+      add_host:
+          name: "{{ item.value.0 }}"
+          group: bigip-cluster-seeds
+          cluster_name: "{{ item.key }}"
+          members: "{{ item.value }}"
+      with_dict: groups
+      when: item.key in groups['bigip-clusters']
 
 - hosts: apphosts
   gather_facts: no
@@ -48,7 +63,7 @@
     - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
       delegate_to: localhost
 
-- hosts: bigips
+- hosts: bigip-cluster-seeds
   gather_facts: no
   vars:
     vip_id: "Vip2"
@@ -207,8 +222,8 @@
           resource_key="name"
       ignore_errors: true
 
-# Finally attach an EIP to the Vip / Application
-- hosts: bigips
+# Finally attach an EIP to the Vip / Application. One per cluster
+- hosts: bigip-cluster-seeds
   gather_facts: no
   vars:
      ansible_connection: local

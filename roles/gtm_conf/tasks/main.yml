@@ -43,6 +43,19 @@
   #   msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
 
 # NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
+- name: Setup the BIGIP-Object for GTMs (Standalone BIGIPs)
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+      collection_path='mgmt/tm/gtm/server'
+      resource_key="name"
+  with_items: groups['gtms']
+
+# NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
 - name: Setup the BIGIP-Object for BIGIPs (Standalone BIGIP1)
   delegate_to: localhost
   bigip_config:
@@ -54,16 +67,3 @@
       collection_path='mgmt/tm/gtm/server'
       resource_key="name"
   with_items: groups['bigips']
-# NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
-
-- name: Setup the BIGIP-Object for GTMs (Standalone BIGIP1)
-  delegate_to: localhost
-  bigip_config:
-      state=present
-      host={{ ansible_ssh_host }}
-      user={{ bigip_rest_user }}
-      password={{ bigip_rest_password }}
-      payload='{"product":"single-bigip","name":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","addresses":[{"deviceName":"ip-{{hostvars[item]["ManagementInterfacePrivateIp"]|replace(".","-")}}.ec2.internal","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
-      collection_path='mgmt/tm/gtm/server'
-      resource_key="name"
-  with_items: groups['gtms']
