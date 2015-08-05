@@ -15,7 +15,7 @@ These examples are provided in order to demonstrate how BIG-IP can be used to ma
 As of now, these deployment models are:<br>
 -single-standalone (single big-ip and application server in one availability zone) <br>
 -standalone-per-zone (big-ips in multiple availability zones, fronted by big-ip running gtm in each AZ, application hosts in each AZ, and a host in the external subnet for traffic generation)<br>
--single-standalone (cluster of big-ips and application server in one availability zone) <br>
+-single-cluster (cluster of big-ips and application server in one availability zone) <br>
 
 #### Support
 
