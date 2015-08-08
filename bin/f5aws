@@ -460,7 +460,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     inventory, resources, statuses = self.get_environment_info(env)
     inventory_path = '%s/%s/inventory/hosts' % (self.settings['env_path'], env)
     ansible_inventory = ansible.inventory.Inventory(inventory_path, vault_password=None)
-    
+  
     #login is a bit more custom - we want to show the login
     # information for a dynamic set of hosts - bigips, gtms, app hosts, and the client host
     # this information is compiled from the ansible inventory for this environment
@@ -518,7 +518,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     try:
       hostname = resource_name
       az = ansible_inventory.get_host(hostname).get_variables()['availability_zone']
-      return '{}:   '.format(az)
+      return '{}/{}:  '.format(az,resource_name)
     except: 
       return ''
 

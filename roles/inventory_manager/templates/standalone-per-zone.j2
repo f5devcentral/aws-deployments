@@ -54,6 +54,27 @@ zone{{ outer_loop.index }}-gtm{{ loop.index }}
 [clients]
 zone1-client
 
+{% for zone in zones %}
+{% set outer_loop = loop %}
+[zone{{ outer_loop.index }}-bigip-cluster]
+{% for bigipnum in range(1, standalone_per_az['bigips_per_zone'] + 1) %}
+zone{{ outer_loop.index }}-bigip{{ loop.index }}
+{% endfor %}
+
+{% endfor %}
+
+
+[bigip-clusters]
+{% for zone in zones %}
+zone{{ loop.index }}-bigip-cluster
+{% endfor %}
+
+
+[bigip-cluster-seeds]
+{% for zone in zones %}
+zone{{ loop.index }}-bigip1
+{% endfor %}
+
 
 ; group vars
 

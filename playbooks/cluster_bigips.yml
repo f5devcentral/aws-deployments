@@ -6,7 +6,7 @@
   connection: local
   vars_files:
       - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
-  pre_tasks:
+  tasks:
     - name: Add CFT output variables to host from persisted results from previous playbooks
       set_fact:
         ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
@@ -17,11 +17,7 @@
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
 
-  roles:
-     # This role configures the device object on each bigip
-     # and can safely be applied to all BIGIPs  (even standalones)
-     - bigip_cluster
-
+# Credit to Tim Rupp
 - hosts: bigip-clusters
   gather_facts: no
   connection: local
@@ -45,21 +41,13 @@
         template: src=../roles/bigip_cluster/templates/cluster_peer_info.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{inventory_hostname}}_peer_info.yml
         delegate_to: localhost
 
-# Add peer variables to host from template output above 
+# Add peer variables to host from template output above
 - hosts: bigip-cluster-seeds
   gather_facts: no
   vars_files:
     - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
     - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_peer_info.yml" ]
-  tasks:
+  roles:
+     # This role configures the device object on each bigip and clusters them
+     - bigip_cluster
 
-    - name: now cluster the bigips from the seed device
-      delegate_to: localhost
-      bigip_cluster:
-         state: present
-         hostname: "{{ hostvars[inventory_hostname]['ansible_ssh_host'] }}"
-         username: "{{ bigip_rest_user }}"
-         password: "{{ bigip_rest_password }}"
-         action: cluster
-         devices: "{{ cluster_device_names }}"
-         devices_mgmt_ips: "{{ cluster_mgmt_ips }}" 
