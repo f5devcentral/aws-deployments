@@ -51,6 +51,30 @@
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
         region="{{region}}"
 
+
+# Re-construct bigip_cluster info for adding BIGIP clusters to GTM
+# Credit to Tim Rupp
+- hosts: bigip-clusters
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: create a dynamic group of seed devices using first member of each group
+      add_host:
+          name: "{{ item.value.0 }}"
+          group: bigip-cluster-seeds
+          cluster_name: "{{ item.key }}"
+          members: "{{ item.value }}"
+      with_dict: groups
+      when: item.key in groups['bigip-clusters']
+
+# Add peer variables to host from template created when originally created clusters
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars_files:
+    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_peer_info.yml" ]
+
+
 # Wait for hosts to become ready
 - hosts: gtms
   gather_facts: no

@@ -40,12 +40,12 @@ cluster_spanned_across_azs:
   bigips_per_zone: 1
   gtms_per_zone: 1
 
-clustered_deviced_per_az:
+cluster_per_zone:
   clustering: same-az
   bigips_per_zone: 2
   gtms_per_zone: 1
 
-clustered_in_single_zone:
+cluster_in_single_zone:
   clustering: same-az
   bigips_per_zone: 2
   gtms_per_zone: 1

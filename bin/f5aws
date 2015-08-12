@@ -164,10 +164,10 @@ class F5Aws(object):
       'cluster_bigips.yml',
       'deploy_bigip_app1.yml',
       'deploy_bigip_app2.yml',
-      'deploy_gtm.yml',
-      'deploy_gtm_app1.yml',
-      'deploy_gtm_app2.yml',
-      'deploy_client.yml'
+#       'deploy_gtm.yml',
+#       'deploy_gtm_app1.yml',
+#       'deploy_gtm_app2.yml',
+#       'deploy_client.yml'
     ]
 
     # uses the inventory created in ~/vars/f5aws/env/<env name> created by `init`
