@@ -7,8 +7,8 @@
 # Step 1: Build the Docker image from the Dockerfile located in this directory
 sudo docker build -t f5demo .
 
-# Step 2: Launch docker container
-sudo docker run -v /aws-deployments:/aws-deployments -i -t f5demo
+# Step 2: Launch docker container and share code with docker container
+sudo docker run -v /path/to/aws-deployments:/aws-deployments -i -t f5demo
 
 # Step 3: Now follow instructions from the main repo README
 

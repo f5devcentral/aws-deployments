@@ -11,4 +11,4 @@ MAINTAINER Alex Applebaum a.applebaum@f5.com
 
 COPY .f5aws / 
 
-COPY .aws / 
+COPY .aws/credentials /.aws/credentials 
