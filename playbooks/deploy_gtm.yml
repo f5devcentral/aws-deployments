@@ -52,7 +52,7 @@
         region="{{region}}"
 
 
-# Re-construct bigip_cluster info for adding BIGIP clusters to GTM
+# Re-construct bigip_clusters info for adding BIGIP cluster objects to GTM
 # Credit to Tim Rupp
 - hosts: bigip-clusters
   gather_facts: no
@@ -67,13 +67,15 @@
       with_dict: groups
       when: item.key in groups['bigip-clusters']
 
-# Add peer variables to host from template created when originally created clusters
+# Add peer variables to seeds from variables when originally created bigip clusters
 - hosts: bigip-cluster-seeds
   gather_facts: no
   vars_files:
     - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
     - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_peer_info.yml" ]
-
+  tasks:
+    - name: loading variables for cluster seeds
+      debug: msg="loading variables for cluster seed {{inventory_hostname}}"
 
 # Wait for hosts to become ready
 - hosts: gtms
@@ -92,16 +94,16 @@
 - hosts: gtms
   gather_facts: no
   roles:
-    # adds users via tmsh
-    - bigip_base 
-    # provisions system globals like ntp, dns, snmp, syslog, db keys  
-    - bigip_system
-    # sets AWS keys and disables DHCP
-    - bigip_system_aws
-    # sets vlans, self-ips, routes
-    - gtm_network
-    # provisions GTM 
-    - gtm_system
+#     # adds users via tmsh
+#     - bigip_base 
+#     # provisions system globals like ntp, dns, snmp, syslog, db keys  
+#     - bigip_system
+#     # sets AWS keys and disables DHCP
+#     - bigip_system_aws
+#     # sets vlans, self-ips, routes
+#     - gtm_network
+#     # provisions GTM 
+#     - gtm_system
     # setup gtm configuration for this network topology
     - gtm_conf
     # setup up gtms in cluster, they share route information

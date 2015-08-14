@@ -50,12 +50,18 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      payload='{"product":"single-bigip","name":"{{hostvars[item]["DeviceName"]}}","addresses":[{"deviceName":"{{hostvars[item]["DeviceName"]}}","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+      payload='{"product":"single-bigip","name":"{{item}}","addresses":[{"deviceName":"{{hostvars[item]["DeviceName"]}}","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
       collection_path='mgmt/tm/gtm/server'
       resource_key="name"
   with_items: groups['gtms']
 
 # NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
+# Note, each standalone bigip object will be called by its cluster name as a
+# cluster can be a cluster of one.
+# NOTE: the BIG-IP object config will eventually need to be modified to pull from a jinja template 
+# when GTM better supports Scale-N clusters. 
+# Right now easier to construct object manually since it's just one or two BIG-IPs
+ 
 - name: Setup the BIGIP-Object for BIGIPs (Standalone BIGIP)
   delegate_to: localhost
   bigip_config:
@@ -63,7 +69,24 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      payload='{"product":"single-bigip","name":"{{hostvars[item]["DeviceName"]}}","addresses":[{"deviceName":"{{hostvars[item]["DeviceName"]}}","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+      payload='{"product":"single-bigip","name":"{{hostvars[item]["cluster_name"]}}","addresses":[{"deviceName":"{{hostvars[item]["DeviceName"]}}","name":"{{hostvars[item]["ExternalInterfacePublicIp"]}}","translation":"{{hostvars[item]["ExternalInterfacePrivateIp"]}}"}],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
       collection_path='mgmt/tm/gtm/server'
       resource_key="name"
   with_items: groups['bigips']
+  when: hostvars[inventory_hostname].deployment_model != "cluster-per-zone"
+
+
+- name: Setup the BIGIP-Object for BIGIPs (Clustered BIGIPs)
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      payload='{"product":"redundant-bigip","name":"{{hostvars[item]["cluster_name"]}}","addresses":[{"deviceName":"{{hostvars[item]["cluster_device_names"][0]}}","name":"{{hostvars[item]["cluster_public_nat_addrs"][0]}}","translation":"{{hostvars[item]["cluster_public_self_addrs"][0]}}"},{"deviceName":"{{hostvars[item]["cluster_device_names"][1]}}","name":"{{hostvars[item]["cluster_public_nat_addrs"][1]}}","translation":"{{hostvars[item]["cluster_public_self_addrs"][1]}}"} ],"datacenter":"{{region}}","monitor":"/Common/bigip","virtualServerDiscovery":"disabled"}'
+      collection_path='mgmt/tm/gtm/server'
+      resource_key="name"
+  with_items: groups['bigip-cluster-seeds']
+  when: hostvars[inventory_hostname].deployment_model == "cluster-per-zone"
+
+

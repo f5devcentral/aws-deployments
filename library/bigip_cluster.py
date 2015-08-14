@@ -364,6 +364,11 @@ def main():
 								states = [ "STATE_ENABLED" ]
 								)
 
+		    # Need to make sure seed is Active. 
+                    # Logic would need to be enhanced like f5onboard tools for Scale-N clusters
+		    seed_bigip_obj.System.Failover.set_standby_traffic_group_to_device( traffic_groups = [ "traffic-group-1" ], device = device_names[1] )
+		    
+
 		# Need extra validation here before returning true/Cluster successfully created		
 		result = { "changed": True, "Cluster Created" : True }
 

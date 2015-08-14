@@ -16,6 +16,19 @@
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
         region="{{region}}"
 
+- hosts: bigip-clusters
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: re-create a dynamic group of seed devices using first member of each group
+      add_host:
+          name: "{{ item.value.0 }}"
+          group: bigip-cluster-seeds
+          cluster_name: "{{ item.key }}"
+          members: "{{ item.value }}"
+      with_dict: groups
+      when: item.key in groups['bigip-clusters']
+
 - hosts: bigip-cluster-seeds
   gather_facts: no
   vars_files:
@@ -32,7 +45,6 @@
         AvailabilityZone={{ hostvars[inventory_hostname].stack_outputs.AvailabilityZone }}
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
 
-
 - hosts: bigip-cluster-seeds
   gather_facts: no
   vars_files:
@@ -48,7 +60,7 @@
   vars:
     vip_id: "Vip1"
   tasks:
-    - name: Setup the Virtual Servers
+    - name: Setup the Virtual Servers on each BIG-IP
       delegate_to: localhost
       bigip_config:
           state=present
@@ -56,7 +68,7 @@
           user={{ bigip_rest_user }}
           password={{ bigip_rest_password }}
           payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["VipEip"]}}:80","translationAddress":"{{hostvars[item]["VipPrivateIp"]}}"}'
-          collection_path='mgmt/tm/gtm/server/~Common~{{hostvars[item]["DeviceName"]}}/virtual-servers'
+          collection_path='mgmt/tm/gtm/server/~Common~{{hostvars[item]["cluster_name"]}}/virtual-servers'
           resource_key="name"
       with_items: groups['bigip-cluster-seeds']
 
@@ -67,7 +79,7 @@
           host={{ ansible_ssh_host }}
           user={{ bigip_rest_user }}
           password={{ bigip_rest_password }}
-          payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"{{hostvars[item]["DeviceName"]}}:{{vip_id}}"}]}'
+          payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"{{hostvars[item]["cluster_name"]}}:{{vip_id}}"}]}'
           collection_path='mgmt/tm/gtm/pool'
           resource_key="name"
       with_items: groups['bigip-cluster-seeds']
@@ -81,7 +93,7 @@
       register: wideip_pool_string
       delegate_to: localhost
 
-    - name: Setup the Wideip
+    - name: Setup the Wideip for Vip1
       delegate_to: localhost
       bigip_config:
           state=present
@@ -91,5 +103,4 @@
           payload='{"name":"{{vip_id}}.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
           collection_path='mgmt/tm/gtm/wideip'
           resource_key="name"
-
 

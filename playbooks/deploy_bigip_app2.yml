@@ -72,12 +72,7 @@
     # so have to remove new lines and convert back to json ( with to_nice_json filter) so json modules don't fail 
     # ex. 
     # json/decoder.py", line 381, in raw_decode 
-    background_image: "{{ lookup('file', install_path + '/roles/bigip_app/files/background_image_base_64') }}"
-    sorry_image: "{{ lookup('file', install_path + '/roles/bigip_app/files/sorry_image_base_64') }}"
-    sorry_page_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__sorry_page_rule.tcl') }}"
     snat_random_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__snat_random_rule.tcl') }}"
-    demo_analytics_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__demo_analytics_rule.tcl') }}"
-    demo_iApp: "{{ lookup('file', install_path + '/roles/bigip_app/files/__demo_iApp.txt')|replace('\n','') }}"
 
   tasks:
     - name: Setup Webserver Pool
@@ -91,74 +86,7 @@
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
 
-    - name: Setup a High Speed Logging pool to send to Analytics Server
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host={{ ansible_ssh_host }}
-          user={{ bigip_rest_user }}
-          password={{ bigip_rest_password }}
-          collection_path='mgmt/tm/ltm/pool'
-          resource_key="name"
-          payload='{"name":"syslog_pool","members":[{"name":"10.0.3.32:514","address":"10.0.3.32"},{"name":"10.0.3.33:514","address":"10.0.3.33"}],"monitor":"tcp"}' 
-    ##### UPLOAD DATAGROUP #####
-    # TODO:
-    # "Setting SSL Profiles"
-    # "Setting Remote Logging Profiles"
- 
-    - name: Setup Analytics Profile
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host={{ ansible_ssh_host }}
-          user={{ bigip_rest_user }}
-          password={{ bigip_rest_password }}
-          collection_path='mgmt/tm/ltm/profile/analytics'
-          resource_key="name"
-          payload='{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
-      ignore_errors: True
-
-#TODO: REST call for datagroup not idempotent
-#ex.
-#failed: [52.26.61.0 -> localhost] => {"failed": true, "name": "mgmt/tm/ltm/data-group/internal", "rc": 1}
-#msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'"type" may not be specified in the context of the "modify" command. "type" may be specified using the following commands: create, edit, list', u'code': 400}
- 
-    - name: Upload Datagroup ... background for sorry page
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host={{ ansible_ssh_host }}
-          user={{ bigip_rest_user }}
-          password={{ bigip_rest_password }}
-          collection_path='mgmt/tm/ltm/data-group/internal'
-          resource_key="name"
-          payload='{"name":"background_image","type":"string","records":[{"name":"{{background_image}}"}]}'
-      ignore_errors: True
-
-    - name: Upload Datagroup ... image for sorry page
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host={{ ansible_ssh_host }}
-          user={{ bigip_rest_user }}
-          password={{ bigip_rest_password }}
-          collection_path='mgmt/tm/ltm/data-group/internal'
-          resource_key="name"
-          payload='{"name":"sorry_images","type":"string","records":[{"name":"{{sorry_image}}"}]}'
-      ignore_errors: True
-    
-    ##### UPLOAD RULES #####
-    - name: Upload iRules ... sorry_page_rule
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host={{ ansible_ssh_host }}
-          user={{ bigip_rest_user }}
-          password={{ bigip_rest_password }}
-          collection_path='mgmt/tm/ltm/rule'
-          resource_key="name"
-          payload='{"name":"__sorry_page_rule","apiAnonymous":"{{sorry_page_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
-    
+   
     - name: Upload iRules ... snat_random_rule
       delegate_to: localhost
       bigip_config:
@@ -171,17 +99,7 @@
           payload='{"name":"__snat_random_rule","apiAnonymous":"{{snat_random_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
           #payload='{"name":"__snat_random_rule","apiAnonymous":"{{lookup('file', install_path + '/roles/bigip_app/files/__snat_random_rule.tcl')|replace("\n","\\n")|replace("\"","\\\"")}}"}'
     
-    - name: Upload iRules ... demo_analytics_rule
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host={{ ansible_ssh_host }}
-          user={{ bigip_rest_user }}
-          password={{ bigip_rest_password }}
-          collection_path='mgmt/tm/ltm/rule'
-          resource_key="name"
-          payload='{"name":"__demo_analytics_rule","apiAnonymous":"{{demo_analytics_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
-    
+   
     #Deploy VIPs
     - name: Setup the HTTP Virtual
       delegate_to: localhost
@@ -210,29 +128,4 @@
 #failed: [52.25.214.214 -> localhost] => {"failed": true, "name": "mgmt/tm/sys/application/service", "rc": 1}
 #msg: 404 Client Error: Not Found. {u'errorStack': [], u'message': u'01020036:3: The requested Application Service (/Common/demo_iApp) was not found.', u'code': 404}
 
-    - name: Setup the iApp
-      delegate_to: localhost
-      bigip_config:
-          state=present
-          host={{ ansible_ssh_host }}
-          user={{ bigip_rest_user }}
-          password={{ bigip_rest_password }}
-          payload='{{demo_iApp|to_nice_json}}'
-          collection_path='mgmt/tm/sys/application/service'
-          resource_key="name"
-      ignore_errors: true
 
-# Finally attach an EIP to the Vip / Application. One per cluster
-- hosts: bigip-cluster-seeds
-  gather_facts: no
-  vars:
-     ansible_connection: local
-     ansible_python_interpreter: "/usr/bin/env python"
-     vip_id: "Vip2"
-  #Grab Interface IDs and Secondary IPs from each BIGIP
-  vars_files:
-     - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
-  tasks:
-    - name: deploy eips
-      include: "{{ install_path }}/roles/infra/tasks/deploy_eip_cft.yml"
-      delegate_to: localhost
