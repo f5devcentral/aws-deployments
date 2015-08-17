@@ -17,7 +17,7 @@
 - shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ bigip_version }} --license {{ bigip_license_model }} --package {{ bigip_license_package }} --throughput {{ bigip_license_throughput }} --matchone"
   register: output
 
-- name: Launching a big-ip in each AZ
+- name: Launching a big-ip from CFT
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present

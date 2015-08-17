@@ -145,6 +145,7 @@ def main():
 
     result = {}
     changed = False
+    result.update( { "changed": False } )
 
     argument_spec = dict(
             username=dict(type='str', aliases=['username', 'admin'], required=True),
@@ -185,7 +186,7 @@ def main():
     #bigip_image not used
     bigip_image = ''
 
-    num_bigips = len(device_names)
+    bigip_objs = []
 
     #Quick validation
     if device_names is None or \
@@ -195,22 +196,28 @@ def main():
 
     if action == 'cluster':
 
-	for BIGIP_INDEX in range(0, num_bigips):
+	# Initalize the bigsuds connection object to each node in the cluster and add add it to array
+	for BIGIP_INDEX in range(0, len(device_names)):
 
 	    try:
-		# Initalize the bigsuds connection object to SEED node
-		bigip_obj = bigsuds.BIGIP(
-			    hostname = bigip_api_addr_list[BIGIP_INDEX],
-			    username = username,
-			    password = password,
-			    )
+		bigip_obj  = bigsuds.BIGIP(
+		                          hostname = bigip_api_addr_list[BIGIP_INDEX],
+			                  username = username,
+			                  password = password,
+			                  )
+
+		bigip_objs.append(bigip_obj)
+
 	    except Exception, e:
 		module.fail_json(msg="bigip suds object creation failed. received exception: %s" % e)
+    
+        # Go configure the failover attributes for each BIG-IP object in Device Service Cluster
+	for BIGIP_INDEX in range(0, len(bigip_objs)):
 
 	    try:
 
-		existing_device_name = bigip_obj.Management.Device.get_local_device()
-		# existing_hostname = bigip_obj.System.Inet.get_hostname()
+		existing_device_name = bigip_objs[BIGIP_INDEX].Management.Device.get_local_device()
+		# existing_hostname = bigip_objs[BIGIP_INDEX].System.Inet.get_hostname()
 		# print json.dumps({"existing_device_name": existing_device_name,
 		#                 "device_name": device_name})
 
@@ -218,26 +225,27 @@ def main():
 		# so have to reset device trust in order to reset the device_name to be unique. 
 		# device_name could be arbitrary/simple like bigip1, bigip2.
 		# If not already something unique like a hostname, 
-		# In the end, best practice is to match hostname but well just use name provided 
+		# In the end, best practice is to match hostname but we'll just use the name provided 
 		if existing_device_name != "/Common/bigip1" or ("/Common/" + device_names[BIGIP_INDEX]):
-		    bigip_obj.Management.Trust.reset_all(
+		    bigip_objs[BIGIP_INDEX].Management.Trust.reset_all(
 					    device_object_name = device_names[BIGIP_INDEX],
 					    keep_current_authority = 'true',
 					    authority_cert = '',
 					    authority_key = '',
 					  )
 
-		    result = { "changed": True, "Reset Device Trust" : True }
+		    result.update( { "changed": True, "Reset Device Trust" : True } )
 		    time.sleep(15)
 
 		############################################################
 		# Begin Setting HA Channel Properities on each device object
 		############################################################
 	        
-                # TODO: Add idempotence to these calls. Check if exists/matches first and report if changed
+                # TODO: Add idempotence to each of these calls. Check if exists/matches first 
+                # before blindly setting and report if changed
 
 		# Set ConfigSync Address 
-		bigip_obj.Management.Device.set_configsync_address( devices = [ device_names[BIGIP_INDEX] ], 
+		bigip_objs[BIGIP_INDEX].Management.Device.set_configsync_address( devices = [ device_names[BIGIP_INDEX] ], 
 								    addresses = [ bigip_ha_addr_list[BIGIP_INDEX] ] )
 
 		# Set Failover Address
@@ -250,65 +258,54 @@ def main():
 				  }
 		    unicast_objs.append(unicast_obj)
 
-		bigip_obj.Management.Device.set_unicast_addresses(
+		bigip_objs[BIGIP_INDEX].Management.Device.set_unicast_addresses(
 							    devices =   [ device_names[BIGIP_INDEX] ],
 							    addresses = [ unicast_objs ]
 							)
 	      
 		# Set Mirror Addresses
-		bigip_obj.Management.Device.set_primary_mirror_address(
+		bigip_objs[BIGIP_INDEX].Management.Device.set_primary_mirror_address(
 								devices = [ device_names[BIGIP_INDEX] ],
 								addresses = [ bigip_ha_addr_list[BIGIP_INDEX] ]
 							    )
-    #             bigip_obj.Management.Device.set_secondary_mirror_address(
+    #             bigip_objs[BIGIP_INDEX].Management.Device.set_secondary_mirror_address(
     #                                                             devices = [ device_names[BIGIP_INDEX] ],
     #                                                             addresses = [ bigip_ha_addr_list[BIGIP_INDEX] ]
     #                                                         )
     # 
 
                 # For now, Just rolling up summary that all calls were made
-		result = { "changed": True, "Device Object Configured" : True }
+		result.update({ "changed": True , "Device Object Configured" : True })
 
 	    except Exception, e:
 		module.fail_json(msg="device object configuration failed. received exception: %s" % e)
 
 	### END DEVICE OBJECT LOOP ###
 
-	# GO TO SEED DEVICE (default = 1st device in list) 
-        # AND CREATE THE CLUSTER
-        # FIRST MAKE SURE NOT JUST ONE DEVICE IN LIST (i.e. we have STANDALONE)
-	if len(device_names) > 1: 
-
-	    try:
-		# Initalize a bigsuds connection object to SEED node
-		seed_bigip_obj = 	bigsuds.BIGIP(
-				    hostname = bigip_api_addr_list[0],
-				    username = username,
-				    password = password,
-				    )
-	    except Exception, e:
-		module.fail_json(msg="seed bigip suds object creation failed. received exception: %s" % e)
-
-
+        # If more than one device provided, cluster them 
+	if len(device_names) > 1:
+ 
 	    try:
 		peer_exists = False
 		device_group_exists = False
 
-		# Check to see if Device Trust Group exists / already contains a peer device
-		existing_peers = seed_bigip_obj.Management.Device.get_list()
+		# Check to see if a Device Trust Group exists / already contains a peer device
+		existing_peers = bigip_objs[0].Management.Device.get_list()
 		for device in existing_peers:
 		    if device == device_names[1]:
 			 peer_exists = True
+			 result.update({ "Peer Already Exists" : True })
 			 break
 
 		if bigip_cluster_name == None:
 		    bigip_cluster_name = "my-sync-failover-group"
 
-		# Check to see if there's a sync failover group
-		existing_device_groups = seed_bigip_obj.Management.DeviceGroup.get_list()
+		# Check to see if there's already a sync failover group
+		existing_device_groups = bigip_objs[0].Management.DeviceGroup.get_list()
 		for group in existing_device_groups:
 		    if group == ("/Common/" + bigip_cluster_name):
 			 device_group_exists = True
+			 result.update({ "Device Group Already Exists" : True })
 			 break
 
 
@@ -316,7 +313,7 @@ def main():
 		    for i in range(len(device_names)-1):
 
 			    # Start adding peers
-			    seed_bigip_obj.Management.Trust.add_authority_device(
+			    bigip_objs[0].Management.Trust.add_authority_device(
 							    address = bigip_api_addr_list[i + 1],
 							    username = username,
 							    password = password,
@@ -330,21 +327,30 @@ def main():
 		if not device_group_exists:
 
 		    # Create Sync-Failover Group. 
-		    device_group_created = seed_bigip_obj.Management.DeviceGroup.create(  
+		    device_group_created = bigip_objs[0].Management.DeviceGroup.create(  
 								device_groups = [ bigip_cluster_name ],
 								types = [ "DGT_FAILOVER" ]
 								)
 
-		    # Due to, Bug alias 479071 TG initial-placement influenced by sync-failover DG w/auto-sync enabled 
-		    # either need to disaable auto-sync when first creating sync-failover-group
-		    # or first offline peers before adding them 
-		    seed_bigip_obj.Management.DeviceGroup.set_autosync_enabled_state (
+
+                    # Default behavior described in:
+		    # Bug alias 479071 TG initial-placement influenced by sync-failover DG w/auto-sync enabled 
+		    # Bug alias 475503 Adding member to FODG triggers failover
+		    # As each device has traffic-group-1, default is for device with lowest IP to become active. 
+		    # So we can control/overide this by offlining all the peer devices before adding them to the cluster
+                    # and disabling auto-sync (a newer feature)
+	
+		    for BIGIP_INDEX in range(1, len(bigip_objs)):
+			bigip_objs[BIGIP_INDEX].System.Failover.set_offline()
+
+		    #Back to seed
+	            bigip_objs[0].Management.DeviceGroup.set_autosync_enabled_state (
 								device_groups = [ bigip_cluster_name ],
 								states = [ "STATE_DISABLED" ]
 								)
 		    
-		    # Add device Sync-Failover Group. 
-		    add_devices = seed_bigip_obj.Management.DeviceGroup.add_device(  
+		    # Now can add peer devices to Sync-Failover Group. 
+		    add_devices = bigip_objs[0].Management.DeviceGroup.add_device(  
 								  device_groups = [ bigip_cluster_name ],
 								  devices = [ device_names ]
 								  )
@@ -352,25 +358,35 @@ def main():
 		    #Sleep for 15 seconds to make sure devices are added
 		    time.sleep(15)
 		    # Initiate a Sync Request
-		    sync_request = seed_bigip_obj.System.ConfigSync.synchronize_to_group_v2(
+		    sync_request = bigip_objs[0].System.ConfigSync.synchronize_to_group_v2(
 						    group = bigip_cluster_name,
 						    device = device_names[0],
 						    force = True
 						    )
 
 		    # Can now re-enable auto-sync  
-		    seed_bigip_obj.Management.DeviceGroup.set_autosync_enabled_state (
+		    bigip_objs[0].Management.DeviceGroup.set_autosync_enabled_state (
 								device_groups = [ bigip_cluster_name ],
 								states = [ "STATE_ENABLED" ]
-								)
+	    							)
 
-		    # Need to make sure seed is Active. 
-                    # Logic would need to be enhanced like f5onboard tools for Scale-N clusters
-		    seed_bigip_obj.System.Failover.set_standby_traffic_group_to_device( traffic_groups = [ "traffic-group-1" ], device = device_names[1] )
-		    
+		    # No go online peers and set them to standby for good measure
+		    for BIGIP_INDEX in range(1, len(bigip_objs)):
+			bigip_objs[BIGIP_INDEX].System.Failover.set_offline_release()
+                        bigip_objs[BIGIP_INDEX].System.Failover.set_standby_traffic_group_to_device(
+                                                               traffic_groups = [""], 
+                                                               device = device_names[0] 
+                                                               )
+
+		    # Grab Seed Active/Standy status
+		    seed_status = bigip_objs[0].System.Failover.get_failover_state()
+
+		    # Might want to fail if not expected Active Status
+		    if seed_status != "FAILOVER_STATE_ACTIVE":
+			result.update({ "WARNING": "Seed Not Active" })
 
 		# Need extra validation here before returning true/Cluster successfully created		
-		result = { "changed": True, "Cluster Created" : True }
+		result.update( { "changed": True, "Cluster Created" : True, "Seed Status": seed_status } )
 
 	    except Exception, e:
 		module.fail_json(msg="Cluster creation failed. received exception: %s" % e)
