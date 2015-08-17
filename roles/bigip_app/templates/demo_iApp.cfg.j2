@@ -1,6 +1,6 @@
-{
+---
+demo_iApp: {
     "name": "demo_iApp",
-    "deviceGroup": "/Common/my-sync-failover-group",
     "inheritedDevicegroup": "true",
     "inheritedTrafficGroup": "true",
     "lists": [
@@ -33,7 +33,7 @@
             "rows": [
                 {
                     "row": [
-                        "{{application_host_name}}"
+                        "demo.example.com"
                     ]
                 }
             ]
@@ -122,17 +122,12 @@
         {
             "encrypted": "no",
             "name": "pool__pool_to_use",
-            "value": "/Common/{{vip_id}}_pool"
+            "value": "/Common/Vip1_pool"
         },
         {
             "encrypted": "no",
             "name": "pool__port",
             "value": "80"
-        },
-        {
-            "encrypted": "no",
-            "name": "pool__xff",
-            "value": "yes"
         },
         {
             "encrypted": "no",
@@ -156,8 +151,48 @@
         },
         {
             "encrypted": "no",
+            "name": "pool__port_secure",
+            "value": "443"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__redirect_port",
+            "value": "80"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__redirect_to_https",
+            "value": "yes"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__xff",
+            "value": "yes"
+        },
+        {
+            "encrypted": "no",
             "name": "ssl__mode",
-            "value": "no_ssl"
+            "value": "client_ssl"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__cert",
+            "value": "/Common/default.crt"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__client_ssl_profile",
+            "value": "/#create_new#"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__key",
+            "value": "/Common/default.key"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__use_chain_cert",
+            "value": "/#do_not_use#"
         },
         {
             "encrypted": "no",
@@ -180,4 +215,5 @@
             "value": "/Common/request-log"
         }
     ]
+
 }

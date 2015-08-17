@@ -33,7 +33,7 @@
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
-    payload='{"name":"private", "address":"{{ InternalInterfacePrivateIp }}/24", "vlan":"private", "trafficGroup":"traffic-group-local-only"}'
+    payload='{"name":"private", "address":"{{ InternalInterfacePrivateIp }}/24", "vlan":"private", "trafficGroup":"traffic-group-local-only", "allowService":"default"}'
     collection_path='mgmt/tm/net/self'
     resource_key="name"
 

@@ -21,7 +21,7 @@
   until: result|changed
   retries: 20
   delay: 5
-
+  
 # We need NTP, we do not get this from Amazon
 # TODO: take in an array for pool members
 # pool members are the same for each device if they are in the same region

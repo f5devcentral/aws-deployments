@@ -1,0 +1,17 @@
+---
+- name: Configuring DSC Device objects and clustering the bigips if more than one.  
+        This can take a couple of minutes...
+  delegate_to: localhost
+  bigip_cluster:
+     state: present
+     username: "{{ bigip_rest_user }}"
+     password: "{{ bigip_rest_password }}"
+     action: cluster
+     ha_type: pair
+     bigip_cluster_name: my_sync_failover_group
+     device_names: "{{ cluster_device_names }}"
+     api_addrs: "{{ cluster_api_addrs }}"
+     mgmt_addrs: "{{ cluster_mgmt_addrs }}"
+     ha_addrs: "{{ cluster_ha_addrs }}"
+     mirror_addrs: "{{ cluster_mirror_addrs }}"
+

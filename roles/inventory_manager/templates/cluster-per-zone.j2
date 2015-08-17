@@ -10,8 +10,11 @@ vpc-manager
 zone{{ loop.index }}-az
 zone{{ loop.index }}-client
 zone{{ loop.index }}-apphost1
-zone{{ loop.index }}-bigip1
 zone{{ loop.index }}-gtm1
+{% set outer_loop = loop %}
+{% for bigipnum in range(1, cluster_per_zone['bigips_per_zone'] + 1) %}
+zone{{ outer_loop.index }}-bigip{{ loop.index }}
+{% endfor %}
 
 {% endfor %}
 
@@ -38,7 +41,7 @@ zone{{ outer_loop.index }}-apphost{{ loop.index }}
 [bigips]
 {% for zone in zones %}
 {% set outer_loop = loop %}
-{% for bigipnum in range(1, standalone_per_zone['bigips_per_zone'] + 1) %}
+{% for bigipnum in range(1, cluster_per_zone['bigips_per_zone'] + 1) %}
 zone{{ outer_loop.index }}-bigip{{ loop.index }}
 {% endfor %}
 {% endfor %}
@@ -46,7 +49,7 @@ zone{{ outer_loop.index }}-bigip{{ loop.index }}
 [gtms]
 {% for zone in zones %}
 {% set outer_loop = loop %}
-{% for gtmnum in range(1, standalone_per_zone['gtms_per_zone'] + 1) %}
+{% for gtmnum in range(1, cluster_per_zone['gtms_per_zone'] + 1) %}
 zone{{ outer_loop.index }}-gtm{{ loop.index }}
 {% endfor %}
 {% endfor %}
@@ -57,7 +60,7 @@ zone1-client
 {% for zone in zones %}
 {% set outer_loop = loop %}
 [zone{{ outer_loop.index }}-bigip-cluster]
-{% for bigipnum in range(1, standalone_per_zone['bigips_per_zone'] + 1) %}
+{% for bigipnum in range(1, cluster_per_zone['bigips_per_zone'] + 1) %}
 zone{{ outer_loop.index }}-bigip{{ loop.index }}
 {% endfor %}
 

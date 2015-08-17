@@ -1,0 +1,53 @@
+---
+
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: bigips
+  gather_facts: no
+  connection: local
+  vars_files:
+      - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
+        DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
+
+# Credit to Tim Rupp
+- hosts: bigip-clusters
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: create a dynamic group of seed devices using first member of each group 
+      add_host:
+          name: "{{ item.value.0 }}"
+          group: bigip-cluster-seeds
+          cluster_name: "{{ item.key }}"
+          members: "{{ item.value }}"
+      with_dict: groups
+      when: item.key in groups['bigip-clusters']
+
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  connection: local
+  tasks:
+      # Difficult to selectively grab/loop through variables and construct string together 
+      # in play framework itself. Easiest way is through a template.
+      - name: Store peers information
+        template: src=../roles/bigip_cluster/templates/cluster_peer_info.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{inventory_hostname}}_peer_info.yml
+        delegate_to: localhost
+
+# Add peer variables to host from template output above
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars_files:
+    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_peer_info.yml" ]
+  roles:
+     # This role configures the device object on each bigip and clusters them
+     - bigip_cluster
+

@@ -28,17 +28,7 @@
     - name: Teardown gtms
       include: "{{ install_path }}/roles/infra/tasks/teardown_gtm_cft.yml"
 
-- hosts: bigips
-  vars:
-    ansible_connection: local
-    ansible_python_interpreter: /usr/bin/env python
-    vip_id: Vip2
-  gather_facts: no
-  tasks: 
-    - name: Teardown eip associated with Vip2
-      include: "{{ install_path }}/roles/infra/tasks/teardown_eip_cft.yml"
-
-- hosts: bigips
+- hosts: bigip-cluster-seeds
   vars:
     ansible_connection: local
     ansible_python_interpreter: /usr/bin/env python

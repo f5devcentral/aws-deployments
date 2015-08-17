@@ -32,6 +32,7 @@
         ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
         ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
         VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
+        DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
         region="{{region}}"
 
 - hosts: bigips
@@ -47,6 +48,34 @@
         ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
         ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
+        DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
+        region="{{region}}"
+
+
+# Re-construct bigip_clusters info for adding BIGIP cluster objects to GTM
+# Credit to Tim Rupp
+- hosts: bigip-clusters
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: create a dynamic group of seed devices using first member of each group
+      add_host:
+          name: "{{ item.value.0 }}"
+          group: bigip-cluster-seeds
+          cluster_name: "{{ item.key }}"
+          members: "{{ item.value }}"
+      with_dict: groups
+      when: item.key in groups['bigip-clusters']
+
+# Add peer variables to seeds from variables when originally created bigip clusters
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars_files:
+    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_peer_info.yml" ]
+  tasks:
+    - name: loading variables for cluster seeds
+      debug: msg="loading variables for cluster seed {{inventory_hostname}}"
 
 # Wait for hosts to become ready
 - hosts: gtms
@@ -57,7 +86,7 @@
       local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
     - name: Wait until BIG-IP is ready for provisioning
       raw: "run /util bash -c 'cat /var/prompt/ps1'"
-      until: (result.stdout.find("Active") != -1)
+      until: (result.stdout.find("Active") != -1 or result.stdout.find("Standby") != -1)
       register: result
       retries: 40
 

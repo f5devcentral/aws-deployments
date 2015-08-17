@@ -30,22 +30,29 @@ client_instance_type: "t2.micro"
 
 # standalone big-ip in each availability zone, traffic directed
 #  via gslb, dns
-standalone_per_az:
+single_standalone:
+  clustering: none
+  bigips_per_zone: 1
+  gtms_per_zone: none
+
+single_cluster:
+  clustering: same-az
+  bigips_per_zone: 2
+  gtms_per_zone: 1
+
+standalone_per_zone:
   clustering: none
   bigips_per_zone: 1
   gtms_per_zone: 1
 
-cluster_spanned_across_azs:
+cluster_per_zone:
+  clustering: same-az
+  bigips_per_zone: 2
+  gtms_per_zone: 1
+
+cluster_spanned_across_zones:
   clustering: cross-az
   bigips_per_zone: 1
   gtms_per_zone: 1
 
-clustered_deviced_per_az:
-  clustering: same-az
-  bigips_per_zone: 2
-  gtms_per_zone: 1
 
-clustered_in_single_zone:
-  clustering: same-az
-  bigips_per_zone: 2
-  gtms_per_zone: 1

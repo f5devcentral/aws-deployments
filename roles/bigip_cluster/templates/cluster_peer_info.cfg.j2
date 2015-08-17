@@ -1,0 +1,8 @@
+---
+cluster_device_names: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['DeviceName'] }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+cluster_api_addrs: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['ManagementInterfacePublicIp'] }} {% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+cluster_mgmt_addrs: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['ManagementInterfacePrivateIp'] }} {% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+cluster_ha_addrs: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['InternalInterfacePrivateIp'] }} {% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+cluster_mirror_addrs: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['InternalInterfacePrivateIp'] }} {% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+cluster_public_self_addrs: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['ExternalInterfacePrivateIp'] }} {% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+cluster_public_nat_addrs: [ {% for member in hostvars[inventory_hostname]['members'] %}{% if member is defined %}{{ hostvars[member]['ExternalInterfacePublicIp'] }} {% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
