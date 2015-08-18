@@ -65,12 +65,13 @@ AWS-SSH-KEY.pem            100% 1696     1.7KB/s   00:00
 This will initialize the set of ansible variables necessary for deployment (known as an 'inventory'. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.
 
 
+
 ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "single-standalone", "region": "us-east-1", "zone": "us-east-1b"}'```
 
 ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "single-cluster", "region": "us-east-1", "zone": "us-east-1b" }'```
 
 
-You can also try out a more complex deployment model ( complete with GTMs (up to 2 - one in each AZ) and a jmeter client to generate traffic) that can leverage multiple AZs. You must choose the availability zones in which you want to deploy. 
+You can also try out a more complex deployment ( complete with GTMs (up to 2 - one in each AZ) and a jmeter client to generate traffic) that can leverage multiple AZs. You must choose the availability zones in which you want to deploy. 
  
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "region": "us-east-1", "zones": ["us-east-1b"]}'```
 

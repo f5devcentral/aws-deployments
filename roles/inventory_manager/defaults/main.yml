@@ -19,7 +19,9 @@ gtm_instance_type: "m3.xlarge"
 
 
 # defaults for deploying applications within docker containers
-# default ami is Docker optimized in US-EAST-1
+# default ami is ECS-Optimized AMI
+# https://aws.amazon.com/marketplace/pp/B00U6QTYI2
+# Using 2015.03.f
 apphost_instance_type: "t2.micro"
 containers_per_host: 2
 apphosts_per_zone: 1
