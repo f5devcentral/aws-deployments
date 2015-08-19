@@ -68,7 +68,7 @@ def colorize(lead, num, color):
   """ Print 'lead' = 'num' in 'color' """
   if num != 0 and ANSIBLE_COLOR and color is not None:
     return "%s%s%-15s" % (stringc(lead, color),
-                stringc("=", color), stringc(str(num), color))
+      stringc("=", color), stringc(str(num), color))
   else:
     return "%s=%-4s" % (lead, str(num))
 
@@ -103,7 +103,8 @@ class ValidationError(Exception):
 class F5Aws(object):
 
   """
-    This class is used to execute a set of ansible playbooks included in ./playbooks.
+    This class is used to execute a set of ansible playbooks
+      included in ./playbooks.
     Playbooks are executed using the run_playbooks method, which reloads the
     inventory between each playbook.  This is slightly different than the
     way that ansible-playbook command typically handles things.  It only loads
@@ -118,7 +119,8 @@ class F5Aws(object):
       try:
         self.settings = dict(yaml.load(fd))
       except yaml.YAMLError, e:
-        raise Exception("Fatal YAML error while reading settings file in {}, perhaps there is a syntax error in the file?\r\nThe error was {}".format(
+        raise Exception("Fatal YAML error while reading settings file in {}, \
+perhaps there is a syntax error in the file?\r\nThe error was {}".format(
           global_vars_path, e))
 
       for v in REQUIRED_VARS:
@@ -150,14 +152,16 @@ class F5Aws(object):
     # basic string checking to prevent failures later in playbook
     if not re.match('^[a-zA-z]{1}[a-zA-Z0-9-]*', options.env_name):
       raise ValidationError(
-        'The environment name must match the following regexp: "[a-zA-z]{1}[a-zA-Z0-9-]*" ')
+        'The environment name must match the following\
+regexp: "[a-zA-z]{1}[a-zA-Z0-9-]*" ')
 
     # check to make sure this inventory does not already exist
     print self.settings['env_path']
     if (os.path.isdir((self.settings['env_path'] + options.env_name)) and not
-        options.force):
-      raise ValidationError(
-        'There is already an environment with name "%s".  Use -f, --force to update the inventory variables for this environment. ' % options.env_name)
+      options.force):
+        raise ValidationError(
+          'There is already an environment with name "%s".  Use -f, --force to \
+update the inventory variables for this environment. ' % options.env_name)
 
     # uses the inventory included in this repository
     inventory_path = self.settings['install_path'] + '/inventory/hosts'
@@ -177,9 +181,9 @@ class F5Aws(object):
       # 'deploy_bigip_cft.yml',
       # 'deploy_gtm_cft.yml',
       # 'deploy_app_cft.yml',
-      # 'deploy_client_cft.yml',
-      # 'deploy_app.yml',
-      # 'deploy_bigip.yml',
+      'deploy_client_cft.yml',
+      'deploy_app.yml',
+      'deploy_bigip.yml',
       'cluster_bigips.yml',
       'deploy_bigip_app1.yml',
       'deploy_bigip_app2.yml',
@@ -196,11 +200,12 @@ class F5Aws(object):
     if self.run_playbooks(playbooks, inventory_path, options, extra_vars) == 0:
       self.display_login(options.env_name)
 
-    print '\nIf you\'ve deployed a client, you can start traffic by running:\n./bin/{} {} {}'.format(
+    print '\nIf you\'ve deployed a client, you can start traffic by \
+running:\n./bin/{} {} {}'.format(
       __prog__, 'start_traffic', options.env_name)
 
-    print '\nYou can re-print the above login information along with the ansible inventory \
-using "info" command\n'
+    print '\nYou can re-print the above login information along with the ansible \
+inventory using "info" command\n'
 
   @safe
   def cmd_teardown(self, options, extra_vars):
@@ -239,13 +244,14 @@ using "info" command\n'
       self.run_playbooks(playbooks, inventory_path, options, extra_vars)
     else:
       msg = """Cannot remove environment '%s' until all resources have been de-provisioned.
-The following resources still exist: %s. 
+The following resources still exist: %s\n. 
 Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       display(msg, color='red', stderr=True)
 
   def cmd_list(self, options, extra_vars):
     """
-      Implements a command line method to list all environments that have been instantiated using `init`.
+      Implements a command line method to list all environments that
+      have been instantiated using `init`.
     """
     display("Installed environments (%s):" %
         self.settings['env_path'], color='green', stderr=False)
@@ -569,7 +575,11 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       # the other thing we want to print in all circumstances is the virtual servers
       # which have been deployed.  i.e. show people how they can reach the VIP
 
-      # 
+      # print the publicily routable VIP
+
+      # print the network resources which can be reached when logged into the client host
+      # dns entries
+      # private IP for second virtual server
 
   def host_to_az(self, resource_name, ansible_inventory):
     # traverse the ansible inventory to get the availability zone

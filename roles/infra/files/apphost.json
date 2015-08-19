@@ -49,25 +49,28 @@
   "Mappings": {
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "AMI": "ami-ae6559c6"
+        "AMI": "ami-a7893fcc"
       },
       "us-west-1": {
-        "AMI": "ami-xxxxxxxx"
+        "AMI": "ami-0d966f49"
       },
       "us-west-2": {
-        "AMI": "ami-f96353c9"
+        "AMI": "ami-337d6903"
       },
       "eu-west-1": {
-        "AMI": "ami-ed7c149a"
+        "AMI": "ami-b67b24c1"
       },
       "sa-east-1": {
         "AMI": "ami-xxxxxxxx"
       },
       "ap-southeast-1": {
-        "AMI": "ami-xxxxxxxx"
+        "AMI": "ami-xxxxxxx"
+      },
+      "ap-southeast-2": {
+        "AMI": "ami-0f5b1935"
       },
       "ap-northeast-1": {
-        "AMI": "ami-xxxxxxxx"
+        "AMI": "ami-d2b93dd2"
       }
     }
   },
