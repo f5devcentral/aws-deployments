@@ -172,14 +172,14 @@ class F5Aws(object):
             See individual playbooks for more info.
         """
         playbooks = [
-            # 'deploy_vpc_cft.yml',
-            # 'deploy_az_cft.yml',
-            # 'deploy_bigip_cft.yml',
-            # 'deploy_gtm_cft.yml',
-            # 'deploy_app_cft.yml',
-            # 'deploy_client_cft.yml',
-            # 'deploy_app.yml',
-            # 'deploy_bigip.yml',
+            'deploy_vpc_cft.yml',
+            'deploy_az_cft.yml',
+            'deploy_bigip_cft.yml',
+            'deploy_gtm_cft.yml',
+            'deploy_app_cft.yml',
+            'deploy_client_cft.yml',
+            'deploy_app.yml',
+            'deploy_bigip.yml',
             'cluster_bigips.yml',
             'deploy_bigip_app1.yml',
             'deploy_bigip_app2.yml',
