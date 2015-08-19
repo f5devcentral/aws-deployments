@@ -1,4 +1,19 @@
 ---
+# This playbook deploys a virtual server and all related BIG-IP and EC2 resources. 
+# For this second virtual, we do not use iApps.  Instead, we directly use the
+#  bigip_config ansible module we have written. The module is
+#  used to deploy an iRule, virtual servers for 80 and 443, and an web server pool.
+# The iRule we deploy will randomly SNAT and redirect traffic to the first virtual
+#  server mentioned above. This helps to provide some interesting
+#  graphs for viewing traffic in the Analytics module or elsewhere. 
+# Finally, for this virtual, we do not attach an EIP as we did previously. The virtual 
+#  server will not be reachable from the public internet, but only within the VPC. 
+#  This step is skipped in order to save on Elastic IP addresses, which are in short supply. 
+# 
+
+#####################################################################################
+###### Our typical boilerplate to handle variable persistence within ansible. ######
+
 # Add CFT output variables to host from persisted results from previous playbooks
 - hosts: bigips
   gather_facts: no
@@ -63,6 +78,20 @@
     - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
       delegate_to: localhost
 
+########################################################################
+############################## End boilerplate #########################
+
+# At this point we have dynamically populated the ansible host groups,
+#  variables, and execution data from previous playbooks
+#  that are necessary to deploy our application resources...
+# 
+# We will execute most of the following provisioning steps against hosts
+#  in the 'bigip-cluster-seeds' group.  In this way, we are provisioning 
+#  against only a single device in the cluster. The config-sync feature
+#  will handle configuration of secondary devices in Device Service
+#  Clusters as necessary. 
+
+# Deploy virtual server and related resources to BIG-IP 
 - hosts: bigip-cluster-seeds
   gather_facts: no
   vars:
@@ -75,7 +104,7 @@
     snat_random_rule: "{{ lookup('file', install_path + '/roles/bigip_app/files/__snat_random_rule.tcl') }}"
 
   tasks:
-    - name: Setup Webserver Pool
+    - name: Deploying/updating webserver pool
       delegate_to: localhost
       bigip_config:
           state=present
@@ -86,8 +115,7 @@
           collection_path='mgmt/tm/ltm/pool'
           resource_key="name"
 
-   
-    - name: Upload iRules ... snat_random_rule
+    - name: Uploading iRules ... snat_random_rule
       delegate_to: localhost
       bigip_config:
           state=present
@@ -97,11 +125,9 @@
           collection_path='mgmt/tm/ltm/rule'
           resource_key="name"
           payload='{"name":"__snat_random_rule","apiAnonymous":"{{snat_random_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
-          #payload='{"name":"__snat_random_rule","apiAnonymous":"{{lookup('file', install_path + '/roles/bigip_app/files/__snat_random_rule.tcl')|replace("\n","\\n")|replace("\"","\\\"")}}"}'
+          
     
-   
-    #Deploy VIPs
-    - name: Setup the HTTP Virtual
+    - name: Setup the HTTP virtual server
       delegate_to: localhost
       bigip_config:
           state=present
@@ -112,7 +138,7 @@
           resource_key="name"
           payload='{"name":"{{vip_id}}_http","destination":"/Common/{{VipAddress}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'
 
-    - name: Setup the HTTPS Virtual
+    - name: Setup the HTTPS virtual server
       delegate_to: localhost
       bigip_config:
           state=present
@@ -123,9 +149,9 @@
           resource_key="name"
           payload='{"name":"{{vip_id}}_https","destination":"/Common/{{VipAddress}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"}]}'
 
-#TODO: REST call for datagroup not idempotent
-#ex.
-#failed: [52.25.214.214 -> localhost] => {"failed": true, "name": "mgmt/tm/sys/application/service", "rc": 1}
-#msg: 404 Client Error: Not Found. {u'errorStack': [], u'message': u'01020036:3: The requested Application Service (/Common/demo_iApp) was not found.', u'code': 404}
+    #TODO: REST call for datagroup not idempotent
+    #ex.
+    #failed: [52.25.214.214 -> localhost] => {"failed": true, "name": "mgmt/tm/sys/application/service", "rc": 1}
+    #msg: 404 Client Error: Not Found. {u'errorStack': [], u'message': u'01020036:3: The requested Application Service (/Common/demo_iApp) was not found.', u'code': 404}
 
 
