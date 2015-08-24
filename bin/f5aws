@@ -53,13 +53,10 @@ from ansible.callbacks import display
 __version__ = "0.8"
 __prog__ = "f5aws"
 
-# set of variables which must be defined in ~/.f5aws
 LOCK_TIMEOUT = 10  # seconds
 
-# decorate the methods which update an environment
+# decorator for methods which update an environment
 #  so they can run safely
-
-
 def safe(func):
   def inner(*args, **kwargs):
     # f = args[2]['env_name']

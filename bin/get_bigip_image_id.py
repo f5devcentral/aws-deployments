@@ -1,10 +1,12 @@
 #get_bigip_image_id.py
-
+import os
+import sys
 local_module_path = os.path.abspath(
   os.path.join(os.path.dirname(__file__), '..', 'src')
 )
 sys.path.append(local_module_path)
 
+from f5_aws import image_finder
 
 """
 Script to look up the ami-id of big-ip in the Amazon EC2 marketplace. 
@@ -55,10 +57,10 @@ args = vars(parser.parse_args())
 
 try:
 	if args['matchone'] is True:
-		print ImageFinder().find(**args)[0]['id']
+		print image_finder.BigIpImageFinder().find(**args)[0]['id']
 	else:
 		print 'Found '
-		for i in ImageFinder().find(**args):
+		for i in image_finder.BigIpImageFinder().find(**args):
 			print i
 except IndexError:
 	# set the exit code so that ansible knows we have failed
