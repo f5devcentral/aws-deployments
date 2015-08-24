@@ -65,7 +65,6 @@ AWS-SSH-KEY.pem            100% 1696     1.7KB/s   00:00
 This will initialize the set of ansible variables necessary for deployment (known as an 'inventory'. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.
 
 
-
 ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "single-standalone", "region": "us-east-1", "zone": "us-east-1b"}'```
 
 ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "single-cluster", "region": "us-east-1", "zone": "us-east-1b" }'```
@@ -85,6 +84,14 @@ or using clusters:
 
 NOTE: These have larger resource requirements (EIPs + CFTs) so you may need to increase your limits ahead of time.
  
+NOTE: Due to AMI availability, currently working regions are:
+* us-east-1 
+* us-west-1
+* us-west-2
+* eu-west-1
+* ap-southeast-2
+* ap-northeast-1
+
 
 2) Deploy and manage the environment you instantiated in step 1.  This creates all the resources associated with environment, including AWS EC2 hosts, a VPC, configuration objects on BIG-IP and GTM, and docker containers.  
 

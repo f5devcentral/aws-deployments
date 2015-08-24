@@ -9,6 +9,7 @@ For more information on usage see README.md
 
 """
 
+# python built-ins
 import sys
 import os
 import stat
@@ -21,15 +22,25 @@ import lockfile
 import time
 import datetime
 
+# some path mudgery
 # Augment PYTHONPATH to find Python modules relative to this file path
 # This is so that we can find the modules when running from a local checkout
 # installed as editable with `pip install -e ...` or `python setup.py develop`
-local_module_path = os.path.abspath(
+local_ansible_path = os.path.abspath(
   os.path.join(os.path.dirname(__file__), '..', 'lib')
 )
+local_module_path = os.path.abspath(
+  os.path.join(os.path.dirname(__file__), '..', 'src')
+)
+
 sys.path.append(local_module_path)
+sys.path.append(local_ansible_path)
 
 
+# custom modules
+from f5_aws import settings
+
+# ansible stuff
 import ansible.playbook
 import ansible.constants as constants
 import ansible.utils.template
@@ -37,15 +48,12 @@ from ansible import errors
 from ansible import callbacks
 from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
-from ansible.callbacks import display
+from ansible.callbacks import display_loginy
 
 __version__ = "0.8"
 __prog__ = "f5aws"
 
 # set of variables which must be defined in ~/.f5aws
-REQUIRED_VARS = ['install_path', 'ssh_key',
-         'bigip_rest_user', 'bigip_rest_password',
-         'f5_aws_access_key', 'f5_aws_secret_key']
 LOCK_TIMEOUT = 10  # seconds
 
 # decorate the methods which update an environment
@@ -112,32 +120,7 @@ class F5Aws(object):
   """
 
   def __init__(self):
-    try:
-      # load settings stored in a file configured by user
-      global_vars_path = '~/.{}'.format(__prog__)
-      fd = open(os.path.expanduser(global_vars_path), 'r')
-      try:
-        self.settings = dict(yaml.load(fd))
-      except yaml.YAMLError, e:
-        raise Exception("Fatal YAML error while reading settings file in {}, \
-perhaps there is a syntax error in the file?\r\nThe error was {}".format(
-          global_vars_path, e))
-
-      for v in REQUIRED_VARS:
-        if self.settings.get(v, None) is None:
-          raise Exception(
-            'Required variable "{}" not found in {}'.format(v, global_vars_path))
-
-      self.settings['vars_path'] = os.path.expanduser(
-        '~/vars/{}'.format(__prog__))
-      self.settings['lock_path'] = self.settings['vars_path'] + '/lock/'
-      self.settings['env_path'] = self.settings['vars_path'] + '/env/'
-      self.settings['bin_path'] = self.settings['install_path'] + '/bin/'
-
-      # make the /env/ directory if it does not exist
-      os.makedirs(self.settings['env_path'])
-    except OSError:
-      pass
+     self.settings = settings.Settings(__prog__)
 
   @safe
   def cmd_init(self, options, extra_vars):
@@ -156,7 +139,6 @@ perhaps there is a syntax error in the file?\r\nThe error was {}".format(
 regexp: "[a-zA-z]{1}[a-zA-Z0-9-]*" ')
 
     # check to make sure this inventory does not already exist
-    print self.settings['env_path']
     if (os.path.isdir((self.settings['env_path'] + options.env_name)) and not
       options.force):
         raise ValidationError(
@@ -176,11 +158,11 @@ update the inventory variables for this environment. ' % options.env_name)
       See individual playbooks for more info.
     """
     playbooks = [
-      # 'deploy_vpc_cft.yml',
-      # 'deploy_az_cft.yml',
-      # 'deploy_bigip_cft.yml',
-      # 'deploy_gtm_cft.yml',
-      # 'deploy_app_cft.yml',
+      'deploy_vpc_cft.yml',
+      'deploy_az_cft.yml',
+      'deploy_bigip_cft.yml',
+      'deploy_gtm_cft.yml',
+      'deploy_app_cft.yml',
       'deploy_client_cft.yml',
       'deploy_app.yml',
       'deploy_bigip.yml',
@@ -660,10 +642,6 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
     """
       Returns the status of executed ansible cloudformation tasls
       from captured output. 
-
-      We need to deal with the case where the stack does not exist
-      in a particular fashion for the command line `descibe` and 
-      `list commands.
     """
     result = {}
     cf = convert_str(latest_result['invocation']['module_args'])
@@ -678,6 +656,9 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
       else:
         result['state'] = 'deploy-error'
     else:  # state == 'absent'...
+      # We need to deal with the case where the stack does not exist
+      # in a particular fashion for the command line `descibe` and 
+      # `list commands.
       if (latest_result.get('output', '') == 'Stack Deleted' or
           'does not exist' in latest_result.get('msg', '')):
         result['state'] = 'absent'
@@ -794,7 +775,7 @@ Hint: try './bin/f5aws teardown %s'""" % (env, stillExist, env)
 
     # pass along our project variables to ansible
     #  some playbooks will need access keys and passwords during runtime
-    for v in REQUIRED_VARS:
+    for v in self.settings['required_vars']:
       extra_vars[v] = self.settings[v]
 
     # cloudformation templates will need just the key name, without any
