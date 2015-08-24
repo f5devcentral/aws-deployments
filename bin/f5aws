@@ -48,7 +48,7 @@ from ansible import errors
 from ansible import callbacks
 from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
-from ansible.callbacks import display_loginy
+from ansible.callbacks import display
 
 __version__ = "0.8"
 __prog__ = "f5aws"
