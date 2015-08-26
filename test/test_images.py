@@ -6,8 +6,8 @@ import json
 import yaml
 sys.path.append('../src')
 
-from f5_aws import settings, image_finder, meta
-from test_helpers import touchImage, Region
+from f5_aws import settings, image_finder, meta, utils
+from test_helpers import Region
 
 # regions_for_test = [
 #     'us-west-1'
@@ -42,7 +42,7 @@ def testenv(request):
 #  the image. 
 # ...just a sanity check that our tests our working
 # def test_working_image_conditions(testenv):
-#   assert touchImage(
+#   assert utils.touchImage(
 #       region=testenv['region'].region_name,
 #       keyName=testenv['region'].key_name,
 #       subnetId=testenv['region'].subnet_id,
@@ -55,7 +55,7 @@ def testenv(request):
 # #  the image virtualization type (hvm) and the ami definition
 # # ...just a sanity check that our tests our working
 # def test_broken_image_conditions(testenv):
-#   assert not touchImage(
+#   assert not utils.touchImage(
 #       region=testenv['region'].region_name,
 #       keyName=testenv['region'].key_name,
 #       subnetId=testenv['region'].subnet_id,
@@ -82,7 +82,7 @@ def validate_linux_image(testenv, host_type):
         '/roles/inventory_manager/defaults/main.yml'))
     instance_type = defaults[host_type+'_instance_type']
 
-    return touchImage(
+    return utils.touchImage(
         imageId=image_id,
         instanceType=instance_type,
         region=testenv['region'].region_name,
@@ -110,7 +110,7 @@ def validate_bigip_image(testenv, host_type):
     }
     image_id = image_finder.BigIpImageFinder().find(**module_args)[0]['id']
 
-    return touchImage(
+    return utils.touchImage(
         imageId=image_id,
         instanceType=defaults[host_type+'_instance_type'],
         region=testenv['region'].region_name,
