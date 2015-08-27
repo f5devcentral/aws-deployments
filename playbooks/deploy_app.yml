@@ -16,8 +16,6 @@
         WebServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
         WebServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePrivateIp }}
 
-
-
 # Wait for hosts to become ready
 - hosts: apphosts
   gather_facts: False

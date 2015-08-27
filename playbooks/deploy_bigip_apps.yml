@@ -1,0 +1,180 @@
+---
+# This playbook deploys virtual severs and all related BIG-IP and EC2 resources. 
+ 
+#####################################################################################
+###### Our typical boilerplate to handle variable persistence within ansible. ######
+
+# Add CFT output variables to host from persisted results from previous playbooks
+- hosts: bigips
+  gather_facts: no
+  connection: local
+  vars_files:
+      - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  pre_tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePublicIp }}
+        ManagementInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp }}
+        ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
+        ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
+        InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
+        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip2 }}
+        DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
+
+- hosts: bigip-clusters
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: re-create a dynamic group of seed devices using first member of each group
+      add_host:
+          name: "{{ item.value.0 }}"
+          group: bigip-cluster-seeds
+          cluster_name: "{{ item.key }}"
+          members: "{{ item.value }}"
+      with_dict: groups
+      when: item.key in groups['bigip-clusters']
+
+- hosts: apphosts
+  gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}_docker_containers.yml" ]
+  tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
+        WebServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
+        WebServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePrivateIp }}
+
+# Now that topology and variables are finally loaded again
+# Deploy App Stuff Here....
+- hosts: apphosts
+  gather_facts: no
+  vars:
+    vip_id: "Vip1"
+  tasks:
+    - name: Store pool members from containers into json
+      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+
+     # Notes:
+     # strip out last comma from jinja template output (see note below)
+     # json.loads is more sensitive than our parser and need to strip out last "," at the end of the pool member list
+     # no clean way to use loop.last directive in jinja template because it's a nested loop over all docker hosts
+     # Could try a inline replacement
+     # json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
+     # easier for now to modify in place with ansible replace command than jinja regex filter
+
+    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
+      delegate_to: localhost
+
+# Now that topology and variables are finally loaded again
+# Deploy App Stuff Here....
+- hosts: apphosts
+  gather_facts: no
+  vars:
+    vip_id: "Vip2"
+  tasks:
+    - name: Store pool members from containers into json
+      local_action: template src=../roles/bigip_app2/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+
+     # Notes:
+     # strip out last comma from jinja template output (see note below)
+     # json.loads is more sensitive than our parser and need to strip out last "," at the end of the pool member list
+     # no clean way to use loop.last directive in jinja template because it's a nested loop over all docker hosts
+     # Could try a inline replacement
+     # json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
+     # easier for now to modify in place with ansible replace command than jinja regex filter
+
+    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
+      delegate_to: localhost
+
+############################## End boilerplate #########################
+########################################################################
+
+
+# At this point we have dynamically populated the ansible host groups,
+#  variables, and execution data from previous playbooks
+#  that are necessary to deploy our application resources...
+# 
+# We will execute most of the following provisioning steps against hosts
+#  in the 'bigip-cluster-seeds' group.  In this way, we are provisioning 
+#  against only a single device in the cluster. The config-sync feature
+#  will handle configuration of secondary devices in Device Service
+#  Clusters as necessary. 
+
+###### app 1 #######
+# We leverage iApps as a way to consistently deploy the TMOS traffic configuration.
+#  iApps are F5’s powerful re-entrant templates for creating virtual services. They
+#  allow you to see and manage all the elements for the virtual service while
+#  providing custom menus using language that all users in your organization can understand.
+#  This built-in iApp has a few fun iRules attached (one that posts an Sorry Page
+#  if the virtual service is down and another that sends log data to a remote log
+#  server for additional Analytics/Reporting)
+#  A template of the iApp we deploy is available in:
+#   /roles/bigip_app/templates/demo_iApp.cfg.j2.
+# The playbook also deploys the supporting content for the iApp:
+#  1) iRules including a few demonstrating analytics integration, and displaying sorry page. 
+#     These iRules can be seen in ./roles/bigip_app/files/
+#  2) Background and sorry page images to an internal data-group. 
+#      These images can be found in ./roles/bigip_app/files/
+# After deploying the iApp which contains the virtual server, we attach an EIP to the
+#  secondary IP address in Amazon.  This secondary EIP matches the VIP. 
+
+# Generate the iApp we will deploy from a template (this is a local action)
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  connection: local
+  vars:
+    vip_id: "Vip1"
+  tasks: 
+     - name: Modify iApp to use VipAddress
+       template: src='{{ install_path }}/roles/bigip_app1/templates/demo_iApp.cfg.j2' dest='~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-{{vip_id}}-iApp.yml'
+
+# Deploy virtual server and related resources to BIG-IP 
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars:
+    vip_id: "Vip1"
+    background_image: "{{ lookup('file', install_path + '/roles/bigip_app1/files/background_image_base_64') }}"
+    sorry_image: "{{ lookup('file', install_path + '/roles/bigip_app1/files/sorry_image_base_64') }}"
+    sorry_page_rule: "{{ lookup('file', install_path + '/roles/bigip_app1/files/__sorry_page_rule.tcl') }}"
+    demo_analytics_rule: "{{ lookup('file', install_path + '/roles/bigip_app1/files/__demo_analytics_rule.tcl') }}"
+  vars_files:
+    - [ "~/vars/f5aws/env/{{env_name}}/{{inventory_hostname}}-{{vip_id}}-iApp.yml" ]
+  roles:
+    - bigip_app1
+
+# Finally attach an EIP to the VIP / Application. One per cluster
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars:
+     ansible_connection: local
+     ansible_python_interpreter: "/usr/bin/env python"
+     vip_id: "Vip1"
+  tasks:
+    - name: deploy eips
+      include: "{{ install_path }}/roles/infra/tasks/deploy_eip_cft.yml"
+      delegate_to: localhost
+
+
+###### app 2 #######
+# For this second virtual, we do not use iApps.  Instead, we directly use the
+#  bigip_config ansible module we have written. The module is
+#  used to deploy an iRule, virtual servers for 80 and 443, and an web server pool.
+# The iRule we deploy will randomly SNAT and redirect traffic to the first virtual
+#  server mentioned above. This helps to provide some interesting
+#  graphs for viewing traffic in the Analytics module or elsewhere. 
+# Finally, for this virtual, we do not attach an EIP as we did previously. The virtual 
+#  server will not be reachable from the public internet, but only within the VPC. 
+#  This step is skipped in order to save on Elastic IP addresses, which are in short supply.
+
+# Deploy virtual server and related resources to BIG-IP 
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars:
+    vip_id: "Vip2"
+    snat_random_rule: "{{ lookup('file', install_path + '/roles/bigip_app2/files/__snat_random_rule.tcl') }}"
+  roles:
+    - bigip_app2
+

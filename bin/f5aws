@@ -10,10 +10,10 @@ For more information on usage see README.md
 """
 
 # python built-ins
-import sys
 import os
+import sys
+import json
 import argparse
-import lockfile
 
 # some path mudgery
 # Augment PYTHONPATH to find Python modules relative to this file path
@@ -30,40 +30,31 @@ sys.path.append(local_module_path)
 sys.path.append(local_ansible_path)
 
 #import f5_aws.config as config
+from f5_aws.config import Config
 from f5_aws.runner import EnvironmentManager
 from f5_aws.exceptions import ValidationError, ExecutionError, LifecycleError
 
 # ansible stuff
 import ansible.playbook
-import ansible.constants as constants
-import ansible.utils.template
 from ansible import errors
-from ansible import callbacks
 from ansible import utils
-from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
+from ansible.color import ANSIBLE_COLOR, stringc
 
+
+config = Config().config
 
 LOCK_TIMEOUT = 10  # seconds
-
-# decorator for methods which update an environment
-#  so they can run safely
-def safe(func):
-  def inner(*args, **kwargs):
-    # f = args[2]['env_name']
-    # lock = lockfile.LockFile(f)
-    # lock.acquire()
-    # try:
-    return func(*args, **kwargs)
-    # finally:
-    #   lock.release()
-  return inner
 
 def print_playbook_results(exec_results):
   if 'playbook_results' in exec_results:
     exec_results['playbook_results'].print_playbook_results()
     
-def cli_init(args):   
+def cli_init(args): 
+  """
+    Create the ansible inventory for the environment
+      based on the deployment model and other variables
+  """  
   exec_results = EnvironmentManager(args).init()
   print_playbook_results(exec_results)
 
@@ -73,39 +64,35 @@ def cli_init(args):
     print 'The Ansible inventory for your environment has not been initialized. \
 Deploy the environment with the `deploy` command.'
 
-# def cli_deploy(exec_results):
-#   """
-#     Deploy an environment based on the set of inventory files 
-#     created by the 'init' command.
+def cli_deploy(args):
+  """
+    Deploy an environment based on the set of inventory files 
+    created by the 'init' command.
+  """
+  exec_results = EnvironmentManager(args).deploy()
+  print_playbook_results(exec_results)
 
-#     See individual playbooks for more info.
-#   """
-#   pass
-# #   print '\nIf you\'ve deployed a client, you can start traffic by \
-# # running:\n./bin/{} {} {}'.format(
-# #     __prog__, 'start_traffic', options.env_name)
+  print ''
+  print 'If you\'ve deployed a client, you can start traffic by \
+running:\n./bin/{} {} {}'.format(
+    config['prog'], 'start_traffic', args.env_name)
 
-# #   print '\nYou can re-print the above login information along with the ansible \
-# # inventory using "info" command\n'
+  print '\nYou can re-print the above login information along with the ansible \
+inventory using "info" command\n'
 
-# def cli_teardown(exec_results):
-#   """
-#     Complete teardown a deployed environment.
-#     Does not remove the inventory files in ~/vars/f5aws/env/<env name>
-#   """
-
-#   playbooks = ['teardown_all.yml']
-
-#   inventory_path = '%s/%s/inventory/hosts' % (
-#     self.settings['env_path'], options.env_name)
-#   return self.run_playbooks(playbooks, inventory_path, options, extra_vars)
+def cli_teardown(exec_results):
+  """
+    Complete teardown of a deployed environment.
+    Does not remove the environment inventory. 
+  """
+  exec_results = EnvironmentManager(args).teardown()
+  print_playbook_results(exec_results)
 
 def cli_remove(args):
   """
     Deletes all inventory files for a deployment from ~/vars/f5aws/env/<env name>
     This environment should already have been torn down using `teardown`
   """
-  
   exec_results = EnvironmentManager(args).remove()
   print_playbook_results(exec_results)
 
@@ -114,8 +101,6 @@ def cli_list(exec_results):
     Implements a command line method to list all environments that
     have been instantiated using `init`.
   """
-  #display("Installed environments (%s):" %
-#      self.settings['env_path'], color='green', stderr=False)
   envs = EnvironmentManager.get_envs()
   if len(envs) == 0:
     display("(none)", color='red', stderr=False)
@@ -123,60 +108,38 @@ def cli_list(exec_results):
     for env in envs:
       EnvironmentManager(get_namespace(env_name=env)).display_basic_info()
 
-# def cli_inventory(exec_results):
-#   try:
-#     env = extra_vars['env_name']
-#     self.display_inventory(env)
-#   except IOError:
-#     display(" Environment '%s' does not exist" %
-#         env, color='red', stderr=True)
+def cli_inventory(args):
+  print json.dumps(EnvironmentManager(get_namespace(env_name=args.env_name)).inventory(),
+    indent=4, sort_keys=True)
 
-# def cli_resources(exec_results):
-#   try:
-#     env = extra_vars['env_name']
-#     self.display_resources(env)
-#   except IOError:
-#     display(" Environment '%s' does not exist" %
-#         env, color='red', stderr=True)
-
-def cli_login(args):
+def cli_resources(exec_results):
   """
     Implements command line method to provide more details on the resources associated with 
     a particular deployment (vpc, subnets, bigip, app hosts, etc...)
   """
-  #try:
-  print EnvironmentManager(get_namespace(env_name=args.env_name)).login_info()
-
+  resources, statuses = EnvironmentManager(get_namespace(env_name=args.env_name)).resources()
+  for r in resources:
+    print r
+    print json.dumps(statuses[r])
     
-  # except IOError:
-  #   display(" Environment '%s' does not exist" %
-  #       env, color='red', stderr=True)
+def cli_login(args):
+  print json.dumps(EnvironmentManager(get_namespace(env_name=args.env_name)).login_info(),
+    indent=4, sort_keys=True)
 
-# def cli_start_traffic(exec_results):
-#   """
-#     Implements command line method to pass traffic through BIG-IP
-#   """
 
-#   # uses the inventory created in ~/vars/f5aws/env/<env name> created by
-#   # `init`
-#   inventory = '%s/%s/inventory/hosts' % (
-#     settings['env_path'], options.env_name)
-#   self.run_playbooks(
-#     ['launch_traffic.yml'], inventory, options, extra_vars)
-#   print 'Started jmeter on client'
+def cli_start_traffic(exec_results):
+  """
+    Implements command line method to pass traffic through BIG-IP
+  """
+  exec_results = EnvironmentManager(args).launch_traffic()
+  print_playbook_results(exec_results)
 
-# def cli_stop_traffic(exec_results):
-#   """
-#     Implements command line method to stop jmeter client
-#   """
-
-#   # uses the inventory created in ~/vars/f5aws/env/<env name> created by
-#   # `init`
-#   inventory = '%s/%s/inventory/hosts' % (
-#     settings['env_path'], options.env_name)
-#   run_playbooks(
-#     ['stop_traffic.yml'], inventory, options, extra_vars)
-#   print 'Stopped jmeter client.'
+def cli_stop_traffic(exec_results):
+  """
+    Implements command line method to stop traffic through BIG-IP
+  """
+  exec_results = EnvironmentManager(args).stop_traffic()
+  print_playbook_results(exec_results)
 
 def create_parser():
   """
@@ -185,7 +148,7 @@ def create_parser():
     the corrosponding method (e.g. init -> cli_init) and pass the 
     corrosponding argument values. 
   """
-  parser = argparse.ArgumentParser(prog='f5aws')
+  parser = argparse.ArgumentParser(prog=config['prog'])
   parser.add_argument('-v', '--verbose', action='count', default=0,
             help='verbose mode (-vvv for more, -vvvv to enable connection debugging')
   subparsers = parser.add_subparsers(dest='cmd', help='sub-command help')
@@ -201,10 +164,6 @@ def create_parser():
   parser_init.add_argument('-e', '--extra-vars', required=True,
                dest="extra_vars", action="append",
                help="set additional variables as key=value or YAML/JSON", default=[])
-  # TODO: cleanup the variable passing for extravars so we don't need to
-  # pass the extra-vars argument -- allow users to pass variables
-  # directly
-
   parser_deploy = subparsers.add_parser('deploy',
                       help='Deploy EC2 resource and application services based on inventory files created using `init`.')
   parser_deploy.add_argument('env_name', metavar='ENVIRONMENT',
@@ -236,6 +195,7 @@ def create_parser():
   parser_info = subparsers.add_parser('info',
                     help='Show resource variables along with environment information.')
 
+  # multiple subparsers for the info command
   info_subparsers = parser_info.add_subparsers(
     dest='cmd', help='sub-command help')
 
@@ -257,25 +217,13 @@ def create_parser():
   return parser
 
 # not sure how else to generate a 'namespace' like object
-#  simimilar to what argparse returns...couldn't they just use a dict?
+#  similar to what argparse returns...couldn't they just use a dict?
 def get_namespace(**kwargs):
-  class SimpleClass(object):
+  class Namespace(object):
     def __init__(self, kwargs):
       for k, v in kwargs.items():
         setattr(self, k, v)
-  return SimpleClass(kwargs)
-  
-
-  # how about a common set of return values by all cmd functions
-  # try:
-  #   getattr(self, 'cmd_' + options.cmd,
-  #       self.raise_not_implemented)(options, extra_vars)
-  # except ValidationError as e:
-  #   display("Failed while processing input arguments: %s" %
-  #       e, color='red', stderr=True)
-  # except Exception as e:
-  #  display("Caught an unhandle exception: %s" % e, color='red', stderr=True)
-
+  return Namespace(kwargs)
 
 if __name__ == "__main__":
   display(" ", log_only=True)
@@ -293,12 +241,14 @@ if __name__ == "__main__":
     handlers = {
       'init': cli_init,
       'list': cli_list,
-      # 'deploy': cli_deploy,
+      'deploy': cli_deploy,
       'login': cli_login,
-      # 'start_traffic': cli_start_traffic,
-      # 'stop_traffic': cli_stop_traffic,
+      'resources': cli_resources,
+      'inventory': cli_inventory,
+      'start_traffic': cli_start_traffic,
+      'stop_traffic': cli_stop_traffic,
       'remove': cli_remove,
-      # 'teardown': cli_teardown,
+      'teardown': cli_teardown,
     }
 
     handlers[args.cmd](args)

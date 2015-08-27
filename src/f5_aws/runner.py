@@ -8,7 +8,9 @@ import time
 import datetime
 
 # custom modules
+
 from f5_aws.config import Config
+from f5_aws.utils import convert_str
 from f5_aws.exceptions import ExecutionError, ValidationError, LifecycleError
 
 local_ansible_path = os.path.abspath(
@@ -193,13 +195,13 @@ class PlaybookExecution(object):
 
         if len(failed_hosts) > 0:
           self.statuscode = 2
+          return
 
         if len(unreachable_hosts) > 0:
           self.statuscode = 3
+          return
 
         self.statuscode = 0
-
-        return
 
       except errors.AnsibleError, e:
         display("ERROR: %s" % e, color='red')
@@ -225,7 +227,7 @@ class EnvironmentManager(object):
     self.extra_vars = {}    
 
     # pass along our project variables to ansible
-    #  some playbooks will need access keys and passwords during runtime
+    # some playbooks will need access keys and passwords during runtime
     for v in config['required_vars']:
       self.extra_vars[v] = config[v]
 
@@ -251,17 +253,20 @@ class EnvironmentManager(object):
     self.options.sudo_user = None
     self.options.su = constants.DEFAULT_SU
     self.options.su_user = constants.DEFAULT_SU_USER
-    # TODO: can we make this work for some scenarios?
     self.options.check = False
-    self.options.diff = False  # TODO: can we make this work for some scenarios?
+    self.options.diff = False  
     self.options.force_handlers = False
     self.options.flush_cache = False
-    # TODO: can we make this work for some scenarios?
     self.options.listhosts = False
-    # TODO: can we make this work for some scenarios?
     self.options.listtasks = False
-    # TODO: can we make this work for some scenarios?
     self.options.syntax = False
+
+    # the first inventory is just a localhost for creating
+    #  the second one
+    self.proj_inventory_path = config['install_path'] + '/inventory/hosts'
+    # the second inventory is specific to this deployment
+    self.env_inventory_path = '%s/%s/inventory/hosts' % (
+      config['env_path'], self.options.env_name)
 
   def init(self):
     """
@@ -275,8 +280,6 @@ class EnvironmentManager(object):
     for extra_vars_opt in self.options.extra_vars:
       self.extra_vars = utils.combine_vars(self.extra_vars,
                         utils.parse_yaml(extra_vars_opt))
-
-      
 
     playbooks = ['init.yml']
     
@@ -294,12 +297,9 @@ class EnvironmentManager(object):
   update the inventory variables for this environment. ' % self.options.env_name)
 
     # TODO: validate images, eip and cloudformation limits?
-
-    # uses the inventory included in this repository
-    inventory_path = config['install_path'] + '/inventory/hosts'
     
     playbook_context = PlaybookExecution(
-      playbooks, config, inventory_path, self.options, self.extra_vars)
+      playbooks, config, self.proj_inventory_path, self.options, self.extra_vars)
     playbook_context.run()  
 
     return {'playbook_results': playbook_context, 'env': self}
@@ -307,40 +307,54 @@ class EnvironmentManager(object):
   def deploy(self):
 
     playbooks = [
-      'deploy_vpc_cft.yml',
-      'deploy_az_cft.yml',
-      'deploy_bigip_cft.yml',
-      'deploy_gtm_cft.yml',
-      'deploy_app_cft.yml',
-      'deploy_client_cft.yml',
-      'deploy_app.yml',
-      'deploy_bigip.yml',
-      'cluster_bigips.yml',
-      'deploy_bigip_app1.yml',
-      'deploy_bigip_app2.yml',
-      'deploy_gtm.yml',
-      'deploy_gtm_app1.yml',
-      'deploy_gtm_app2.yml',
-      'deploy_client.yml'
+      # 'deploy_vpc_cft.yml',
+      # 'deploy_az_cft.yml',
+      # 'deploy_bigip_cft.yml',
+      # 'deploy_gtm_cft.yml',
+      # 'deploy_app_cft.yml',
+      # 'deploy_client_cft.yml',
+      # 'deploy_app.yml',
+      # 'deploy_bigip.yml',
+      # 'cluster_bigips.yml',
+      'deploy_bigip_apps.yml',
+      # 'deploy_gtm.yml',
+      # 'deploy_gtm_app1.yml',
+      # 'deploy_gtm_app2.yml',
+      # 'deploy_client.yml'
     ]
 
-    # uses the inventory created in ~/vars/f5aws/env/<env name> created by
-    # `init`
-    inventory_path = '%s/%s/inventory/hosts' % (
-      config['env_path'], options.env_name)
-    
-    self.display_login(options.env_name)
-
     playbook_context = PlaybookExecution(
-      playbooks, config, inventory_path, self.options, self.extra_vars)
+      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
     playbook_context.run()  
 
     return {'playbook_results': playbook_context, 'env': self}
 
-  
-
   def teardown(self):
-    pass
+    playbooks = ['teardown_all.yml']
+
+    playbook_context = PlaybookExecution(
+      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
+    playbook_context.run()  
+
+    return {'playbook_results': playbook_context, 'env': self}
+
+  def start_traffic(self):
+    playbooks = ['start_traffic.yml']
+
+    playbook_context = PlaybookExecution(
+      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
+    playbook_context.run()  
+
+    return {'playbook_results': playbook_context, 'env': self}
+
+  def stop_traffic(self):
+    playbooks = ['stop_traffic.yml']
+
+    playbook_context = PlaybookExecution(
+      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
+    playbook_context.run()  
+
+    return {'playbook_results': playbook_context, 'env': self}
 
   def inventory(self):
     pass
@@ -352,7 +366,6 @@ class EnvironmentManager(object):
     pass
 
   def remove(self):
-    print 'remove'
     inventory, resources, statuses = self.get_environment_info()
 
     okToRemove = True
@@ -408,26 +421,16 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
     for k in sorted(env_info, key=lambda key: key):
       display("  %s: %s" % (k, env_info[k]), color=color, stderr=False)
 
-  def display_inventory(self):
+  def inventory(self):
     inventory, resources, statuses = self.get_environment_info()
-    display("  %s" %
-        json.dumps(inventory, indent=10), color='green', stderr=False)
+    return inventory
 
-  def display_resources(self):
+  def resources(self):
     """
       Print information nicely about deployment resources to stdout
     """
     inventory, resources, statuses = self.get_environment_info()
-
-    display("  resources: ", color='green', stderr=False)
-    for r in resources:
-      if statuses[r]['state'] != 'deployed':
-        color = 'red'
-      else:
-        color = 'green'
-      display("  %s:" % r, color=color, stderr=False)
-      display("  %s" % json.dumps(
-        statuses[r], indent=10), color=color, stderr=False)
+    return resources, statuses
 
   def login_info(self):
     """
@@ -454,59 +457,31 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
       'client': 'ClientInstancePublicIp'
     }
 
-
-    for group in ['apphosts', 'bigips', 'gtms', 'clients']:
+    for host_type in ip_map.keys():
       try:
-        if inventory[group]:
-          group_info = inventory[group]
-
-          # hostnames are not plural
-          host_type = group[:-1]
+        group_name = host_type+'s'
+        if inventory[group_name]:
+          group_info = inventory[group_name]
+          login_info[host_type] = {}
 
           # not very efficient, but hey, its a demo
           for resource_name, status in statuses.items():
             match = re.match(
-              '^zone[0-9]+[/-]{}[0-9]*'.format(host_type), resource_name)
+              '^zone[0-9]+[/-]{}[0-9]+'.format(host_type), resource_name)
 
-            login_info[host_type] = []
             if match:
-              login_info[host_type][self.host_to_az(
+              try:
+                  login_info[host_type][self.host_to_az(
                   resource_name, ansible_inventory)] = 'ssh -i {} {}@{}'.format(
                     group_info['vars'][
                       'ansible_ssh_private_key_file'],
                     group_info['vars']['ansible_ssh_user'],
                     status['resource_vars'][ip_map[host_type]])
-                # elif host_type == 'bigip':
-                #   print '   {}ssh -i {} {}@{}'.format(
-                #     self.host_to_az(
-                #       resource_name, ansible_inventory),
-                #     group_info['vars'][
-                #       'ansible_ssh_private_key_file'],
-                #     group_info['vars']['ansible_ssh_user'],
-                #     status['resource_vars']['ManagementInterfacePublicIp'])
-                # elif host_type == 'apphost':
-                #   print '   {}ssh -i {} {}@{}'.format(
-                #     self.host_to_az(
-                #       resource_name, ansible_inventory),
-                #     group_info['vars'][
-                #       'ansible_ssh_private_key_file'],
-                #     group_info['vars']['ansible_ssh_user'],
-                #     status['resource_vars']['WebServerInstancePublicIp'])
-                # elif host_type == 'client':
-                #   print '   {}ssh -i {} {}@{}'.format(
-                #     self.host_to_az(
-                #       resource_name, ansible_inventory),
-                #     group_info['vars'][
-                #       'ansible_ssh_private_key_file'],
-                #     group_info['vars']['ansible_ssh_user'],
-                #     status['resource_vars']['ClientInstancePublicIp'])
-              except KeyError:
-                pass
-                # print '   Not deployed/Login information
-                # not available.'
-      except KeyError:
+              except KeyError, e:
+                login_info[host_type][self.host_to_az(
+                  resource_name, ansible_inventory)] = ''
+      except KeyError, e:
         pass
-        # print '   Not deployed/Login information not available.'
 
       # the other thing we want to print in all circumstances is the virtual servers
       # which have been deployed.  i.e. show people how they can reach the VIP
@@ -517,7 +492,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
       # dns entries
       # private IP for second virtual server
 
-      return login_info
+    return login_info
 
   def host_to_az(self, resource_name, ansible_inventory):
     # traverse the ansible inventory to get the availability zone
@@ -526,7 +501,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
       hostname = resource_name
       az = ansible_inventory.get_host(
         hostname).get_variables()['availability_zone']
-      return '{}/{}:  '.format(az, resource_name)
+      return '{}/{}'.format(az, resource_name)
     except:
       return ''
 
@@ -589,6 +564,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
                             latest['invocation'][
                               'module_name'],
                             self.raise_not_implemented)(latest, True)
+
       except Exception as e:
         statuses[resource_name] = {'state': 'not deployed/error'}
 
@@ -601,6 +577,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
     """
     result = {}
     cf = convert_str(latest_result['invocation']['module_args'])
+    
     # we need to handle 'present' and 'absent' situations differently
     if cf['state'] == 'present':
       result['stack_name'] = cf['stack_name']
