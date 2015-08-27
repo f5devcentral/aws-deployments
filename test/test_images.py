@@ -4,6 +4,7 @@ import boto
 import sys
 import json
 import yaml
+
 sys.path.append('../src')
 
 from f5_aws.config import Config
@@ -11,11 +12,12 @@ from f5_aws import settings, image_finder, meta, utils
 from test_helpers import Region
 
 config = Config().config
+print config
 
 
 # scope=module => this setup function will be run once before 
 #  executing all the test methods in this module
-@pytest.fixture(scope="function", params=config.regions)
+@pytest.fixture(scope="function", params = ['us-west-1']) # params=config['regions'])
 def testenv(request):
     testenv = dict()
 
@@ -70,12 +72,12 @@ def validate_linux_image(testenv, host_type):
     """
 
     # get the ami id for this type of host working region
-    cft = json.loads(open(config.install_path+
+    cft = json.loads(open(config['install_path']+
         '/roles/infra/files/'+host_type+'.json', 'r').read())
     image_id = cft['Mappings']['AWSRegionArch2AMI'][testenv['region'].region_name]['AMI']
 
     # get the default instance type for this type of host
-    defaults = yaml.load(open(config.install_path+
+    defaults = yaml.load(open(config['install_path']+
         '/roles/inventory_manager/defaults/main.yml'))
     instance_type = defaults[host_type+'_instance_type']
 
@@ -93,7 +95,7 @@ def validate_bigip_image(testenv, host_type):
     specifically testing the ability to launch BIG-IP images.
     """
     # we can get all information from the defaults file, assume the user will use these
-    defaults = yaml.load(open(config.install_path+
+    defaults = yaml.load(open(config['install_path']+
         '/roles/inventory_manager/defaults/main.yml'))
 
     # get the ami id

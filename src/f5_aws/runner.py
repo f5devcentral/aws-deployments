@@ -16,15 +16,10 @@ from f5_aws.exceptions import ExecutionError, ValidationError, LifecycleError
 local_ansible_path = os.path.abspath(
   os.path.join(os.path.dirname(__file__), '..', 'lib')
 )
-# local_module_path = os.path.abspath(
-#   os.path.join(os.path.dirname(__file__), '..', 'src')
-# )
 
-# sys.path.append(local_module_path)
 sys.path.append(local_ansible_path)
 
 # load the config
-global config
 config = Config().config
 
 # ansible stuff
