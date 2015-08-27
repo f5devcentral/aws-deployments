@@ -29,22 +29,17 @@ local_module_path = os.path.abspath(
 sys.path.append(local_module_path)
 sys.path.append(local_ansible_path)
 
-#import f5_aws.config as config
 from f5_aws.config import Config
+from f5_aws.utils import get_namespace
 from f5_aws.runner import EnvironmentManager
 from f5_aws.exceptions import ValidationError, ExecutionError, LifecycleError
 
 # ansible stuff
-import ansible.playbook
 from ansible import errors
 from ansible import utils
 from ansible.callbacks import display
-from ansible.color import ANSIBLE_COLOR, stringc
-
 
 config = Config().config
-
-LOCK_TIMEOUT = 10  # seconds
 
 def print_playbook_results(exec_results):
   if 'playbook_results' in exec_results:
@@ -62,7 +57,9 @@ def cli_init(args):
     getattr(exec_results['playbook_results'], 'statuscode', -1)) == 0:
     print ''
     print 'The Ansible inventory for your environment has not been initialized. \
-Deploy the environment with the `deploy` command.'
+Deploy the environment with the `deploy` command.\n'
+    print 'You can view the inventory for this environment in {}'.format(
+      exec_results['env'].env_inventory_path)
 
 def cli_deploy(args):
   """
@@ -72,15 +69,21 @@ def cli_deploy(args):
   exec_results = EnvironmentManager(args).deploy()
   print_playbook_results(exec_results)
 
-  print ''
-  print 'If you\'ve deployed a client, you can start traffic by \
-running:\n./bin/{} {} {}'.format(
-    config['prog'], 'start_traffic', args.env_name)
+  try:
+    # print the login information if the deployment was successful
+    if exec_results['playbook_results'].statuscode == 0:
+      print ''
+      print 'If you\'ve deployed a client, you can start traffic by \
+  running:\n./bin/{} {} {}'.format(
+        config['prog'], 'start_traffic', args.env_name)
 
-  print '\nYou can re-print the above login information along with the ansible \
-inventory using "info" command\n'
+      print '\nYou can re-print the above login information along with the ansible \
+  inventory using "info" command\n'
+      print ''
+  except KeyError: 
+    pass
 
-def cli_teardown(exec_results):
+def cli_teardown(args):
   """
     Complete teardown of a deployed environment.
     Does not remove the environment inventory. 
@@ -96,7 +99,7 @@ def cli_remove(args):
   exec_results = EnvironmentManager(args).remove()
   print_playbook_results(exec_results)
 
-def cli_list(exec_results):
+def cli_list(args):
   """
     Implements a command line method to list all environments that
     have been instantiated using `init`.
@@ -109,10 +112,10 @@ def cli_list(exec_results):
       EnvironmentManager(get_namespace(env_name=env)).display_basic_info()
 
 def cli_inventory(args):
-  print json.dumps(EnvironmentManager(get_namespace(env_name=args.env_name)).inventory(),
+  pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).inventory(),
     indent=4, sort_keys=True)
 
-def cli_resources(exec_results):
+def cli_resources(args):
   """
     Implements command line method to provide more details on the resources associated with 
     a particular deployment (vpc, subnets, bigip, app hosts, etc...)
@@ -120,28 +123,27 @@ def cli_resources(exec_results):
   resources, statuses = EnvironmentManager(get_namespace(env_name=args.env_name)).resources()
   for r in resources:
     print r
-    print json.dumps(statuses[r])
+    pretty_print(statuses[r])
     
 def cli_login(args):
-  print json.dumps(EnvironmentManager(get_namespace(env_name=args.env_name)).login_info(),
+  pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).login_info(),
     indent=4, sort_keys=True)
 
-
-def cli_start_traffic(exec_results):
+def cli_start_traffic(args):
   """
     Implements command line method to pass traffic through BIG-IP
   """
   exec_results = EnvironmentManager(args).launch_traffic()
   print_playbook_results(exec_results)
 
-def cli_stop_traffic(exec_results):
+def cli_stop_traffic(args):
   """
     Implements command line method to stop traffic through BIG-IP
   """
   exec_results = EnvironmentManager(args).stop_traffic()
   print_playbook_results(exec_results)
 
-def create_parser():
+def get_parser():
   """
     Define the various command line methods and arguments here. 
     For each command, implement a sub-parser. Later we will call
@@ -216,14 +218,28 @@ def create_parser():
 
   return parser
 
-# not sure how else to generate a 'namespace' like object
-#  similar to what argparse returns...couldn't they just use a dict?
-def get_namespace(**kwargs):
-  class Namespace(object):
-    def __init__(self, kwargs):
-      for k, v in kwargs.items():
-        setattr(self, k, v)
-  return Namespace(kwargs)
+def pretty_print(to_print):
+  print json.dumps(to_print, indent=4, sort_keys=True)
+
+def get_handlers():
+  return {
+    'init': cli_init,
+    'list': cli_list,
+    'deploy': cli_deploy,
+    'login': cli_login,
+    'resources': cli_resources,
+    'inventory': cli_inventory,
+    'start_traffic': cli_start_traffic,
+    'stop_traffic': cli_stop_traffic,
+    'remove': cli_remove,
+    'teardown': cli_teardown,
+  }
+
+def set_debug_level(verbosity):
+  # leverage ansible debugging and logging as much as possible
+  for i in range(verbosity):
+    print 'Incrementing debug to level %s' % i
+    utils.increment_debug(False, False, False, False)
 
 if __name__ == "__main__":
   display(" ", log_only=True)
@@ -231,26 +247,11 @@ if __name__ == "__main__":
   display(" ", log_only=True)
 
   try:
-    parser = create_parser()
+    handlers = get_handlers()
+    parser = get_parser()
     args = parser.parse_args()
 
-    for i in range(args.verbose):
-      print 'Incrementing debug to level %s' % i
-      utils.increment_debug(False, False, False, False)
-
-    handlers = {
-      'init': cli_init,
-      'list': cli_list,
-      'deploy': cli_deploy,
-      'login': cli_login,
-      'resources': cli_resources,
-      'inventory': cli_inventory,
-      'start_traffic': cli_start_traffic,
-      'stop_traffic': cli_stop_traffic,
-      'remove': cli_remove,
-      'teardown': cli_teardown,
-    }
-
+    set_debug_level(args.verbose)
     handlers[args.cmd](args)
 
   except ValidationError, e:
@@ -262,7 +263,7 @@ if __name__ == "__main__":
   except errors.AnsibleError, e:
     display("ANSIBLE ERROR: %s" % e, color='red', stderr=True)
     sys.exit(1)
-  except KeyboardInterrupt, ke:
+  except KeyboardInterrupt, e:
     display("ERROR: interrupted", color='red', stderr=True)
     sys.exit(1)
   except Exception, e:

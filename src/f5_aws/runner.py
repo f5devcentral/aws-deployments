@@ -7,8 +7,6 @@ import yaml
 import time
 import datetime
 
-# custom modules
-
 from f5_aws.config import Config
 from f5_aws.utils import convert_str
 from f5_aws.exceptions import ExecutionError, ValidationError, LifecycleError
@@ -25,7 +23,6 @@ config = Config().config
 # ansible stuff
 import ansible.playbook
 import ansible.constants as constants
-import ansible.utils.template
 from ansible import errors
 from ansible import callbacks
 from ansible import utils
@@ -234,7 +231,7 @@ class EnvironmentManager(object):
     if getattr(self.options, 'env_name', None) is not None:
       self.extra_vars['env_name'] = self.options.env_name
 
-    # Since we have forked and modified ansible-playbook book
+    # Since we have forked and modified ansible-playbook 
     #  we have copied over many of these default variables.
     #  some of the options have been disabled due to unknown
     #  dependency changes we may have introduced.
@@ -256,8 +253,7 @@ class EnvironmentManager(object):
     self.options.listtasks = False
     self.options.syntax = False
 
-    # the first inventory is just a localhost for creating
-    #  the second one
+    # the first inventory just contains a local host to run the init playbook
     self.proj_inventory_path = config['install_path'] + '/inventory/hosts'
     # the second inventory is specific to this deployment
     self.env_inventory_path = '%s/%s/inventory/hosts' % (
@@ -271,13 +267,11 @@ class EnvironmentManager(object):
     See individual playbooks for more info. 
     """
 
-    # there are a few additional options which need to be processed with the init command
+    # additional options which need to be processed with the init command
     for extra_vars_opt in self.options.extra_vars:
       self.extra_vars = utils.combine_vars(self.extra_vars,
                         utils.parse_yaml(extra_vars_opt))
 
-    playbooks = ['init.yml']
-    
     # basic string checking to prevent failures later in playbook
     if not re.match('^[a-zA-z]{1}[a-zA-Z0-9-]*', self.options.env_name):
       raise ValidationError(
@@ -291,8 +285,16 @@ class EnvironmentManager(object):
           'There is already an environment with name "%s".  Use -f, --force to \
   update the inventory variables for this environment. ' % self.options.env_name)
 
+    # check that this is one of the working regions
+    if self.extra_vars['region'] not in config['regions']:
+      raise ValidationError(
+          'Only the following regions are possible when using this tool due to \
+availability of the ECS-optimized images used to run the Docker app: {}'.format(
+          config['regions']))
+
     # TODO: validate images, eip and cloudformation limits?
-    
+
+    playbooks = ['init.yml']
     playbook_context = PlaybookExecution(
       playbooks, config, self.proj_inventory_path, self.options, self.extra_vars)
     playbook_context.run()  
@@ -302,19 +304,19 @@ class EnvironmentManager(object):
   def deploy(self):
 
     playbooks = [
-      # 'deploy_vpc_cft.yml',
-      # 'deploy_az_cft.yml',
-      # 'deploy_bigip_cft.yml',
-      # 'deploy_gtm_cft.yml',
-      # 'deploy_app_cft.yml',
-      # 'deploy_client_cft.yml',
-      # 'deploy_app.yml',
-      # 'deploy_bigip.yml',
-      # 'cluster_bigips.yml',
-      # 'deploy_apps_bigip.yml',
-      # 'deploy_gtm.yml',
-      # 'deploy_apps_gtm.yml',
-      # 'deploy_client.yml'
+      'deploy_vpc_cft.yml',
+      'deploy_az_cft.yml',
+      'deploy_bigip_cft.yml',
+      'deploy_gtm_cft.yml',
+      'deploy_app_cft.yml',
+      'deploy_client_cft.yml',
+      'deploy_app.yml',
+      'deploy_bigip.yml',
+      'cluster_bigips.yml',
+      'deploy_apps_bigip.yml',
+      'deploy_gtm.yml',
+      'deploy_apps_gtm.yml',
+      'deploy_client.yml'
     ]
 
     playbook_context = PlaybookExecution(
@@ -350,15 +352,6 @@ class EnvironmentManager(object):
 
     return {'playbook_results': playbook_context, 'env': self}
 
-  def inventory(self):
-    pass
-
-  def resources(self):
-    pass
-
-  def login(self):
-    pass
-
   def remove(self):
     inventory, resources, statuses = self.get_environment_info()
 
@@ -382,7 +375,6 @@ class EnvironmentManager(object):
       raise LifecycleError("""Cannot remove environment '%s' until all resources have been de-provisioned.
 The following resources still exist: %s\n. 
 Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.options.env))
-      
 
   @classmethod
   def get_envs(self):
@@ -390,6 +382,8 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
       Gets a list of all deployments
     """
     return os.listdir(config['env_path'])
+
+  #### all over the below needs to get refactored....very ugly
 
   def get_environment_info(self):
     inventory = self.get_inventory()
@@ -424,11 +418,12 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
       Print information nicely about deployment resources to stdout
     """
     inventory, resources, statuses = self.get_environment_info()
-    return resources, statuses
+  
+    return resources, statuses, 
 
   def login_info(self):
     """
-      Prints login information for each of the deployed host types.
+      Returns login information for each of the deployed host types.
       We need to extract the login information (user, ip address) froms
       slightly different information for each host type (gtm, bigip, client, etc...)
     """

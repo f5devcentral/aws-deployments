@@ -12,12 +12,13 @@ from f5_aws import settings, image_finder, meta, utils
 from test_helpers import Region
 
 config = Config().config
-print config
 
+regions = config['regions']
+#regions = ['us-west-1']
 
 # scope=module => this setup function will be run once before 
 #  executing all the test methods in this module
-@pytest.fixture(scope="function", params = ['us-west-1']) # params=config['regions'])
+@pytest.fixture(scope="function", params=regions)
 def testenv(request):
     testenv = dict()
 

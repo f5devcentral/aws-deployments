@@ -5,6 +5,15 @@ import itertools
 import boto.ec2
 from boto.exception import EC2ResponseError
 
+# not sure how else to generate a 'namespace' like object
+#  similar to what argparse returns...couldn't they just use a dict?
+def get_namespace(**kwargs):
+  class Namespace(object):
+    def __init__(self, kwargs):
+      for k, v in kwargs.items():
+        setattr(self, k, v)
+  return Namespace(kwargs)
+
 def convert_str(inStr):
   """
     One of the quirks with ansible is the use of several different

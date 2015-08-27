@@ -1,46 +1,15 @@
 ---
 # networking defaults
 vpc_cidr_prefix: "172.16"
-
-# defaults for all bigips deployed
-# note: need m3.2xlarge to provision AVR
-bigip_version: "11.6"
-bigip_license_throughput: "25mbps"
-bigip_license_model: "hourly"
-bigip_license_package: "better"
-bigip_instance_type: "m3.2xlarge"
-
-# defaults for all gtms deployed
-gtm_version: "11.6"
-gtm_license_throughput: "25mbps"
-gtm_license_model: "hourly"
-gtm_license_package: "better"
-gtm_instance_type: "m3.xlarge"
-
-
-# defaults for deploying applications within docker containers
-# default ami is ECS-Optimized AMI
-# https://aws.amazon.com/marketplace/pp/B00U6QTYI2
-# Using 2015.03.f
-apphost_instance_type: "t2.micro"
 containers_per_host: 2
 apphosts_per_zone: 1
 
-# defaults for deploying test client/jumbox
-client_instance_type: "t1.micro"
 
+# default ami is ECS-Optimized AMI
+# https://aws.amazon.com/marketplace/pp/B00U6QTYI2
+# Using 2015.03.f
 
-# standalone big-ip in each availability zone, traffic directed
-#  via gslb, dns
-single_standalone:
-  clustering: none
-  bigips_per_zone: 1
-  gtms_per_zone: none
-
-single_cluster:
-  clustering: same-az
-  bigips_per_zone: 2
-  gtms_per_zone: 1
+# some variables for our more complex deployment models
 
 standalone_per_zone:
   clustering: none
@@ -50,11 +19,6 @@ standalone_per_zone:
 cluster_per_zone:
   clustering: same-az
   bigips_per_zone: 2
-  gtms_per_zone: 1
-
-cluster_spanned_across_zones:
-  clustering: cross-az
-  bigips_per_zone: 1
   gtms_per_zone: 1
 
 

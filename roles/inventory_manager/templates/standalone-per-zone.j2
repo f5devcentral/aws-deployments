@@ -94,18 +94,6 @@ management_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}1.0/24"
 private_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}2.0/24"
 public_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}3.0/24"
 application_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}4.0/24"
-bigip_version={{ bigip_version }}
-bigip_license_throughput={{ bigip_license_throughput }}
-bigip_license_model={{ bigip_license_model }}
-bigip_license_package={{ bigip_license_package }}
-bigip_instance_type={{ bigip_instance_type }}
-gtm_version={{ gtm_version }}
-gtm_license_throughput={{ gtm_license_throughput }}
-gtm_license_model={{ gtm_license_model }}
-gtm_license_package={{ gtm_license_package }}
-gtm_instance_type={{ gtm_instance_type }}
-apphost_instance_type={{ apphost_instance_type }}
-client_instance_type={{ client_instance_type }}
 
 {% endfor %}
 

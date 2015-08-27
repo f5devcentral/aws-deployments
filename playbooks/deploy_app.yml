@@ -1,15 +1,9 @@
 ---
-
 - hosts: apphosts
   gather_facts: False
   vars_files:
    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
-  tasks: 
-#  
-#     - name: Add CFT variables to host
-#       set_fact: item.key  = item.value
-#       with_dict: hostvars[inventory_hostname].stack_outputs
-# 
+  tasks:
     - name: Add CFT output variables to host from persisted results from previous playbooks 
       set_fact:
         ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}

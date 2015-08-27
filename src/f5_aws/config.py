@@ -26,9 +26,8 @@ class Config(object):
         
     self.config['vars_path'] = os.path.expanduser(
       '~/vars/{}'.format(self.config['prog']))
-    self.config['lock_path'] = self.config['vars_path'] + '/lock/'
-    self.config['env_path'] = self.config['vars_path'] + '/env/'
-    self.config['bin_path'] = self.config['install_path'] + '/bin/'
+    self.config['env_path'] = self.config['vars_path'] + '/env'
+    self.config['bin_path'] = self.config['install_path'] + '/bin'
 
     # make the /env/ directory if it does not exist
     try:

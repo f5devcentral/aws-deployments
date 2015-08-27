@@ -1,9 +1,7 @@
 ---
-
 # ---------------------------------
 # Configure settings which are specific to each device.
 # ---------------------------------
-
 - name: Add external vlan
   delegate_to: localhost
   bigip_config:
