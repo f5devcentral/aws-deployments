@@ -316,10 +316,9 @@ class EnvironmentManager(object):
       # 'deploy_app.yml',
       # 'deploy_bigip.yml',
       # 'cluster_bigips.yml',
-      'deploy_bigip_apps.yml',
+      # 'deploy_apps_bigip.yml',
       # 'deploy_gtm.yml',
-      # 'deploy_gtm_app1.yml',
-      # 'deploy_gtm_app2.yml',
+      # 'deploy_apps_gtm.yml',
       # 'deploy_client.yml'
     ]
 

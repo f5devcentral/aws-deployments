@@ -1,0 +1,49 @@
+- name: Gather EIPs for VIP1
+  set_fact:
+    VipPrivateIp={{ hostvars[inventory_hostname].stack_outputs.privateIpAddress }}
+    VipEip={{ hostvars[inventory_hostname].stack_outputs.eipAddress }}
+
+- name: Setup the Virtual Servers on each BIG-IP
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["VipEip"]}}:80","translationAddress":"{{hostvars[item]["VipPrivateIp"]}}"}'
+      collection_path='mgmt/tm/gtm/server/~Common~{{hostvars[item]["cluster_name"]}}/virtual-servers'
+      resource_key="name"
+  with_items: groups['bigip-cluster-seeds']
+
+- name: Setup the AZ pools
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"{{hostvars[item]["cluster_name"]}}:{{vip_id}}"}]}'
+      collection_path='mgmt/tm/gtm/pool'
+      resource_key="name"
+  with_items: groups['bigip-cluster-seeds']
+
+#Difficult to selectively grab variables for various hosts and string together in play framework. Easiest way is through a template.
+- name: Store create wideip pool string from jinja 2 template
+  template: src=../roles/gtm_conf/templates/wideip_pool.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_wideip_pool_string.json
+  delegate_to: localhost
+
+- shell: "cat ~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_wideip_pool_string.json"
+  register: wideip_pool_string
+  delegate_to: localhost
+
+- name: Setup the Wideip for Vip1
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      payload='{"name":"{{vip_id}}.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
+      collection_path='mgmt/tm/gtm/wideip'
+      resource_key="name"
+
