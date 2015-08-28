@@ -1,7 +1,11 @@
 #!/usr/bin/python
 
 """
-ansible module for managing configuration resources on BIG-IP over iControlREST.
+Ansible module for managing configuration resources on BIG-IP over iControlRest.
+
+It handles some of this subtleties encountered when dealing with 
+provisioning objects using iControlRest, and aims to provide some level of idempotence. 
+Some of the gotchas when using the "patch" method are documented in _get_safe_patch_payload()
 """
 
 import sys
@@ -37,14 +41,20 @@ class BigipConfig(object):
 
   def _get_safe_patch_payload(self):
     """
-     Working around this error from tmsh:
-      => {"code":400,"message":"\"network\" may not be specified in the context of the \"modify\" command.
-       \"network\" may be specified using the following commands: create, list, show","errorStack":[]}
+      When using the HTTP patch method, there are certain
+      field which may not be present in the payload 
     """
     safe_payload = deepcopy(self.payload)
     
+    #  => {"code":400,"message":"\"network\" may not be specified in the context of the \"modify\" command.
+    #   \"network\" may be specified using the following commands: create, list, show","errorStack":[]}
     if safe_payload.get("network", None) is not None:
       del safe_payload["network"]
+
+    # => {"code":400,"message":"\"type\" may not be specified in the context of the \"modify\" command.
+    #    \"type\" may be specified using the following commands: create, edit, list","errorStack":[]}
+    if safe_payload.get("type", None) is not None:
+      del safe_payload["type"]
 
     return safe_payload
 
@@ -93,15 +103,21 @@ class BigipConfig(object):
     return self.http("delete", self._get_full_resource_path())
 
   def http(self, method, host, payload=''):
+    """
+    Send the actual HTTP request
+    """
+
     print 'HTTP %s %s: %s' % (method, host, payload)
     methodfn = getattr(requests, method.lower(), None)
+    url ='%s/%s' % (self.hosturl, host)
+
     if method is None:
       raise NotImplementedError("requests module has not method %s " % method)
     try:
       if payload != '':
-        request = methodfn(url='%s/%s' % (self.hosturl, host), data=json.dumps(payload), auth=self.auth, verify=False)
+        request = methodfn(url=url, data=json.dumps(payload), auth=self.auth, verify=False)
       else:
-        request = methodfn(url='%s/%s' % (self.hosturl, host), auth=self.auth, verify=False)
+        request = methodfn(url=url, auth=self.auth, verify=False)
 
       if request.status_code != requests.codes.ok:
         request.raise_for_status()
@@ -112,7 +128,8 @@ class BigipConfig(object):
     except (ConnectionError, HTTPError, Timeout, TooManyRedirects) as e:
       rc = 1
       out = ''
-      err = '%s. %s' % (e.message, json.loads(request.text))
+      err = '%s.\nError received: %s.\nSent request: %s' % (
+          e.message, json.loads(request.text), 'HTTP method=%s host=%s payload=%s' % (method, url, payload))
 
     print 'HTTP %s returned: %s' % (method, request.text)
 
@@ -120,7 +137,6 @@ class BigipConfig(object):
 
 def main():
 
-  print 'main()'
   module = AnsibleModule(
     argument_spec = dict(
       state=dict(default='present', choices=['present', 'absent'], type='str'),

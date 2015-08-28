@@ -19,7 +19,8 @@
         ExternalInterfacePublicIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePublicIp }}
         ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
-        VipAddress={{ hostvars[inventory_hostname].stack_outputs.Vip2 }}
+        VipAddress1={{ hostvars[inventory_hostname].stack_outputs.Vip1 }}
+        VipAddress2={{ hostvars[inventory_hostname].stack_outputs.Vip2 }}
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
 
 - hosts: bigip-clusters
@@ -47,61 +48,47 @@
         WebServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
         WebServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePrivateIp }}
 
-# Now that topology and variables are finally loaded again
-# Deploy App Stuff Here....
-- hosts: apphosts
-  gather_facts: no
-  vars:
-    vip_id: "Vip1"
-  tasks:
-    - name: Store pool members from containers into json
-      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
-
-     # Notes:
-     # strip out last comma from jinja template output (see note below)
-     # json.loads is more sensitive than our parser and need to strip out last "," at the end of the pool member list
-     # no clean way to use loop.last directive in jinja template because it's a nested loop over all docker hosts
-     # Could try a inline replacement
-     # json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
-     # easier for now to modify in place with ansible replace command than jinja regex filter
-
-    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
-      delegate_to: localhost
-
-# Now that topology and variables are finally loaded again
-# Deploy App Stuff Here....
-- hosts: apphosts
-  gather_facts: no
-  vars:
-    vip_id: "Vip2"
-  tasks:
-    - name: Store pool members from containers into json
-      local_action: template src=../roles/bigip_app2/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
-
-     # Notes:
-     # strip out last comma from jinja template output (see note below)
-     # json.loads is more sensitive than our parser and need to strip out last "," at the end of the pool member list
-     # no clean way to use loop.last directive in jinja template because it's a nested loop over all docker hosts
-     # Could try a inline replacement
-     # json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
-     # easier for now to modify in place with ansible replace command than jinja regex filter
-
-    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
-      delegate_to: localhost
-
 ############################## End boilerplate #########################
 ########################################################################
-
-
 # At this point we have dynamically populated the ansible host groups,
 #  variables, and execution data from previous playbooks
-#  that are necessary to deploy our application resources...
+#  that are necessary to begin provisioning our application resources...
 # 
 # We will execute most of the following provisioning steps against hosts
 #  in the 'bigip-cluster-seeds' group.  In this way, we are provisioning 
 #  against only a single device in the cluster. The config-sync feature
 #  will handle configuration of secondary devices in Device Service
-#  Clusters as necessary. 
+#  Clusters as necessary. Remember that a cluster may only include 1
+#  device, in which case that will be active. 
+
+# prepare the json payload for the ltm pools based on output from container
+#  provisioning tasks.  Use jinja templates for this. 
+- hosts: apphosts
+  gather_facts: no
+  vars:
+    vip_id:  "Vip2"
+  tasks:
+    - name: Store pool members from containers into json
+      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+   # We strip out last comma from jinja template output (see note below)
+   # json.loads is more sensitive than our parser and need to strip out last "," at the end of the pool member li
+   # no clean way to use loop.last directive in jinja template because it's a nested loop over all docker hosts
+   # Could try a inline replacement
+   # json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
+   # easier for now to modify in place with ansible replace command than jinja regex filter
+  - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
+      delegate_to: localhost
+- hosts: apphosts
+  gather_facts: no
+  vars:
+    vip_id:  "Vip2"
+  tasks:
+    - name: Store pool members from containers into json
+      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
+      delegate_to: localhost
+
+
 
 ###### app 1 #######
 # We leverage iApps as a way to consistently deploy the TMOS traffic configuration.
@@ -121,15 +108,15 @@
 # After deploying the iApp which contains the virtual server, we attach an EIP to the
 #  secondary IP address in Amazon.  This secondary EIP matches the VIP. 
 
-# Generate the iApp we will deploy from a template (this is a local action)
+# Generate the iApp we will deploy from a template 
 - hosts: bigip-cluster-seeds
   gather_facts: no
-  connection: local
   vars:
     vip_id: "Vip1"
   tasks: 
      - name: Modify iApp to use VipAddress
        template: src='{{ install_path }}/roles/bigip_app1/templates/demo_iApp.cfg.j2' dest='~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-{{vip_id}}-iApp.yml'
+       delegate_to: localhost
 
 # Deploy virtual server and related resources to BIG-IP 
 - hosts: bigip-cluster-seeds

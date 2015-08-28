@@ -1,7 +1,7 @@
 # utils.py
 
+import subprocess
 import itertools
-
 import boto.ec2
 from boto.exception import EC2ResponseError
 
@@ -69,3 +69,14 @@ imageId={}, keyName={}, instanceType={}\r\n\
         raise e
         return False
   return True
+
+def ntp_update():
+  """
+  somtimes the vagrant VM system time is incorrect, which 
+  causes errors when using the AWS CFT API
+  """
+  try:
+    subprocess.check_call(['sudo', 'ntpdate', 'ntp.ubuntu.com'])
+  except:
+    print 'WARN: Clock update failed'
+    pass

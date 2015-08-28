@@ -40,7 +40,6 @@
       collection_path='mgmt/tm/ltm/profile/analytics'
       resource_key="name"
       payload='{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
-  ignore_errors: True
 
 - name: Uploading Datagroup ... background for sorry page
   delegate_to: localhost
@@ -52,7 +51,6 @@
       collection_path='mgmt/tm/ltm/data-group/internal'
       resource_key="name"
       payload='{"name":"background_image","type":"string","records":[{"name":"{{background_image}}"}]}'
-  ignore_errors: True
 
 - name: Uploading Datagroup ... image for sorry page
   delegate_to: localhost
@@ -64,7 +62,6 @@
       collection_path='mgmt/tm/ltm/data-group/internal'
       resource_key="name"
       payload='{"name":"sorry_images","type":"string","records":[{"name":"{{sorry_image}}"}]}'
-  ignore_errors: True
 
 - name: Uploading iRules ... sorry_page_rule
   delegate_to: localhost
