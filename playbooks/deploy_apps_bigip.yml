@@ -152,6 +152,7 @@
      ansible_connection: local
      ansible_python_interpreter: "/usr/bin/env python"
      vip_id: "Vip1"
+     owner: "app1"
   tasks:
     - name: deploy eips
       include: "{{ install_path }}/roles/infra/tasks/deploy_eip_cft.yml"

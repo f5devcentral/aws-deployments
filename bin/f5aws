@@ -112,8 +112,7 @@ def cli_list(args):
       EnvironmentManager(get_namespace(env_name=env)).display_basic_info()
 
 def cli_inventory(args):
-  pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).inventory(),
-    indent=4, sort_keys=True)
+  pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).inventory())
 
 def cli_resources(args):
   """
@@ -126,8 +125,7 @@ def cli_resources(args):
     pretty_print(statuses[r])
     
 def cli_login(args):
-  pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).login_info(),
-    indent=4, sort_keys=True)
+  pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).login_info())
 
 def cli_start_traffic(args):
   """

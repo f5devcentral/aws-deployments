@@ -430,10 +430,9 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
 
     login_info = {}
     inventory, resources, statuses = self.get_environment_info()
-    inventory_path = '%s/%s/inventory/hosts' % (
-      config['env_path'], self.options.env_name)
+   
     ansible_inventory = ansible.inventory.Inventory(
-      inventory_path, vault_password=None)
+      self.env_inventory_path, vault_password=None)
 
     # login is a bit more custom - we want to show the login
     # information for a dynamic set of hosts - bigips, gtms, app hosts, and the client host
@@ -461,14 +460,18 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
             if match:
               try:
                   login_info[host_type][self.host_to_az(
-                  resource_name, ansible_inventory)] = 'ssh -i {} {}@{}'.format(
+                  resource_name, ansible_inventory)] = {}
+                  login_info[host_type][self.host_to_az(
+                  resource_name, ansible_inventory)]['ssh'] = 'ssh -i {} {}@{}'.format(
                     group_info['vars'][
                       'ansible_ssh_private_key_file'],
                     group_info['vars']['ansible_ssh_user'],
                     status['resource_vars'][ip_map[host_type]])
+                  login_info[host_type][self.host_to_az(
+                  resource_name, ansible_inventory)]['https'] = 'https://{}'.format(
+                    status['resource_vars'][ip_map[host_type]])
               except KeyError, e:
-                login_info[host_type][self.host_to_az(
-                  resource_name, ansible_inventory)] = ''
+                pass
       except KeyError, e:
         pass
 
@@ -480,6 +483,34 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
       # print the network resources which can be reached when logged into the client host
       # dns entries
       # private IP for second virtual server
+
+    return login_info
+
+  def app_info(self):
+    """
+      Returns information on each application deployed (including virtual server info)
+    """
+
+    login_info = {}
+    inventory, resources, statuses = self.get_environment_info()
+   
+    ansible_inventory = ansible.inventory.Inventory(
+      self.env_inventory_path, vault_password=None)
+
+    for i in [1,2]:
+      try:
+        group_name = host_type+'s'
+        if inventory[group_name]:
+          group_info = inventory[group_name]
+          login_info[host_type] = {}
+
+          # not very efficient, but hey, its a demo
+          for resource_name, status in statuses.items():
+            match = re.match(
+              '^zone[0-9]+[/-]{}[0-9]+'.format(host_type), resource_name)
+
+      except KeyError, e:
+        pass
 
     return login_info
 
@@ -513,10 +544,8 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
     Compiles group, host, and variable information using ansible API
     """
 
-    inventory_path = '%s/%s/inventory/hosts' % (
-      config['env_path'], self.options.env_name)
     ansible_inventory = ansible.inventory.Inventory(
-      inventory_path, vault_password=None)
+      self.env_inventory_path, vault_password=None)
 
     inventory = {}
     for group, hosts in ansible_inventory.groups_list().items():

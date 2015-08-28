@@ -44,11 +44,14 @@
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
         AvailabilityZone={{ hostvars[inventory_hostname].stack_outputs.AvailabilityZone }}
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
+        Vip2={{ hostvars[inventory_hostname].stack_outputs.Vip2 }}
 
 - hosts: gtms
   gather_facts: no
   vars:
     vip_id: "Vip1"
+    VipPrivateIp: "{{ hostvars[inventory_hostname].stack_outputs.privateIpAddress }}"
+    VipEip: "{{ hostvars[inventory_hostname].stack_outputs.eipAddress }}"
   vars_files:
     - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-Vip1.yml" ]
   roles:
@@ -58,5 +61,5 @@
   gather_facts: no
   vars:
     vip_id: "Vip2"
-  tasks:
+  roles:
     - gtm_app2

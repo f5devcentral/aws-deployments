@@ -11,6 +11,7 @@
      ansible_connection: local
      ansible_python_interpreter: "/usr/bin/env python"
      vip_id: "Vip1"
+     owner: "gtm"
   vars_files:
      - "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml"
   tasks:

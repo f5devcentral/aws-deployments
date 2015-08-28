@@ -129,7 +129,6 @@
     collection_path='mgmt/tm/ltm/profile/tcp'
     resource_key="name"
 
-
 # Example of provisioning modules...
 - name: Provisioning AVR 
   delegate_to: localhost

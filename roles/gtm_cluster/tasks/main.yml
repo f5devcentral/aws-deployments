@@ -21,8 +21,6 @@
   script: ../roles/gtm_cluster/files/gtm_expect.py admin {{hostvars[groups['gtms'][0]]["ansible_ssh_host"]}} gtm_add admin {{hostvars[item.1]["ansible_ssh_host"]}} \'{{ bigip_rest_password }}\'
   delegate_to: localhost
   with_indexed_items: groups['gtms']
-  #when: item.0 > 0 and length(groups['gtms'])|num > 1
-  #when index > 0
   when: item.0 > 0 
   run_once: true
   ignore_errors: true
