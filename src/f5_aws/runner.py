@@ -317,6 +317,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_gtm.yml',
       'deploy_apps_gtm.yml',
       'deploy_client.yml'
+      'dump_bigip_facts.yml'
     ]
 
     playbook_context = PlaybookExecution(
@@ -452,67 +453,68 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
           group_info = inventory[group_name]
           login_info[host_type] = {}
 
-          # not very efficient, but hey, its a demo
+          # not very efficient...
           for resource_name, status in statuses.items():
             match = re.match(
               '^zone[0-9]+[/-]{}[0-9]+'.format(host_type), resource_name)
 
             if match:
               try:
+                  resources = {}
+                  key = group_info['vars'][
+                      'ansible_ssh_private_key_file']
+                  user = group_info['vars']['ansible_ssh_user']
+                  ip = status['resource_vars'][ip_map[host_type]]
+                  resources['ssh'] = 'ssh -i {} {}@{}'.format(
+                    key, user, ip)
+                  resources['https'] = 'https://{}'.format(ip)
+
+                  if 'bigip' in resource_name:
+                    resources['virtual_servers'] = self.collect_virtual_servers(resource_name)
+                    resources['elastic_ips'] = self.collect_elastic_ips(resource_name)
+
+                  if 'gtm' in resource_name:
+                    resources['wideips'] = self.collect_wideips(resource_name)
+                    resources['elastic_ips'] = self.collect_elastic_ips(resource_name)
+
                   login_info[host_type][self.host_to_az(
-                  resource_name, ansible_inventory)] = {}
-                  login_info[host_type][self.host_to_az(
-                  resource_name, ansible_inventory)]['ssh'] = 'ssh -i {} {}@{}'.format(
-                    group_info['vars'][
-                      'ansible_ssh_private_key_file'],
-                    group_info['vars']['ansible_ssh_user'],
-                    status['resource_vars'][ip_map[host_type]])
-                  login_info[host_type][self.host_to_az(
-                  resource_name, ansible_inventory)]['https'] = 'https://{}'.format(
-                    status['resource_vars'][ip_map[host_type]])
+                  resource_name, ansible_inventory)] = resources
               except KeyError, e:
                 pass
       except KeyError, e:
         pass
 
-      # the other thing we want to print in all circumstances is the virtual servers
-      # which have been deployed.  i.e. show people how they can reach the VIP
-
-      # print the publicily routable VIP
-
-      # print the network resources which can be reached when logged into the client host
-      # dns entries
-      # private IP for second virtual server
-
     return login_info
 
-  def app_info(self):
-    """
-      Returns information on each application deployed (including virtual server info)
-    """
+  def collect_resources(self, resource_name, fregex, fields, nested):
+    r = []
+    try: 
+      searchDir = '%s/%s/' % (config['env_path'], self.options.env_name)
+      files = os.listdir(searchDir)
+      for fname in files:
+        if re.match(fregex.format(resource_name), fname):
+          with open(searchDir+fname) as data_file:
+            content = json.load(data_file)
+            if nested == False:
+              r.append(dict(zip(fields, [content[x] for x in fields])))
+            else:
+              for i in content['items']:
+                r.append(dict(zip(fields, [i[x] for x in fields])))
+    except KeyError, e:
+      print 'WARN: %s' % e
+    return r
 
-    login_info = {}
-    inventory, resources, statuses = self.get_environment_info()
-   
-    ansible_inventory = ansible.inventory.Inventory(
-      self.env_inventory_path, vault_password=None)
+  def collect_elastic_ips(self, resource_name):
+    return self.collect_resources(resource_name, '{}-vip-Vip[0-9]+.json', 
+      ['eipAddress', 'privateIpAddress'], False)
 
-    for i in [1,2]:
-      try:
-        group_name = host_type+'s'
-        if inventory[group_name]:
-          group_info = inventory[group_name]
-          login_info[host_type] = {}
+  def collect_virtual_servers(self, resource_name):
+    return self.collect_resources(resource_name, 'facts_{}.yml', 
+      ['name', 'destination'], True)
 
-          # not very efficient, but hey, its a demo
-          for resource_name, status in statuses.items():
-            match = re.match(
-              '^zone[0-9]+[/-]{}[0-9]+'.format(host_type), resource_name)
-
-      except KeyError, e:
-        pass
-
-    return login_info
+  def collect_wideips(self, resource_name):
+    return self.collect_resources(resource_name, 'facts_{}.yml', 
+      ['name'], True)
 
   def host_to_az(self, resource_name, ansible_inventory):
     # traverse the ansible inventory to get the availability zone

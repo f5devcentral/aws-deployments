@@ -74,11 +74,11 @@ def cli_deploy(args):
     if exec_results['playbook_results'].statuscode == 0:
       print ''
       print 'If you\'ve deployed a client, you can start traffic by \
-  running:\n./bin/{} {} {}'.format(
+running:\n./bin/{} {} {}'.format(
         config['prog'], 'start_traffic', args.env_name)
 
-      print '\nYou can re-print the above login information along with the ansible \
-  inventory using "info" command\n'
+      print '\nPrint login information along with the ansible \
+inventory using "info" command, i.e. `info login`\n'
       print ''
   except KeyError: 
     pass

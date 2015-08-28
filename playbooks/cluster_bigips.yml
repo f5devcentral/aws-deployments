@@ -17,7 +17,6 @@
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
 
-# Credit to Tim Rupp
 - hosts: bigip-clusters
   gather_facts: no
   connection: local

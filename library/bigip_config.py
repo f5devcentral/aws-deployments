@@ -21,7 +21,10 @@ class BigipConfig(object):
     self.user = module.params["user"]
     self.password = module.params["password"]
     self.state = module.params["state"]
-    self.payload = json.loads(module.params["payload"])
+    try: 
+      self.payload = json.loads(module.params["payload"])
+    except TypeError:
+      self.payload = ''
     self.collection_path = module.params["collection_path"]
     self.resource_id = module.params["resource_id"]
     self.resource_key = module.params["resource_key"]
@@ -88,6 +91,8 @@ class BigipConfig(object):
       else:
         return self.create_resource()
 
+  def inspect(self):
+    return self.http("get", self.collection_path)
 
   def create_resource(self):
     return self.http("post", self.collection_path, self.payload)
@@ -139,7 +144,7 @@ def main():
 
   module = AnsibleModule(
     argument_spec = dict(
-      state=dict(default='present', choices=['present', 'absent'], type='str'),
+      state=dict(default='present', choices=['present', 'absent', 'inspect'], type='str'),
       user=dict(required=True, default=None, type='str'),
       host=dict(required=True, default=None, type='str'),
       password=dict(required=True, default=None, type='str'),
@@ -171,6 +176,11 @@ def main():
         module.fail_json(name=bigip_config.collection_path, msg=err, rc=rc)
   elif bigip_config.state == 'present':
     (rc, out, err) = bigip_config.create_or_update_resource()
+    
+    if rc != 0:
+      module.fail_json(name=bigip_config.collection_path, msg=err, rc=rc)
+  elif bigip_config.state == 'inspect':
+    (rc, out, err) = bigip_config.inspect()
     
     if rc != 0:
       module.fail_json(name=bigip_config.collection_path, msg=err, rc=rc)
