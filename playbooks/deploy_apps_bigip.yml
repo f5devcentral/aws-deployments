@@ -1,8 +1,8 @@
 ---
 # This playbook deploys virtual severs and all related BIG-IP and EC2 resources. 
  
-#####################################################################################
-###### Our typical boilerplate to handle variable persistence within ansible. ######
+###########################################################################################
+###### Our typical (nasty) boilerplate to handle variable persistence within ansible. ######
 
 # Add CFT output variables to host from persisted results from previous playbooks
 - hosts: bigips
@@ -61,36 +61,9 @@
 #  Clusters as necessary. Remember that a cluster may only include 1
 #  device, in which case that will be active. 
 
-# prepare the json payload for the ltm pools based on output from container
-#  provisioning tasks.  Use jinja templates for this. 
-- hosts: apphosts
-  gather_facts: no
-  vars:
-    vip_id:  "Vip2"
-  tasks:
-    - name: Store pool members from containers into json
-      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
-     # We strip out last comma from jinja template output (see note below)
-     # json.loads is more sensitive than our parser and need to strip out last "," at the end of the pool member li
-     # no clean way to use loop.last directive in jinja template because it's a nested loop over all docker hosts
-     # Could try a inline replacement
-     # json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
-     # easier for now to modify in place with ansible replace command than jinja regex filter
-    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
-      delegate_to: localhost
-- hosts: apphosts
-  gather_facts: no
-  vars:
-    vip_id:  "Vip2"
-  tasks:
-    - name: Store pool members from containers into json
-      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
-    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
-      delegate_to: localhost
 
-
-
-###### app 1 #######
+######################################################################################
+######################################## app 1 ####################################
 # We leverage iApps as a way to consistently deploy the TMOS traffic configuration.
 #  iApps are F5’s powerful re-entrant templates for creating virtual services. They
 #  allow you to see and manage all the elements for the virtual service while
@@ -107,6 +80,21 @@
 #      These images can be found in ./roles/bigip_app/files/
 # After deploying the iApp which contains the virtual server, we attach an EIP to the
 #  secondary IP address in Amazon.  This secondary EIP matches the VIP. 
+
+# Prepare the json payload for the ltm pools based on output from container
+#    provisioning tasks.  Use jinja templates for this. 
+# We strip out last comma from jinja template output 
+#    json_payload: "{{json_output|regex_replace(',]}', ']}' ) }}"
+#    easier for now to modify in place with ansible replace command than jinja regex filter
+- hosts: apphosts
+  gather_facts: no
+  vars:
+    vip_id:  "Vip1"
+  tasks:
+    - name: Store pool members from containers into json
+      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
+      delegate_to: localhost
 
 # Generate the iApp we will deploy from a template 
 - hosts: bigip-cluster-seeds
@@ -147,7 +135,9 @@
       delegate_to: localhost
 
 
-###### app 2 #######
+######################################################################################
+######################################## app 2 ####################################
+
 # For this second virtual, we do not use iApps.  Instead, we directly use the
 #  bigip_config ansible module we have written. The module is
 #  used to deploy an iRule, virtual servers for 80 and 443, and an web server pool.
@@ -157,6 +147,18 @@
 # Finally, for this virtual, we do not attach an EIP as we did previously. The virtual 
 #  server will not be reachable from the public internet, but only within the VPC. 
 #  This step is skipped in order to save on Elastic IP addresses, which are in short supply.
+
+# Prepare the json payload for the ltm pools based on output from container
+#    provisioning tasks.  Use jinja templates for this. 
+- hosts: apphosts
+  gather_facts: no
+  vars:
+    vip_id:  "Vip2"
+  tasks:
+    - name: Create a json payload for the pool members
+      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+    - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
+      delegate_to: localhost
 
 # Deploy virtual server and related resources to BIG-IP 
 - hosts: bigip-cluster-seeds

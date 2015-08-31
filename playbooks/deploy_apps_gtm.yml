@@ -46,6 +46,9 @@
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
         Vip2={{ hostvars[inventory_hostname].stack_outputs.Vip2 }}
 
+#####################################################################################
+###### Our typical (nasty) boilerplate to handle variable persistence within ansible. ######
+
 - hosts: gtms
   gather_facts: no
   vars:

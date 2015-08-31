@@ -12,6 +12,13 @@ def get_namespace(**kwargs):
     def __init__(self, kwargs):
       for k, v in kwargs.items():
         setattr(self, k, v)
+
+    def __repr__(self):
+      print dir(self)
+
+    def __str__(self):
+      return dir(self)
+
   return Namespace(kwargs)
 
 def convert_str(inStr):

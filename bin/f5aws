@@ -99,6 +99,14 @@ def cli_remove(args):
   exec_results = EnvironmentManager(args).remove()
   print_playbook_results(exec_results)
 
+  try:
+    # print the login information if the deployment was successful
+    if exec_results['playbook_results'].statuscode == 0:
+      display(' The environment "{} has been successfully removed'.format(args.env_name),
+        color='red', stderr=False)
+  except KeyError, e:
+    raise ExecutionError('Failed due to KeyError while removing {}'.format(args.env_name))
+
 def cli_list(args):
   """
     Implements a command line method to list all environments that
@@ -116,8 +124,9 @@ def cli_inventory(args):
 
 def cli_resources(args):
   """
-    Implements command line method to provide more details on the resources associated with 
-    a particular deployment (vpc, subnets, bigip, app hosts, etc...)
+    Implements command line method to provide more details on the AWS/CFT
+    resources associated with a particular deployment.
+    This includes vpc, subnets, bigip, app hosts, etc...
   """
   resources, statuses = EnvironmentManager(get_namespace(env_name=args.env_name)).resources()
   for r in resources:

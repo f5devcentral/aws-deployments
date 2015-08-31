@@ -316,7 +316,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_apps_bigip.yml',
       'deploy_gtm.yml',
       'deploy_apps_gtm.yml',
-      'deploy_client.yml'
+      'deploy_client.yml',
       'dump_bigip_facts.yml'
     ]
 
@@ -389,6 +389,17 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
   def get_environment_info(self):
     inventory = self.get_inventory()
     resources, statuses = self.get_latest_deploy_results(inventory)
+
+    # clusters also show up in the statuses section, but we cannot
+    #  print their status now, this causes them to show up under
+    #  state = 'not deployed/error' for all models.  Avoiding this
+    #  for now by removing them from the objects below
+    for i, r in enumerate(resources):
+      print r
+      if 'cluster' in r:
+        del statuses[r]
+        del resources[i]
+
     return inventory, resources, statuses
 
   def display_basic_info(self):
@@ -419,7 +430,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
       Print information nicely about deployment resources to stdout
     """
     inventory, resources, statuses = self.get_environment_info()
-  
+
     return resources, statuses, 
 
   def login_info(self):
@@ -537,7 +548,6 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
 
     # don't show the password in the output
     del env_info['env_name']
-    env_info['bigip_rest_password'] = '********'
 
     return env_info
 
