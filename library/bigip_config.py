@@ -32,17 +32,21 @@ class BigipConfig(object):
     self.hosturl = "https://%s" % self.host
     self.auth = (self.user, self.password)
 
+  def _get_full_resource_id(self):
+    if self.resource_id is not None:
+      return self.resource_id
+    else:
+      # need to extract the id from payload
+      return self.payload[self.resource_key]
+
   def _get_full_resource_path(self):
-    # when updating iApps, the PATCH url should like like:
+    # when re-deploying iApps, the PATCH URL is a bit different
     # https://localhost/mgmt/tm/sys/application/service/~Common~Vip1_demo_iApp.app~Vip1_demo_iApp
     if 'application/service' in self.collection_path:
       return ('%s/~Common~%s.app~%s' % (self.collection_path,
          self._get_full_resource_id(), self._get_full_resource_id()))
     else:
       return '%s/%s' % (self.collection_path, self._get_full_resource_id())
-
-  def _get_full_resource_path(self):
-    return '%s/%s' % (self.collection_path, self._get_full_resource_id())
 
   def _get_safe_patch_payload(self):
     """
