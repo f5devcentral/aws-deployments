@@ -17,7 +17,7 @@ local_ansible_path = os.path.abspath(
 
 sys.path.append(local_ansible_path)
 
-# load the config
+# make our config global
 config = Config().config
 
 # ansible stuff
@@ -303,6 +303,12 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
 
   def deploy(self):
 
+    # make sure the environment has been initialized
+    envs = EnvironmentManager.get_envs()
+    if not self.options.env_name in envs:
+      raise LifecycleError('Environment "{}" does not exist.  Has it been initialized?'.format(
+        self.options.env_name))
+
     playbooks = [
       'deploy_vpc_cft.yml',
       'deploy_az_cft.yml',
@@ -375,7 +381,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
     else:
       raise LifecycleError("""Cannot remove environment '%s' until all resources have been de-provisioned.
 The following resources still exist: %s\n. 
-Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.options.env))
+Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, self.options.env_name))
 
   @classmethod
   def get_envs(self):
@@ -395,7 +401,6 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env, stillExists, self.op
     #  state = 'not deployed/error' for all models.  Avoiding this
     #  for now by removing them from the objects below
     for i, r in enumerate(resources):
-      print r
       if 'cluster' in r:
         del statuses[r]
         del resources[i]

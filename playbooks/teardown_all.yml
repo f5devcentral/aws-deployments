@@ -1,6 +1,6 @@
 ---
 #This playbook dismantles all deployed EC2 resources. 
-- hosts: zone1-client
+- hosts: clients
   gather_facts: no
   vars:
     ansible_connection: local

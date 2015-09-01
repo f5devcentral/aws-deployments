@@ -25,7 +25,6 @@ local_ansible_path = os.path.abspath(
 local_module_path = os.path.abspath(
   os.path.join(os.path.dirname(__file__), '..', 'src')
 )
-
 sys.path.append(local_module_path)
 sys.path.append(local_ansible_path)
 
@@ -39,6 +38,7 @@ from ansible import errors
 from ansible import utils
 from ansible.callbacks import display
 
+# make our config global
 config = Config().config
 
 def print_playbook_results(exec_results):
@@ -102,8 +102,9 @@ def cli_remove(args):
   try:
     # print the login information if the deployment was successful
     if exec_results['playbook_results'].statuscode == 0:
+      print ''
       display(' The environment "{} has been successfully removed'.format(args.env_name),
-        color='red', stderr=False)
+        color='green', stderr=False)
   except KeyError, e:
     raise ExecutionError('Failed due to KeyError while removing {}'.format(args.env_name))
 
