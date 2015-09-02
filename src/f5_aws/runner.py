@@ -525,11 +525,11 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
       ['eipAddress', 'privateIpAddress'], False)
 
   def collect_virtual_servers(self, resource_name):
-    return self.collect_resources(resource_name, 'facts_{}.yml', 
+    return self.collect_resources(resource_name, 'facts_{}.json', 
       ['name', 'destination'], True)
 
   def collect_wideips(self, resource_name):
-    return self.collect_resources(resource_name, 'facts_{}.yml', 
+    return self.collect_resources(resource_name, 'facts_{}.json', 
       ['name'], True)
 
   def host_to_az(self, resource_name, ansible_inventory):

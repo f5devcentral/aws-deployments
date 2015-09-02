@@ -42,7 +42,12 @@ class BigipConfig(object):
       return self.payload[self.resource_key]
 
   def _get_full_resource_path(self):
-    return '%s/%s' % (self.collection_path, self._get_full_resource_id())
+    # https://localhost/mgmt/tm/sys/application/service/~Common~Vip1_demo_iApp.app~Vip1_demo_iApp
+    if 'application/service' in self.collection_path:
+      return ('%s/~Common~%s.app~%s' % (self.collection_path,
+         self._get_full_resource_id(), self._get_full_resource_id()))
+    else:
+      return '%s/%s' % (self.collection_path, self._get_full_resource_id())
 
   def _get_safe_patch_payload(self):
     """
@@ -60,6 +65,10 @@ class BigipConfig(object):
     #    \"type\" may be specified using the following commands: create, edit, list","errorStack":[]}
     if safe_payload.get("type", None) is not None:
       del safe_payload["type"]
+
+    # handle the application service resources (i.e. iApps)
+    # if 'application/service' in self.collection_path:
+    # 	print 'collection_path = {}'.format(self.collection_path)
 
     return safe_payload
 
@@ -80,6 +89,7 @@ class BigipConfig(object):
       for i in items:
         if i[self.resource_key] == self.payload[self.resource_key]:
           exists = True
+          print 'fullPath = {}'.format(i['fullPath'])
           break
     return exists
 
@@ -144,9 +154,9 @@ def get_namespace(**kwargs):
 # uncomment the below and run as necessary as 
 # bash$ python ./manual_bigip_config.py
 
-hostname="52.21.200.148"
+hostname="52.22.16.220"
 user="restadmin"
-password="..."
+password="GoF5!"
 
 # test problems with data-group patch, specifically
 #   does not like the 'type' field
@@ -164,16 +174,246 @@ password="..."
 
 # test problems uploading analytics profile, specifically
 #   does not like the 'type' field
+# module = get_namespace()
+# module.params = {
+#   "host": hostname,
+#   "user": user,
+#   "password": password,
+#   "state": "present",
+#   "payload": '{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}',
+#   "collection_path": "mgmt/tm/ltm/profile/analytics",
+#   "resource_key": "name",
+#   "resource_id": None  
+# }
+
+iapp_payload = {
+    "name": "Vip1_demo_iApp",
+    "inheritedDevicegroup": "true",
+    "inheritedTrafficGroup": "true",
+    "lists": [
+        {
+            "encrypted": "no",
+            "name": "irules__irules",
+            "value": [
+                "/Common/__demo_analytics_rule",
+                "/Common/__sorry_page_rule"
+            ]
+        }
+    ],
+    "partition": "Common",
+    "strictUpdates": "enabled",
+    "tables": [
+        {
+            "name": "basic__snatpool_members"
+        },
+        {
+            "name": "net__snatpool_members"
+        },
+        {
+            "name": "optimizations__hosts"
+        },
+        {
+            "columnNames": [
+                "name"
+            ],
+            "name": "pool__hosts",
+            "rows": [
+                {
+                    "row": [
+                        "demo.example.com"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "pool__members"
+        },
+        {
+            "name": "server_pools__servers"
+        }
+    ],
+    "template": "/Common/f5.http",
+    "templateModified": "no",
+    "trafficGroup": "/Common/traffic-group-1",
+    "variables": [
+        {
+            "encrypted": "no",
+            "name": "client__http_compression",
+            "value": "/Common/wan-optimized-compression"
+        },
+        {
+            "encrypted": "no",
+            "name": "client__standard_caching_without_wa",
+            "value": "/#do_not_use#"
+        },
+        {
+            "encrypted": "no",
+            "name": "client__tcp_wan_opt",
+            "value": "/Common/tcp-ssl-wan-optimized"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__client_mode",
+            "value": "wan"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__route_to_bigip",
+            "value": "no"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__same_subnet",
+            "value": "no"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__server_mode",
+            "value": "lan"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__snat_type",
+            "value": "automap"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__vlan_mode",
+            "value": "all"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__addr",
+            "value": "172.16.23.106"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__http",
+            "value": "/#create_new#"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__mask",
+            "value": ""
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__mirror",
+            "value": "disabled"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__persist",
+            "value": "/#do_not_use#"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__pool_to_use",
+            "value": "/Common/Vip1_pool"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__port",
+            "value": "80"
+        },
+        {
+            "encrypted": "no",
+            "name": "server__ntlm",
+            "value": "/#do_not_use#"
+        },
+        {
+            "encrypted": "no",
+            "name": "server__oneconnect",
+            "value": "/#do_not_use#"
+        },
+        {
+            "encrypted": "no",
+            "name": "server__tcp_lan_opt",
+            "value": "/Common/tcp-ssl-wan-optimized"
+        },
+        {
+            "encrypted": "no",
+            "name": "server__tcp_req_queueing",
+            "value": "no"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__port_secure",
+            "value": "443"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__redirect_port",
+            "value": "80"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__redirect_to_https",
+            "value": "yes"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__xff",
+            "value": "yes"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__mode",
+            "value": "client_ssl"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__cert",
+            "value": "/Common/default.crt"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__client_ssl_profile",
+            "value": "/#create_new#"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__key",
+            "value": "/Common/default.key"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__use_chain_cert",
+            "value": "/#do_not_use#"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl_encryption_questions__advanced",
+            "value": "yes"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl_encryption_questions__help",
+            "value": "hide"
+        },
+        {
+            "encrypted": "no",
+            "name": "stats__analytics",
+            "value": "/Common/demo_analytics_profile"
+        },
+        {
+            "encrypted": "no",
+            "name": "stats__request_logging",
+            "value": "/Common/request-log"
+        }
+    ]
+}
+
+# test problems uploading iApps (something to do with .app in the name)
 module = get_namespace()
 module.params = {
   "host": hostname,
   "user": user,
   "password": password,
   "state": "present",
-  "payload": '{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}',
-  "collection_path": "mgmt/tm/ltm/profile/analytics",
+  "payload": json.dumps(iapp_payload),
+  "collection_path": "mgmt/tm/sys/application/service",
   "resource_key": "name",
   "resource_id": None  
 }
-
 bigip_config = BigipConfig(module).create_or_update_resource()
