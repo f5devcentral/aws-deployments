@@ -88,9 +88,5 @@
 - hosts: clients
   gather_facts: no
   tasks:
-
     - name: Copy over simple load generation jmeter script
       copy: src=../roles/client/files/simple-load-generation.jmx dest=~/
-
-    - name: Copy over attack jmeter script
-      copy: src=../roles/client/files/attack-site.jmx dest=~/

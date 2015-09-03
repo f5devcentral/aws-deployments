@@ -6,22 +6,23 @@
 
 # Example of setting database variables
 #  Here we use a loop to retry until this first attempt to 
-#  provision using REST completes. 
+#  provision using REST completes. This is our first REST call
+#  so we want to be sure the device is ready.
 - name: Disabling Setup Utility in GUI
   delegate_to: localhost
   bigip_config: 
     state=present
-    host={{ ansible_ssh_host }} 
-    user={{ bigip_rest_user }} 
-    password={{ bigip_rest_password }} 
-    payload='{"value":"false"}'
-    collection_path='mgmt/tm/sys/db/setup.run'
+    host={{ ansible_ssh_host }}
+    user={{ bigip_rest_user }}
+    password={{ bigip_rest_password }}
+    payload='{"name":"setup.run", "value":"false"}'
+    collection_path='mgmt/tm/sys/db'
+    resource_key="name"
   register: result
-  # TODO: if result is an array then dig into each array else just look for changed = true
   until: result|changed
   retries: 20
   delay: 5
-  
+
 # We need NTP, we do not get this from Amazon
 # TODO: take in an array for pool members
 # pool members are the same for each device if they are in the same region

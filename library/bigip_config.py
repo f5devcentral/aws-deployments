@@ -15,13 +15,16 @@ from copy import deepcopy
 
 from requests.exceptions import ConnectionError, HTTPError, Timeout, TooManyRedirects
 
+class NoChangeError(Exception):
+  pass
+
 class BigipConfig(object):
   def __init__(self, module):
     self.host = module.params["host"]
     self.user = module.params["user"]
     self.password = module.params["password"]
     self.state = module.params["state"]
-    try: 
+    try:
       self.payload = json.loads(module.params["payload"])
     except TypeError:
       self.payload = ''
@@ -40,13 +43,15 @@ class BigipConfig(object):
       return self.payload[self.resource_key]
 
   def _get_full_resource_path(self):
-    # when re-deploying iApps, the PATCH URL is a bit different
     # https://localhost/mgmt/tm/sys/application/service/~Common~Vip1_demo_iApp.app~Vip1_demo_iApp
     if 'application/service' in self.collection_path:
       return ('%s/~Common~%s.app~%s' % (self.collection_path,
          self._get_full_resource_id(), self._get_full_resource_id()))
     else:
       return '%s/%s' % (self.collection_path, self._get_full_resource_id())
+
+  def inspect(self):
+    return self.http("get", self.collection_path)
 
   def _get_safe_patch_payload(self):
     """
@@ -64,6 +69,14 @@ class BigipConfig(object):
     #    \"type\" may be specified using the following commands: create, edit, list","errorStack":[]}
     if safe_payload.get("type", None) is not None:
       del safe_payload["type"]
+
+    del safe_payload[self.resource_key]
+    if len(safe_payload) == 0:
+      raise NoChangeError('Payload is empty')
+
+    # handle the application service resources (i.e. iApps)
+    # if 'application/service' in self.collection_path:
+    #   print 'collection_path = {}'.format(self.collection_path)
 
     return safe_payload
 
@@ -84,6 +97,7 @@ class BigipConfig(object):
       for i in items:
         if i[self.resource_key] == self.payload[self.resource_key]:
           exists = True
+          print 'fullPath = {}'.format(i['fullPath'])
           break
     return exists
 
@@ -93,12 +107,14 @@ class BigipConfig(object):
       return self.http("patch", self.collection_path, self.payload)
     else:
       if self.resource_exists():
-        return self.update_resource()
+        try: 
+          return self.update_resource()
+        except NoChangeError, e:
+          rc = 0
+          out = 'No configuration changes necessary. {}'.format(e)
+          err = ''
       else:
         return self.create_resource()
-
-  def inspect(self):
-    return self.http("get", self.collection_path)
 
   def create_resource(self):
     return self.http("post", self.collection_path, self.payload)
@@ -114,21 +130,15 @@ class BigipConfig(object):
     return self.http("delete", self._get_full_resource_path())
 
   def http(self, method, host, payload=''):
-    """
-    Send the actual HTTP request
-    """
-
     print 'HTTP %s %s: %s' % (method, host, payload)
     methodfn = getattr(requests, method.lower(), None)
-    url ='%s/%s' % (self.hosturl, host)
-
     if method is None:
       raise NotImplementedError("requests module has not method %s " % method)
     try:
       if payload != '':
-        request = methodfn(url=url, data=json.dumps(payload), auth=self.auth, verify=False)
+        request = methodfn(url='%s/%s' % (self.hosturl, host), data=json.dumps(payload), auth=self.auth, verify=False)
       else:
-        request = methodfn(url=url, auth=self.auth, verify=False)
+        request = methodfn(url='%s/%s' % (self.hosturl, host), auth=self.auth, verify=False)
 
       if request.status_code != requests.codes.ok:
         request.raise_for_status()
@@ -139,8 +149,8 @@ class BigipConfig(object):
     except (ConnectionError, HTTPError, Timeout, TooManyRedirects) as e:
       rc = 1
       out = ''
-      err = '%s.\nError received: %s.\nSent request: %s' % (
-          e.message, json.loads(request.text), 'HTTP method=%s host=%s payload=%s' % (method, url, payload))
+      err = '%s. Error received: %s.\n Sent request: %s' % (
+          e.message, json.loads(request.text), 'HTTP %s %s: %s' % (method, host, payload))
 
     print 'HTTP %s returned: %s' % (method, request.text)
 
