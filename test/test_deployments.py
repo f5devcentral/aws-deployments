@@ -2,13 +2,11 @@ import sys
 import pytest
 
 sys.path.append('./src')
-
 from f5_aws.config import Config
 from f5_aws.utils import get_namespace
 from f5_aws.runner import EnvironmentManager
 
 config = Config().config
-
 region_for_lifecyle_tests = config['regions'][0]
 deployment_models = config['deployment_models']
 deployment_models = ['single-standalone']

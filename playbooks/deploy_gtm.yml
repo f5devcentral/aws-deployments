@@ -103,8 +103,6 @@
     - bigip_system_aws
     # sets vlans, self-ips, routes
     - gtm_network
-    # provisions GTM 
-    - gtm_system
     # setup gtm configuration for this network topology
     - gtm_conf
     # setup up gtms in cluster, they share route information

@@ -2,10 +2,6 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Deploys BIG-IP with interfaces on public, private, and management subnets.",
   "Parameters": {
-    "envName": {
-      "Type": "String",
-      "Description": "Environment name from f5Aws tool deployment."
-    },
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within working region."
@@ -115,12 +111,6 @@
             "ToPort": "4353",
             "CidrIp": "0.0.0.0/0"
           }
-        ],
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
         ]
       }
     },
@@ -149,13 +139,7 @@
         ],
         "SubnetId": {
           "Ref": "managementSubnet"
-        },
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
-        ]
+        }
       }
     },
     "InternalInterface": {
@@ -165,13 +149,7 @@
         "SubnetId": {
           "Ref": "privateSubnet"
         },
-        "SourceDestCheck": "false",
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
-        ]
+        "SourceDestCheck": "false"
       }
     },
     "ExternalInterface": {
@@ -187,13 +165,7 @@
           "Ref": "publicSubnet"
         },
         "SourceDestCheck": "false",
-        "SecondaryPrivateIpAddressCount": "5",
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
-        ]
+        "SecondaryPrivateIpAddressCount": "5"
       }
     },
     "BigipInstance": {
@@ -232,12 +204,6 @@
             "NetworkInterfaceId": {
               "Ref": "InternalInterface"
             }
-          }
-        ],
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
           }
         ]
       }

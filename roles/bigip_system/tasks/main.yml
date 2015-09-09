@@ -130,8 +130,10 @@
     collection_path='mgmt/tm/ltm/profile/tcp'
     resource_key="name"
 
-# Example of provisioning modules...
-- name: Provisioning AVR 
+# Provision the modules associated with this BIG-IP host
+#  see variables configured in ./roles/inventory_manager/defaults
+#  the 'modules' variable is unique to the ansible host group, i.e. bigips or gtms
+- name: Provisioning modules 
   delegate_to: localhost
   bigip_config:
     state=present
@@ -139,10 +141,7 @@
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
     payload='{"level":"nominal"}'
-    collection_path='mgmt/tm/sys/provision/avr'
+    collection_path='mgmt/tm/sys/provision/{{item}}'
+  with_items: modules
 
-# - name: Pausing for module provisining to complete
-#   pause: seconds=30
-#   tags:
-#       - pause
 

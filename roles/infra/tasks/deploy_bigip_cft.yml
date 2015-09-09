@@ -14,7 +14,7 @@
 # Run python script to find out which AMI we should use based on user inputs
 #  This is easier than the ugly mapping sections in CloudFormation templates
 #  with high cardinality
-- shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ bigip_version }} --license {{ bigip_license_model }} --package {{ bigip_license_package }} --throughput {{ bigip_license_throughput }} --matchone"
+- shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ version }} --license {{ license_model }} --package {{ license_package }} --throughput {{ license_throughput }} --matchone"
   register: output
 
 - name: Launching a big-ip from CFT
@@ -25,11 +25,10 @@
     template={{ install_path }}/roles/infra/files/bigip.json
   args:
     tags: 
-      envName: "{{ env_name }}"
-      host: "{{ inventory_hostname }}"
-      instanceType: "BIG-IP"
+      EnvName: "{{ env_name }}"
+      Host: "{{ inventory_hostname }}"
+      InstanceType: "BIG-IP"
     template_parameters:
-      envName: "{{ env_name }}"
       region: "{{ region }}"
       vpc: "{{ vpc_id }}"
       availabilityZone: "{{ availability_zone }}"

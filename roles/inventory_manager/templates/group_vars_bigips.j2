@@ -1,9 +1,10 @@
 # defaults for all gtms deployed
 # note: need m3.2xlarge to provision AVR
 ansible_ssh_user: admin
-bigip_version: "11.6"
-bigip_license_throughput: "25mbps"
-bigip_license_model: "hourly"
-bigip_license_package: "better"
-bigip_instance_type: "m3.xlarge"
+version: {{ bigip_version }}
+license_throughput: {{ bigip_license_throughput }}
+license_model: {{ bigip_license_model }}
+license_package: {{ bigip_license_package }}
+instance_type: {{ bigip_instance_type }}
+modules: {{ bigip_modules }}
 ansible_ssh_private_key_file: {{ ssh_key }}

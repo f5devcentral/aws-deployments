@@ -1,8 +1,9 @@
 # defaults for all gtms deployed
 ansible_ssh_user: admin
-gtm_version: "11.6"
-gtm_license_throughput: "25mbps"
-gtm_license_model: "hourly"
-gtm_license_package: "better"
-gtm_instance_type: "m3.xlarge"
+version: {{ gtm_version }}
+license_throughput: {{ gtm_license_throughput }}
+license_model: {{ gtm_license_model }}
+license_package: {{ gtm_license_package }}
+instance_type: {{ gtm_instance_type }}
+modules: {{ bigip_modules }}
 ansible_ssh_private_key_file: {{ ssh_key }}

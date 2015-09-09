@@ -14,7 +14,7 @@
 # Run python script to find out which AMI we should use based on user inputs
 #  This is easier than the ugly mapping sections in CloudFormation templates
 #  with high cardinality
-- shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ gtm_version }} --license {{ gtm_license_model }} --package {{ gtm_license_package }} --throughput {{ gtm_license_throughput }} --matchone"
+- shell: "python {{ install_path }}/bin/get_bigip_image_id.py --region {{ region }} --version {{ version }} --license {{ license_model }} --package {{ license_package }} --throughput {{ license_throughput }} --matchone"
   register: output
 
 - name: Launching a gtm in each AZ
@@ -28,8 +28,8 @@
       envName: "{{ env_name }}"
       host: "{{ inventory_hostname }}"
       instanceType: "GTM"
+      Name: "{{ inventory_hostname }}"
     template_parameters:
-      envName: "{{ env_name }}"
       region: "{{ region }}"
       vpc: "{{ vpc_id }}"
       availabilityZone: "{{ availability_zone }}"
