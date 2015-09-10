@@ -4,6 +4,23 @@ vpc_cidr_prefix: "172.16"
 containers_per_host: 2
 apphosts_per_zone: 1
 
+bigip_version: "11.6"
+bigip_license_throughput: "25mbps"
+bigip_license_model: "hourly"
+bigip_license_package: "better"
+bigip_instance_type: "m3.xlarge"
+bigip_modules: "avr"
+
+gtm_version: "11.6"
+gtm_license_throughput: "25mbps"
+gtm_license_model: "hourly"
+gtm_license_package: "better"
+gtm_instance_type: "m3.xlarge"
+gtm_modules:
+ - avr
+ - gtm
+client_instance_type: "t1.micro"
+apphost_instance_type: "t2.micro"
 
 # default ami is ECS-Optimized AMI
 # https://aws.amazon.com/marketplace/pp/B00U6QTYI2

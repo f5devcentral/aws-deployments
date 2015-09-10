@@ -22,7 +22,7 @@
     template={{ install_path }}/roles/infra/files/client.json
   args:
     tags:
-      Environment: "{{ env_name }}"
+      EnvName: "{{ env_name }}"
       Host: "{{ inventory_hostname }}"
       InstanceType: "Client"
     template_parameters:

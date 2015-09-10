@@ -310,20 +310,19 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
         self.options.env_name))
 
     playbooks = [
-      'deploy_vpc_cft.yml',
-      'deploy_az_cft.yml',
-      'deploy_bigip_cft.yml',
-      'deploy_gtm_cft.yml',
-      'deploy_app_cft.yml',
-      'deploy_client_cft.yml',
-      'deploy_app.yml',
-      'deploy_bigip.yml',
-      'cluster_bigips.yml',
-      'deploy_apps_bigip.yml',
+      # 'deploy_vpc_cft.yml',
+      # 'deploy_az_cft.yml',
+      # 'deploy_bigip_cft.yml',
+      # 'deploy_gtm_cft.yml',
+      # 'deploy_app_cft.yml',
+      # 'deploy_client_cft.yml',
+      # 'deploy_app.yml',
+      # 'deploy_bigip.yml',
+      # 'cluster_bigips.yml',
+      # 'deploy_apps_bigip.yml',
       'deploy_gtm.yml',
       'deploy_apps_gtm.yml',
       'deploy_client.yml',
-      'dump_bigip_facts.yml'
     ]
 
     playbook_context = PlaybookExecution(
@@ -525,11 +524,11 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
       ['eipAddress', 'privateIpAddress'], False)
 
   def collect_virtual_servers(self, resource_name):
-    return self.collect_resources(resource_name, 'facts_{}.yml', 
+    return self.collect_resources(resource_name, 'facts_{}.json', 
       ['name', 'destination'], True)
 
   def collect_wideips(self, resource_name):
-    return self.collect_resources(resource_name, 'facts_{}.yml', 
+    return self.collect_resources(resource_name, 'facts_{}.json', 
       ['name'], True)
 
   def host_to_az(self, resource_name, ansible_inventory):

@@ -2,10 +2,6 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Deploys GTM with interfaces on public and management subnets.",
   "Parameters": {
-    "envName": {
-      "Type": "String",
-      "Description": "Environment name from f5Aws tool deployment."
-    },
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within working region."
@@ -144,13 +140,7 @@
         ],
         "SubnetId": {
           "Ref": "managementSubnet"
-        },
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
-        ]
+        }
       }
     },
     "ExternalInterface": {
@@ -166,13 +156,7 @@
           "Ref": "publicSubnet"
         },
         "SourceDestCheck": "false",
-        "SecondaryPrivateIpAddressCount": "1",
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
-          }
-        ]
+        "SecondaryPrivateIpAddressCount": "1"
       }
     },
     "BigipInstance": {
@@ -204,12 +188,6 @@
             "NetworkInterfaceId": {
               "Ref": "ExternalInterface"
             }
-          }
-        ],
-        "Tags": [
-          {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
           }
         ]
       }

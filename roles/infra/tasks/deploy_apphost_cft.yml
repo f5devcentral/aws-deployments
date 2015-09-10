@@ -22,12 +22,11 @@
     template={{ install_path }}/roles/infra/files/apphost.json
   args:
     tags:
-      envName: "{{ env_name }}"
-      host: "{{ inventory_hostname }}"
-      instanceType: "ApplicationHost"
+      EnvName: "{{ env_name }}"
+      Host: "{{ inventory_hostname }}"
+      InstanceType: "ApplicationHost"
     template_parameters:
       vpc: "{{ vpc_id }}"
-      envName: "{{ env_name }}"
       applicationSubnet: "{{ application_subnet }}"
       instanceType: "{{ apphost_instance_type }}"
       keyName: "{{ key_name }}"

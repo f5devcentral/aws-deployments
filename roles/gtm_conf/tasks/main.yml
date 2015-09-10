@@ -37,7 +37,6 @@
       payload='{"name":"{{region}}"}'
       collection_path='mgmt/tm/gtm/datacenter'
       resource_key="name"
-  ignore_errors: true
   # TODO: Investigate why subsequent calls of above result in: 
   #   failed: [54.86.187.122 -> localhost] => {"failed": true, "name": "mgmt/tm/gtm/datacenter", "rc": 1}
   #   msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
