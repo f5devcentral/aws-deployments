@@ -1,5 +1,4 @@
----
-install_path: '/aws-deployments'
+install_path = '/aws-deployments'
 
 ### Credentials ###
 # This SSH key is used for all deployed hosts in EC2
