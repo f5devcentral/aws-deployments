@@ -36,7 +36,7 @@
       managementSubnet: "{{ management_subnet }}"
       privateSubnet: "{{ private_subnet }}"
       publicSubnet: "{{ public_subnet }}"
-      instanceType: "{{ bigip_instance_type }}"
+      instanceType: "{{ instance_type }}"
       amiId: "{{ output['stdout'] }}"
       keyName: "{{ key_name }}"
   register: bigip_deploy_results

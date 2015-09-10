@@ -35,9 +35,8 @@
       availabilityZone: "{{ availability_zone }}"
       managementSubnet: "{{ management_subnet }}"
       publicSubnet: "{{ public_subnet }}"
-      instanceType: "{{ gtm_instance_type }}"
+      instanceType: "{{ instance_type }}"
       amiId: "{{ output['stdout'] }}" #us-east-1. eventually we'll want to leverage the mappings in cft
-      version: "{{ gtm_version }}"
       keyName: "{{ key_name }}"
   register: gtm_deploy_results 
 
