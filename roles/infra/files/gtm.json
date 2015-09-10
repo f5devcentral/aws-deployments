@@ -20,11 +20,6 @@
       "Type": "String",
       "ConstraintDescription": "Must be subnet within specified availability zone"
     },
-    "version": {
-      "Description": "Platform version (i.e. 11.6)",
-      "Type": "String",
-      "ConstraintDescription": "Must be in <major>.<minor>.<maintenance> version format"
-    },
     "instanceType": {
       "Description": "EC2 Instance type to be used for BIG-IP",
       "Type": "String",

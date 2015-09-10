@@ -71,7 +71,7 @@ class BigipConfig(object):
       del safe_payload["type"]
 
     del safe_payload[self.resource_key]
-    if len(safe_payload) == 0:
+    if len(safe_payload) < 1:
       raise NoChangeError('Payload is empty')
 
     # handle the application service resources (i.e. iApps)
@@ -113,6 +113,7 @@ class BigipConfig(object):
           rc = 0
           out = 'No configuration changes necessary. {}'.format(e)
           err = ''
+          return (rc, out, err)
       else:
         return self.create_resource()
 

@@ -5,5 +5,8 @@ license_throughput: {{ gtm_license_throughput }}
 license_model: {{ gtm_license_model }}
 license_package: {{ gtm_license_package }}
 instance_type: {{ gtm_instance_type }}
-modules: {{ bigip_modules }}
+modules:
+{% for item in gtm_modules %}
+- {{ item }}
+{% endfor %}
 ansible_ssh_private_key_file: {{ ssh_key }}

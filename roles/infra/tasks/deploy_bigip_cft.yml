@@ -35,13 +35,10 @@
       managementSubnet: "{{ management_subnet }}"
       privateSubnet: "{{ private_subnet }}"
       publicSubnet: "{{ public_subnet }}"
-      instanceType: "{{ bigip_instance_type }}"
+      instanceType: "{{ instance_type }}"
       amiId: "{{ output['stdout'] }}"
       keyName: "{{ key_name }}"
   register: bigip_deploy_results
-
-# - name: debug bigip_deploy_results var 
-#   debug: var=bigip_deploy_results  
 
 # Persist data to disk for use across plays
 - name: Persist variable data
