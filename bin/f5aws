@@ -141,7 +141,7 @@ def cli_start_traffic(args):
   """
     Implements command line method to pass traffic through BIG-IP
   """
-  exec_results = EnvironmentManager(args).launch_traffic()
+  exec_results = EnvironmentManager(args).start_traffic()
   print_playbook_results(exec_results)
 
 def cli_stop_traffic(args):
