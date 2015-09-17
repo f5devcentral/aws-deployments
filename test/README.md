@@ -4,6 +4,8 @@ These tests should be run before checking code into the master branch on the pub
 
 Proper testing will ensure the scripts provided in are kept in working order.
 
-Run tests via:
-cd ./tests
-py.test ./
+Run tests (from the top-level directory) via:
+(venv)vagrant@f5demo:/aws-deployments$ py.test ./test
+
+to run a specific test:
+py.test ./test/test_images.py

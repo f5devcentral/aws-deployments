@@ -9,7 +9,7 @@ from f5_aws.runner import EnvironmentManager
 config = Config().config
 region_for_lifecyle_tests = config['regions'][0]
 deployment_models = config['deployment_models']
-deployment_models = ['single-standalone']
+#deployment_models = ['single-standalone']
 
 
 # for each deployment model, we want to test the full lifecycle
@@ -28,14 +28,14 @@ model_stages = {
               region_for_lifecyle_tests+'", "zone": "'+region_for_lifecyle_tests+'b"}']
           }
       },
-      {'stage': 'deploy',
-       'inputs':
-        {
-            'env_name': 'ut-standalone'
-        }
-      },
-      # {stage: 'info'},
-      {'stage': 'teardown'},
+      # {'stage': 'deploy',
+      #  'inputs':
+      #   {
+      #       'env_name': 'ut-standalone'
+      #   }
+      # },
+      # # {stage: 'info'},
+      # {'stage': 'teardown'},
       {'stage': 'remove',
        'inputs':
         {
