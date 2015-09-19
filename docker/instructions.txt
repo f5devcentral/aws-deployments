@@ -100,3 +100,17 @@ PLAY [localhosts] *************************************************************
 Running playbook: /aws-deployments/playbooks/deploy_vpc_cft.yml
 ...
 
+###############################
+
+#EXIT
+(venv)root@76ded817f346:/aws-deployments#exit
+
+#SAVE CONTAINER WITH CREDS
+[ec2-user@ip-172-16-2-146 docker]$ sudo docker commit -m "with creds" -a "smoothalg"  76ded817f346 f5demo:with_creds
+1ca77c5be24f75109d060cb9e1fb8a7e286a5c3918ce32c9fd1b96d5ce138368
+
+#RESTART 
+[ec2-user@ip-172-16-2-146 docker]$ sudo docker run -v /home/ec2-user/aws-deployments:/aws-deployments -i -t f5demo:with_creds bash --rcfile /venv/bin/activate
+(venv)root@3d3387e30761:/aws-deployments#
+
+
