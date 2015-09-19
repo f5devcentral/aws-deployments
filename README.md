@@ -57,7 +57,7 @@ Warning: Permanently added '[127.0.0.1]:2222' (RSA) to the list of known hosts.
 vagrant@127.0.0.1's password:
 AWS-SSH-KEY.pem            100% 1696     1.7KB/s   00:00
 
-
+IMPORTANT: Make sure the ssh key has correct permissions after creation or upload. chmod 400 <key>.
 
 ### Usage:
 

@@ -4,6 +4,10 @@ vpc_cidr_prefix: "172.16"
 containers_per_host: 2
 apphosts_per_zone: 1
 
+# default AMI is F5 BIG-IP Virtual Edition 25 Mbps - Better
+# To accept EULA, go to:
+# https://aws.amazon.com/marketplace/pp/B00JL3Q2VI
+
 bigip_version: "11.6"
 bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
@@ -19,14 +23,18 @@ gtm_instance_type: "m3.xlarge"
 gtm_modules:
  - avr
  - gtm
+
+# Some variables for our more complex deployment models
+
+# default AMI is Ubuntu 14.04 LTS
+# To accept EULA, go to:
+# https://aws.amazon.com/marketplace/pp/B00JV9JBDS
 client_instance_type: "t1.micro"
-apphost_instance_type: "t2.micro"
 
-# default ami is ECS-Optimized AMI
+# default AMI is ECS-Optimized AMI (2015.03.g)
+# To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00U6QTYI2
-# Using 2015.03.f
-
-# some variables for our more complex deployment models
+apphost_instance_type: "t2.micro"
 
 standalone_per_zone:
   clustering: none
