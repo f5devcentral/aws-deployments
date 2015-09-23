@@ -14,6 +14,19 @@
         ExternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ExternalInterfacePrivateIp }}
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
 
+# Pick up Analytics Server Address so can add to syslog_pool
+- hosts: analyticshosts
+  gather_facts: False
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePublicIp }}
+        AnalyticsServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePublicIp }}
+        AnalyticsServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePrivateIp }}
+        AnalyticsServerInstanceId={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstance }}
+
 # Wait for hosts to become ready
 - hosts: bigips
   gather_facts: no

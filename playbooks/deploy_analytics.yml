@@ -1,0 +1,29 @@
+---
+- hosts: analyticshosts
+  gather_facts: False
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks 
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePublicIp }}
+        AnalyticsServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePublicIp }}
+        AnalyticsServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePrivateIp }}
+        AnalyticsServerInstanceId={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstance }}
+
+# Wait for hosts to become ready
+- hosts: analyticshosts
+  gather_facts: False
+  sudo: false
+  tasks:
+
+    - name:  Wait for ssh port to open
+      local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
+
+# Create docker containers on the application hosts
+- hosts: analyticshosts
+  gather_facts: False
+  roles:
+    - analytics
+
+

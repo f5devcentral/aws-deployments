@@ -82,7 +82,23 @@ or using clusters:
 
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "cluster-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c"]}' ```
 
+or also contains an Analytics Server (ex. Splunk):
+ 
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone-w-analytics", "region": "us-east-1", "zones": ["us-east-1b"] }'```
+
+
 NOTE: These have larger resource requirements (EIPs + CFTs) so you may need to increase your limits ahead of time.
+
+NOTE: Depending on the deployment, you will need to go to the AWS Console and accept the EULAs for each of the AMIs in use. 
+
+BIG-IP: F5 BIG-IP Virtual Edition 25 Mbps - Better:
+https://aws.amazon.com/marketplace/pp/B00JL3Q2VI
+Pool Member/Docker Host: Amazon ECS-Optimized Amazon Linux AMI:
+https://aws.amazon.com/marketplace/pp/B00U6QTYI2
+Client: Ubuntu 14.04 LTS
+https://aws.amazon.com/marketplace/pp/B00JV9JBDS
+Analytics Host: Splunk Enterprise HVM
+https://aws.amazon.com/marketplace/pp/B00PUXWXNE
  
 NOTE: Due to AMI availability, currently working regions are:
 * us-east-1 
@@ -92,6 +108,7 @@ NOTE: Due to AMI availability, currently working regions are:
 * ap-southeast-2
 * ap-northeast-1
 
+See PDF in /docs for more details.
 
 2) Deploy and manage the environment you instantiated in step 1.  This creates all the resources associated with environment, including AWS EC2 hosts, a VPC, configuration objects on BIG-IP and GTM, and docker containers.  
 

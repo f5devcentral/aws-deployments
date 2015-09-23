@@ -316,6 +316,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_gtm_cft.yml',
       'deploy_app_cft.yml',
       'deploy_client_cft.yml',
+      'deploy_analytics_cft.yml',
       'deploy_app.yml',
       'deploy_bigip.yml',
       'cluster_bigips.yml',
@@ -323,6 +324,8 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_gtm.yml',
       'deploy_apps_gtm.yml',
       'deploy_client.yml',
+      'deploy_analytics.yml',
+      'dump_bigip_facts.yml'
     ]
 
     playbook_context = PlaybookExecution(
@@ -458,7 +461,8 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
       'gtm': 'ManagementInterfacePublicIp',
       'bigip': 'ManagementInterfacePublicIp',
       'apphost': 'WebServerInstancePublicIp',
-      'client': 'ClientInstancePublicIp'
+      'client': 'ClientInstancePublicIp',
+      'analyticshost': 'AnalyticsServerInstancePublicIp'
     }
 
     for host_type in ip_map.keys():
@@ -491,6 +495,10 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
                   if 'gtm' in resource_name:
                     resources['wideips'] = self.collect_wideips(resource_name)
                     resources['elastic_ips'] = self.collect_elastic_ips(resource_name)
+
+                  if 'analyticshost' in resource_name:
+                    resources['https_username'] = 'admin' 
+                    resources['https'] = 'http://{}:8000'.format(ip) 
 
                   login_info[host_type][self.host_to_az(
                   resource_name, ansible_inventory)] = resources

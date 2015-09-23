@@ -23,7 +23,7 @@
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/ltm/pool'
       resource_key="name"
-      payload='{"name":"syslog_pool","members":[{"name":"10.0.3.32:514","address":"10.0.3.32"},{"name":"10.0.3.33:514","address":"10.0.3.33"}],"monitor":"tcp"}' 
+      payload='{"name":"syslog_pool","members":[{"name":"{{hostvars[groups['analyticshosts'][0]]["AnalyticsServerInstancePrivateIp"]}}:514","address":"{{hostvars[groups['analyticshosts'][0]]["AnalyticsServerInstancePrivateIp"]}}"}],"monitor":"tcp"}' 
 
 ##### UPLOAD DATAGROUP #####
 # TODO:
