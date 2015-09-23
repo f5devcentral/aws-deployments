@@ -3,9 +3,11 @@
 # ensures the set of containers are running
 - docker:
       image: "{{ image_id }}"
-      count: "{{ container_cnt }}"
+      count: 1
+      ports: 80:80
+      # count: "{{ container_cnt }}"
+      # publish_all_ports: true
       state: running
-      publish_all_ports: True
   tags: 
      - launch_containers
   register: launched_containers
