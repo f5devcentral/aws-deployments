@@ -20,6 +20,8 @@ gtm_modules:
  - avr
  - gtm
 
+image_id: "mutzel/all-in-one-hackazon"
+containers_per_app_host: 1
 client_instance_type: "t1.micro"
 apphost_instance_type: "t2.micro"
 

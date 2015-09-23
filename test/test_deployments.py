@@ -25,7 +25,7 @@ model_stages = {
          {
             'env_name': 'ut-standalone',
             'extra_vars': ['{"deployment_model": "single-standalone", "region": "'+\
-              region_for_lifecyle_tests+'", "zone": "'+region_for_lifecyle_tests+'b"}']
+              region_for_lifecyle_tests+'", "zone": "'+region_for_lifecyle_tests+'b", "image_id":"mutzel/all-in-one-hackazon"}']
           }
       },
       # {'stage': 'deploy',
@@ -49,7 +49,7 @@ model_stages = {
          {
             'env_name': 'ut-cluster',
             'extra_vars': ['{"deployment_model": "single-cluster", "region": "'+\
-              region_for_lifecyle_tests+'", "zone": "'+region_for_lifecyle_tests+'b"}']
+              region_for_lifecyle_tests+'", "zone": "'+region_for_lifecyle_tests+'b", "image_id":"mutzel/all-in-one-hackazon"}']
           }
       },
       # {'stage': 'deploy'},
@@ -68,7 +68,7 @@ model_stages = {
          {
             'env_name': 'ut-cluster-per-zone',
             'extra_vars': ['{"deployment_model": "cluster-per-zone", "region": "'+\
-              region_for_lifecyle_tests+'", "zones": ["'+region_for_lifecyle_tests+'b", "'+region_for_lifecyle_tests+'c"]}']
+              region_for_lifecyle_tests+'", "zones": ["'+region_for_lifecyle_tests+'b", "'+region_for_lifecyle_tests+'c"], "image_id":"mutzel/all-in-one-hackazon"}']
           }
       },
       # {'stage': 'deploy'},
@@ -88,7 +88,7 @@ model_stages = {
          {
             'env_name': 'ut-standalone-per-zone',
             'extra_vars': ['{"deployment_model": "standalone-per-zone", "region": "'+\
-              region_for_lifecyle_tests+'", "zones": ["'+region_for_lifecyle_tests+'b", "'+region_for_lifecyle_tests+'c"]}']
+              region_for_lifecyle_tests+'", "zones": ["'+region_for_lifecyle_tests+'b", "'+region_for_lifecyle_tests+'c"], "image_id":"mutzel/all-in-one-hackazon"}']
           }
       },
       # {'stage': 'deploy'},
