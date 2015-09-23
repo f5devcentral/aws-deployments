@@ -19,6 +19,7 @@ gtm_instance_type: "m3.xlarge"
 gtm_modules:
  - avr
  - gtm
+
 client_instance_type: "t1.micro"
 apphost_instance_type: "t2.micro"
 
