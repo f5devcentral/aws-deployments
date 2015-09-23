@@ -324,8 +324,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_gtm.yml',
       'deploy_apps_gtm.yml',
       'deploy_client.yml',
-      'deploy_analytics.yml',
-      'dump_bigip_facts.yml'
+      'deploy_analytics.yml'
     ]
 
     playbook_context = PlaybookExecution(
