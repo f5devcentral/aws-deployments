@@ -1,0 +1,106 @@
+; ansible "hosts" inventory for {{ env_name }} 
+; This is an auto-generated file for this deployment. 
+
+; hosts and groups
+
+vpc-manager
+
+{% for zone in zones %}
+[zone{{ loop.index }}]
+zone{{ loop.index }}-az
+zone{{ loop.index }}-client1
+zone{{ loop.index }}-apphost1
+zone{{ loop.index }}-bigip1
+zone{{ loop.index }}-gtm1
+zone{{ loop.index }}-analyticshost1
+
+{% endfor %}
+
+[vpc]
+
+[vpc:children]
+{% for zone in zones %}
+zone{{ loop.index }}
+{% endfor %}
+
+[azs]
+{% for zone in zones %}
+zone{{ loop.index }}-az
+{% endfor %}
+
+[apphosts]
+{% for zone in zones %}
+{% set outer_loop = loop %}
+{% for apphostnum in range(1, apphosts_per_zone + 1) %}
+zone{{ outer_loop.index }}-apphost{{ loop.index }}
+{% endfor %}
+{% endfor %}
+
+[bigips]
+{% for zone in zones %}
+{% set outer_loop = loop %}
+{% for bigipnum in range(1, standalone_per_zone['bigips_per_zone'] + 1) %}
+zone{{ outer_loop.index }}-bigip{{ loop.index }}
+{% endfor %}
+{% endfor %}
+
+[gtms]
+{% for zone in zones %}
+{% set outer_loop = loop %}
+{% for gtmnum in range(1, standalone_per_zone['gtms_per_zone'] + 1) %}
+zone{{ outer_loop.index }}-gtm{{ loop.index }}
+{% endfor %}
+{% endfor %}
+
+[clients]
+zone1-client1
+
+[analyticshosts]
+zone1-analyticshost1
+
+{% for zone in zones %}
+{% set outer_loop = loop %}
+[zone{{ outer_loop.index }}-bigip-cluster]
+{% for bigipnum in range(1, standalone_per_zone['bigips_per_zone'] + 1) %}
+zone{{ outer_loop.index }}-bigip{{ loop.index }}
+{% endfor %}
+
+{% endfor %}
+
+
+[bigip-clusters]
+{% for zone in zones %}
+zone{{ loop.index }}-bigip-cluster
+{% endfor %}
+
+
+[bigip-cluster-seeds]
+{% for zone in zones %}
+zone{{ loop.index }}-bigip1
+{% endfor %}
+
+
+; group vars
+
+[all:vars]
+env_name={{ env_name }}
+deployment_model={{ deployment_model }}
+region={{ region }}
+vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
+key_name={{ ssh_key_name }}
+
+{% for zone in zones %}
+[zone{{ loop.index }}:vars]
+zone_id=zone{{ loop.index }}
+availability_zone={{ zone }}
+zone_cidr_prefix="{{ vpc_cidr_prefix }}.{{ loop.index }}"
+management_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}1.0/24"
+private_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}2.0/24"
+public_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}3.0/24"
+application_cidr="{{ vpc_cidr_prefix }}.{{ loop.index }}4.0/24"
+
+{% endfor %}
+
+[localhost:vars]
+ansible_connection=local
+ansible_python_interpreter="/usr/bin/env python"

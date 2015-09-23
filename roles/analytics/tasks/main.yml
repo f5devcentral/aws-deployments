@@ -1,0 +1,53 @@
+---
+
+# Tip from Splunk to change admin password and avoid password change error:
+#[ec2-user@ip-172-16-14-236 ~]$ curl -sk -u admin:i-3c97bf10 -H Content-type: application/json -X POST -d '{"username":"admin","password”:”PASSWORD"}' https://localhost:8089/services/storage/passwords/admin
+#<?xml version="1.0" encoding="UTF-8"?>
+#<response>
+#  <messages>
+#    <msg type="ERROR">For security reasons, the admin on this account has requested that you change your password</msg>
+#  </messages>
+#</response>
+# - name: Touch file so change_password not required (SPLUNK_HOME/etc/.ui_login)
+#  file: path=/opt/splunk/etc/.ui_login state=touch owner=splunk group=splunk
+
+# Unfortunately above didn't work and can't get past initial Password Change 
+# request in REST UI so had to resort to yet another expect script.
+
+- name: Change admin password
+  script: ../roles/analytics/files/modify_admin_pass_expect.py {{ ansible_ssh_private_key_file }} ec2-user {{ ansible_ssh_host }} {{ AnalyticsServerInstanceId }} \'{{ bigip_rest_password }}\' 
+  delegate_to: localhost
+
+# Set Fact ansible_sudo: True
+- name: Set Sudo to true for rest of tasks
+  set_fact: ansible_sudo=True
+
+# Upload new inputs.conf
+- name: Copy over inputs.conf
+  copy: src=inputs.conf dest=/opt/splunk/etc/system/local/inputs.conf
+
+# Upload F5 Apps
+- name: Copy over Splunk for F5 Networks App 
+  copy: src=splunk-for-f5-networks_11.tgz dest=/opt/splunk/etc/apps/
+
+# Add-On NOT implemented yet
+- name: Copy over Splunk Add-On. NOTE-> Add-On Not Implemented  yet
+  copy: src=splunk-add-on-for-f5-big-ip_230.tgz dest=/opt/splunk/etc/apps/
+
+- name: unzip F5 Networks app
+  unarchive: src=/opt/splunk/etc/apps/splunk-for-f5-networks_11.tgz dest=/opt/splunk/etc/apps/ copy=no
+
+# Add-On NOT implemented yet
+- name: unzip Splunk Add-On for F5 Networks 
+  unarchive: src=/opt/splunk/etc/apps/splunk-add-on-for-f5-big-ip_230.tgz dest=/opt/splunk/etc/apps/ copy=no
+
+- name: change ownership to splunk
+  file: path=/opt/splunk/etc/apps/SplunkforF5Networks owner=splunk group=splunk
+
+# Add-On NOT implemented yet
+- name: change ownership to splunk
+  file: path=/opt/splunk/etc/apps/Splunk_TA_f5-bigip owner=splunk group=splunk
+
+- name: restart Splunk
+  command: /opt/splunk/bin/splunk restart
+

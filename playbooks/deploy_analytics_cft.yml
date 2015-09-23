@@ -1,0 +1,11 @@
+---
+# Deploy the docker host AMIs via CFT
+- hosts: analyticshosts
+  gather_facts: no
+  vars:
+     ansible_connection: local
+     ansible_python_interpreter: "/usr/bin/env python"
+  tasks:
+    - name: deploy analytics cft 
+      include: "{{ install_path }}/roles/infra/tasks/deploy_analyticshost_cft.yml"
+      delegate_to: localhost

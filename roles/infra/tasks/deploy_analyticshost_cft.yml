@@ -1,0 +1,38 @@
+---
+- name: Determining state of deployed cloudformation stacks
+  shell: "python {{ install_path }}/bin/get_cfn_stack_state.py {{ region }} {{ env_name }}-{{ inventory_hostname }}"
+  register: initial_cfn_state
+
+- name: Teardown previous stack if necessary
+  cloudformation:
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=absent
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/analyticshost.json
+  when: "'{{ initial_cfn_state['stdout'] }}' == 'ROLLBACK_COMPLETE'"
+
+# We could have used the ec2 module here from ansible. It works well when 
+#  deploying "generic" compute resources but we'll use cloudformation
+#  instead for consistency. 
+- name: Launch App hosts
+  action: cloudformation
+    stack_name="{{ env_name }}-{{ inventory_hostname }}"
+    state=present
+    region="{{ region }}"
+    template={{ install_path }}/roles/infra/files/analyticshost.json
+  args:
+    tags:
+      envName: "{{ env_name }}"
+      host: "{{ inventory_hostname }}"
+      instanceType: "Analytics"
+    template_parameters:
+      vpc: "{{ vpc_id }}"
+      envName: "{{ env_name }}"
+      applicationSubnet: "{{ application_subnet }}"
+      instanceType: "{{ analytics_instance_type }}"
+      keyName: "{{ key_name }}"
+  register: analytics_deploy_results
+
+# Persist data to disk for use across plays
+- copy: content="{{ analytics_deploy_results | to_yaml }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml
+- copy: content="{{ analytics_deploy_results['stack_outputs'] | to_json }}" dest=~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.json
