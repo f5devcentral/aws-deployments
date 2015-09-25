@@ -1,12 +1,12 @@
 ---
-- name: Adding each of the BIG-IP clusters as a server within GTM
+- name: Setup the App2 Virtual Server on each BIG-IP object 
   delegate_to: localhost
   bigip_config:
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["Vip2"]}}:80"}'
+      payload='{"name":"{{vip_id}}","destination":"{{hostvars[item]["VipPrivateIp"]}}:80"}'
       collection_path='mgmt/tm/gtm/server/~Common~{{hostvars[item]["cluster_name"]}}/virtual-servers'
       resource_key="name"
   with_items: groups['bigip-cluster-seeds']
