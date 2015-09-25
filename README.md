@@ -18,6 +18,8 @@ As of now, these deployment models are:<br>
 -standalone-per-zone (big-ips in multiple availability zones, fronted by a gtm in each AZ, application hosts in each AZ, and a host in the external subnet for traffic generation)<br>
 -cluster-per-zone (big-ip clusters in multiple availability zones, fronted by gtm in each AZ, application hosts in each AZ, and a host in the external subnet for traffic generation)<br>
 
+For more information, see the PDF in /docs.
+
 #### Support
 
 This code is provided as is and should be used as a reference only.  It is not provided as a production-ready tool and F5 support will not field requests for this work.  
@@ -57,7 +59,17 @@ Warning: Permanently added '[127.0.0.1]:2222' (RSA) to the list of known hosts.
 vagrant@127.0.0.1's password:
 AWS-SSH-KEY.pem            100% 1696     1.7KB/s   00:00
 
-IMPORTANT: Make sure the ssh key has correct permissions after creation or upload. chmod 400 <key>.
+IMPORTANT: Make sure the ssh key has correct permissions after creation or upload [chmod 400 your-key].
+
+7)  Depending on the deployment, you will need to go to the AWS Console and accept the EULAs for each of the AMIs in use. 
+
+BIG-IP: F5 BIG-IP Virtual Edition 25 Mbps - Better: <br>
+https://aws.amazon.com/marketplace/pp/B00JL3Q2VI <br>
+Pool Member/Docker Host: Amazon ECS-Optimized Amazon Linux AMI:<br>
+https://aws.amazon.com/marketplace/pp/B00U6QTYI2<br>
+Client: Ubuntu 14.04 LTS<br>
+https://aws.amazon.com/marketplace/pp/B00JV9JBDS<br>
+
 
 ### Usage:
 
@@ -82,7 +94,7 @@ or using clusters:
 
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "cluster-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c"]}' ```
 
-NOTE: These have larger resource requirements (EIPs + CFTs) so you may need to increase your limits ahead of time.
+NOTE: These have larger resource requirements (EIPs + CFTs) so you may need to increase your limits ahead of time.  For more information, see the PDF in /docs.
  
 NOTE: Due to AMI availability, currently working regions are:
 * us-east-1 
