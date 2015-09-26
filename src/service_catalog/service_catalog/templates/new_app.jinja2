@@ -6,15 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="pyramid web application">
     <meta name="author" content="Pylons Project">
-    <link rel="shortcut icon" href="${request.static_url('service_catalog:static/pyramid-16x16.png')}">
 
-    <title>Starter Scaffold for The Pyramid Web Framework</title>
+    <title>Demo Service catalog</title>
 
     <!-- Bootstrap core CSS -->
     <link href="//oss.maxcdn.com/libs/twitter-bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Custom styles for this scaffold -->
-    <link href="${request.static_url('service_catalog:static/theme.css')}" rel="stylesheet">
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -30,8 +26,7 @@
         <div class="row">
           <div class="col-md-10">
             <div class="content">
-              <h1><span class="font-semi-bold">Acme Incorporated</span> <span class="smaller">Service Catalog</span></h1>
-              <p class="lead">Welcome to the Acme request portal.</p>
+              <h1><span class="font-semi-bold">Request a new application</span></h1>
             </div>
           </div>
         </div>
@@ -39,8 +34,9 @@
           <div class="links">
             <ul>
               <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="https://github.com/F5Networks/aws-deployments/blob/master/docs/Orchestrating%20BIG-IP%20in%20the%20Public%20Cloud%20with%20Ansible.pdf">About this demo</a></li>
-              <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="https://github.com/Pylons/pyramid">Request an application</a></li>
-              <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="irc://irc.freenode.net#pyramid">Manage your applications</a></li>
+              <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="/">Home</a></li>
+              <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="/new">Request an application</a></li>
+              <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="myapps">Manage your applications</a></li>
           </div>
         </div>
         <div class="row">
