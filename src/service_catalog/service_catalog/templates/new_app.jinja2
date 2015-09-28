@@ -4,7 +4,53 @@
   <div class="row">
     <div class="col-md-10">
       <div class="content">
-        <h1><span class="font-semi-bold">Request a new application</span></h1>
+        <h5><span class="font-semi-bold">Request a new application</h5>
+        <p>The following form can be used to provision a new application deployment. The deployment may include a security profile for protecting your application.<p/>
+        </span
+        <form action="/" method="post">
+          
+          Deployment name:
+          <input type="text" name="firstname">
+          <br>
+          <br>
+          Application:
+          <select name="container_id">
+            {% for i in config.available_apps %}
+            <option value="{{ i }}">{{ i }}</option>
+            {% endfor %}
+          </select>
+          <br>
+          <br>
+          Deployment Type:
+          <select name="deploy_waf">
+            <option value="false">load balancing only</option>
+            <option value="true">load balancing + waf</option>
+          </select>
+          <br>
+          <br>
+          Deployment Model:
+          <select name="deployment_model">
+            <option value="single-standalone">single-standalone</option>
+            <option value="standalone-per-zone">standalone-per-zone</option>
+            <option value="cluster-per-zone">cluster-per-zone</option>
+            <option value="cluster-across-zones">cluster-across-zones</option>
+          </select>
+          <br>
+          <br>
+          AWS Region:
+          <select name="regions">
+            {% for i in config.regions %}
+            <option value="{{ i }}">{{ i }}</option>
+            {% endfor %}
+          </select>
+          <br>
+          <br>
+          AWS Availability Zone:
+          <input type="text" name="zones">
+          <br>
+          <br>
+          <input type="submit" value="Submit">
+        </form>
       </div>
     </div>
   </div>

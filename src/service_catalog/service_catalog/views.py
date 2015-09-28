@@ -2,7 +2,7 @@ import json
 import f5_aws
 import f5_aws.utils as utils
 import f5_aws.runner as runner
-import f5_aws.utils 
+from f5_aws.config import Config
 from pyramid.view import view_config
 
 @view_config(route_name='home', renderer='templates/home.jinja2')
@@ -13,7 +13,8 @@ def home_view(request):
 def new_app_view(request):
     # this page will allow a post method for which will create
     #  a new environment
-    return {'project': 'service_catalog'}
+    config = Config().config
+    return {'project': 'service_catalog', 'config': config}
 
 @view_config(route_name='my_apps', renderer='templates/my_apps.jinja2')
 def my_apps_view(request):
@@ -21,13 +22,24 @@ def my_apps_view(request):
     envs = []
     names = runner.EnvironmentManager.get_envs()
 
-    for i in names:
-        em = runner.EnvironmentManager(utils.get_namespace(env_name=i, cmd='info'))
+    for name in names:
+        em = runner.EnvironmentManager(
+            utils.get_namespace(env_name=name, cmd='info'))
         inventory, resources, statuses = em.get_environment_info()
+        env_info = em.get_env_info(inventory)
         login_info = em.login_info()
-        
+
+        provisioning_status = 'deployed'
+        for k, v in statuses.iteritems():
+            if v != 'deployed':
+                provisioning_status = 'not deployed/error'
+
+        if provisioning_status != 'deployed':
+            f5_aws.worker.get_job_status(name)
+
         envs.append({
-            'name': i,
+            'name': name,
+            'env_info': env_info,
             'inventory': inventory,
             'resources': resources,
             'statuses': statuses,
@@ -42,4 +54,4 @@ def my_apps_view(request):
     # 3) teardown the architecture
     # 4) delete deployment 
 
-    return {'envs': envs, 'project': 'service_catalog', 'request': request}
+    return {'project': 'service_catalog', 'envs': envs, 'request': request}

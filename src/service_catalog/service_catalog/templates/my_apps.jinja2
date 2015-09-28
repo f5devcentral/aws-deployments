@@ -1,9 +1,16 @@
 {% extends "layout.jinja2" %}
 {% block content %}
-<div class="content">
+<div id="content">
+  {% if envs %}
   {% for e in envs %}
-    <h4> {{ e.name }} </h4>
-    <h5> Login and virtual server info </h5>
+    <h4> Name: {{ e.name }} </h4>
+    <h5> Status: </h5>
+    <h5> Info: </h5>
+    {% for k1, v1 in e.env_info.iteritems() %}
+      <p style="text-indent: 2em;">{{ k1 }} : {{ v1 }}</p>
+      
+    {% endfor %}
+    <h5> Login and virtual server info: </h5>
     {% for k1, v1 in e.login_info.iteritems() %}
       <p style="text-indent: 2em;">{{ k1 }}s:</p>
       {% for k2, v2 in v1.iteritems() %}
@@ -13,12 +20,15 @@
         {% endfor %}
       {% endfor %}
     {% endfor %}
-    <h5> Statuses </h5>
+    <h5> Resource statuses: </h5>
     {% for k, v in e.statuses.iteritems() %}
       <p style="text-indent: 2em;">{{ k }}: {{ v.state }} </p>
     {% endfor %}
     <hr>
   {% endfor %}
-
+  {% endif %}
+  {% if not envs %}
+  <p> No application deployments currently exist.  </p>
+  {% endif %}
 </div>
 {% endblock %}
