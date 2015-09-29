@@ -3,6 +3,7 @@ import json
 import colander
 from pyramid.view import view_config
 from deform import Form, ValidationFailure, widget
+from pyramid.httpexceptions import HTTPFound
 
 import f5_aws
 import f5_aws.utils as utils
@@ -14,6 +15,9 @@ def check_env_name(value):
     if not value or not re.match('^[a-zA-z]{1}[a-zA-Z0-9-]*', value):
         return False
     return True
+
+def make_pretty(value):
+    return value.replace('-', ' ').replace('_',' ').upper()
 
 @view_config(route_name='home', renderer='templates/home.jinja2')
 def home_view(request):
@@ -27,35 +31,35 @@ def new_app_view(request):
     
     #build the form
     config = Config().config
-    aws_region_values = [(i, i) for i in config['regions']]
-    deployment_model_values = [(i, i) for i in config['deployment_models']]
-    deployment_type_values = [(i.replace(' ','_'), i) for i in config['deployment_type']]
-    container_id_values = [(i, i) for i in config['available_apps']]
+    aws_region_values = [(i, make_pretty(i)) for i in config['regions']]
+    deployment_model_values = [(i, make_pretty(i)) for i in config['deployment_models']]
+    deployment_type_values = [(i, make_pretty(i)) for i in config['deployment_types']]
+    container_id_values = [(i, make_pretty(i)) for i in config['available_apps']]
 
     class AppDeployment(colander.MappingSchema):
         env_name = colander.SchemaNode(colander.String(),
                        title='Deployment Name',
-                       validator=colander.Function(check_env_name))
+                       validator=colander.Function(check_env_name)
         )
         region = colander.SchemaNode(colander.String(),
                        title='AWS Region',
                        widget = widget.SelectWidget(values=aws_region_values),
-                       validator = colander.OneOf(aws_region_values))
+                       validator = colander.OneOf(config['regions'])
         )
         container_id = colander.SchemaNode(colander.String(),
                        title='Container ID', 
                        widget = widget.SelectWidget(values=container_id_values),
-                       validator = colander.OneOf(container_id_values))
+                       validator = colander.OneOf(config['available_apps'])
         )
         deployment_type = colander.SchemaNode(colander.String(),
                        title='Deployment Type', 
                        widget = widget.SelectWidget(values=deployment_type_values),
-                       validator = colander.OneOf(deployment_type_values))
+                       validator = colander.OneOf(config['deployment_types'])
         )
         deployment_model = colander.SchemaNode(colander.String(),
                        title='Deployment Footprint', 
                        widget = widget.SelectWidget(values=deployment_model_values),
-                       validator = colander.OneOf(deployment_model_values))
+                       validator = colander.OneOf(config['deployment_models'])
         )
 
     class Schema(colander.MappingSchema):
@@ -83,7 +87,27 @@ def new_app_view(request):
     if 'submit' in request.POST:
         controls = request.POST.items()
         try:
-            appstruct = form.validate(controls)  
+            appstruct = form.validate(controls) 
+            inputs = appstruct['app_deployment']
+            
+            # initialize this environment and redirect
+            # to the deployemnts page if successful
+            em = runner.EnvironmentManager(
+            utils.get_namespace(
+                cmd='init',
+                env_name=inputs['env_name'],
+                extra_vars=['{"deployment_model": "%s",'+
+                ' "region": "%s",' % inputs['region'] +
+                ' "zone": "%s",' % (inputs['region'] + 'b') +
+                ' "image_id": "%s"}' % inputs['container_id'] ] 
+            ))
+            result = em.init()
+            if (result['playbook_results'] and
+                result['playbook_results'].statuscode == 0):
+                
+                # redirect on success
+                return HTTPFound(location='/my_apps')
+
         except ValidationFailure as e:
             # re-render the form with an exception
             return {
@@ -92,13 +116,21 @@ def new_app_view(request):
                 'tags': tags
             } 
 
+        except Exception as e:
+            return {
+                'project': 'service_catalog',
+                'errors': [str(e)],
+                'tags': tags
+            }
+
         # the form submission succeeded, we have the data
         return {'project': 'service_catalog',
                 'form': None,
-                'app_struct': appstruct,
-                'tags': tags
+                'tags': tags,
+                'app_struct': appstruct
         }
 
+    # render the basic request form
     return {'project': 'service_catalog',
             'form': form.render(),
             'tags': tags}
