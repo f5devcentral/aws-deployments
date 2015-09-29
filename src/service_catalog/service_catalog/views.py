@@ -1,9 +1,19 @@
+import re
 import json
+import colander
+from pyramid.view import view_config
+from deform import Form, ValidationFailure, widget
+
 import f5_aws
 import f5_aws.utils as utils
 import f5_aws.runner as runner
 from f5_aws.config import Config
-from pyramid.view import view_config
+
+
+def check_env_name(value):
+    if not value or not re.match('^[a-zA-z]{1}[a-zA-Z0-9-]*', value):
+        return False
+    return True
 
 @view_config(route_name='home', renderer='templates/home.jinja2')
 def home_view(request):
@@ -11,10 +21,87 @@ def home_view(request):
 
 @view_config(route_name='new_app', renderer='templates/new_app.jinja2')
 def new_app_view(request):
-    # this page will allow a post method for which will create
-    #  a new environment
+    # This page will allow a post method for which will create
+    #  a new environment.  We use 'deform', a technology for form
+    # rendering and validation. 
+    
+    #build the form
     config = Config().config
-    return {'project': 'service_catalog', 'config': config}
+    aws_region_values = [(i, i) for i in config['regions']]
+    deployment_model_values = [(i, i) for i in config['deployment_models']]
+    deployment_type_values = [(i.replace(' ','_'), i) for i in config['deployment_type']]
+    container_id_values = [(i, i) for i in config['available_apps']]
+
+    class AppDeployment(colander.MappingSchema):
+        env_name = colander.SchemaNode(colander.String(),
+                       title='Deployment Name',
+                       validator=colander.Function(check_env_name))
+        )
+        region = colander.SchemaNode(colander.String(),
+                       title='AWS Region',
+                       widget = widget.SelectWidget(values=aws_region_values),
+                       validator = colander.OneOf(aws_region_values))
+        )
+        container_id = colander.SchemaNode(colander.String(),
+                       title='Container ID', 
+                       widget = widget.SelectWidget(values=container_id_values),
+                       validator = colander.OneOf(container_id_values))
+        )
+        deployment_type = colander.SchemaNode(colander.String(),
+                       title='Deployment Type', 
+                       widget = widget.SelectWidget(values=deployment_type_values),
+                       validator = colander.OneOf(deployment_type_values))
+        )
+        deployment_model = colander.SchemaNode(colander.String(),
+                       title='Deployment Footprint', 
+                       widget = widget.SelectWidget(values=deployment_model_values),
+                       validator = colander.OneOf(deployment_model_values))
+        )
+
+    class Schema(colander.MappingSchema):
+        app_deployment = AppDeployment()
+
+    schema = Schema()
+
+    # by default, or form submit button posts to this page
+    form = Form(schema, buttons=('submit',))
+
+    # include the required headers for our form view
+    resources = form.get_widget_resources()
+    js_resources = resources['js']
+    css_resources = resources['css']
+    js_links = [ '/static/%s' % r for r in js_resources ]
+    css_links = [ '/static/%s' % r for r in css_resources ]
+    js_tags = ['<script type="text/javascript" src="%s"></script>' % link
+               for link in js_links]
+    css_tags = ['<link rel="stylesheet" href="%s"/>' % link
+               for link in css_links]
+    tags = '\n'.join(js_tags + css_tags)
+
+    # If we got a post, someone submitted the form.  Render 
+    #  the page based on whether we recieved good inputs.
+    if 'submit' in request.POST:
+        controls = request.POST.items()
+        try:
+            appstruct = form.validate(controls)  
+        except ValidationFailure as e:
+            # re-render the form with an exception
+            return {
+                'project': 'service_catalog',
+                'form': e.render(),
+                'tags': tags
+            } 
+
+        # the form submission succeeded, we have the data
+        return {'project': 'service_catalog',
+                'form': None,
+                'app_struct': appstruct,
+                'tags': tags
+        }
+
+    return {'project': 'service_catalog',
+            'form': form.render(),
+            'tags': tags}
 
 @view_config(route_name='my_apps', renderer='templates/my_apps.jinja2')
 def my_apps_view(request):

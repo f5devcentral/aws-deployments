@@ -87,3 +87,6 @@ def ntp_update():
   except:
     print 'WARN: Clock update failed'
     pass
+
+def region_to_azs(region):
+  pass
