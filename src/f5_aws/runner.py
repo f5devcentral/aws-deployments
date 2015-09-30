@@ -11,18 +11,12 @@ from f5_aws.config import Config
 from f5_aws.utils import convert_str
 from f5_aws.exceptions import ExecutionError, ValidationError, LifecycleError
 
-local_ansible_path = os.path.abspath(
-  os.path.join(os.path.dirname(__file__), '..', 'lib')
-)
-
-sys.path.append(local_ansible_path)
-
 # make our config global
 config = Config().config
 
 # ansible stuff
 import ansible.playbook
-import ansible.constants as constants
+import ansible.constants
 from ansible import errors
 from ansible import callbacks
 from ansible import utils
@@ -236,15 +230,15 @@ class EnvironmentManager(object):
     #  some of the options have been disabled due to unknown
     #  dependency changes we may have introduced.
     
-    self.options.forks = constants.DEFAULT_FORKS
-    self.options.module_path = constants.DEFAULT_MODULE_PATH
-    self.options.remote_user = constants.DEFAULT_REMOTE_USER
-    self.options.timeout = constants.DEFAULT_TIMEOUT
-    self.options.connection = constants.DEFAULT_TRANSPORT
-    self.options.sudo = constants.DEFAULT_SUDO
+    self.options.forks = ansible.constants.DEFAULT_FORKS
+    self.options.module_path = ansible.constants.DEFAULT_MODULE_PATH
+    self.options.remote_user = ansible.constants.DEFAULT_REMOTE_USER
+    self.options.timeout = ansible.constants.DEFAULT_TIMEOUT
+    self.options.connection = ansible.constants.DEFAULT_TRANSPORT
+    self.options.sudo = ansible.constants.DEFAULT_SUDO
     self.options.sudo_user = None
-    self.options.su = constants.DEFAULT_SU
-    self.options.su_user = constants.DEFAULT_SU_USER
+    self.options.su = ansible.constants.DEFAULT_SU
+    self.options.su_user = ansible.constants.DEFAULT_SU_USER
     self.options.check = False
     self.options.diff = False  
     self.options.force_handlers = False
@@ -435,7 +429,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
     """
     inventory, resources, statuses = self.get_environment_info()
 
-    return resources, statuses, 
+    return resources, statuses
 
   def login_info(self):
     """

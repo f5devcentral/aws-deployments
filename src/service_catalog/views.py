@@ -19,11 +19,11 @@ def check_env_name(value):
 def make_pretty(value):
     return value.replace('-', ' ').replace('_',' ').upper()
 
-@view_config(route_name='home', renderer='templates/home.jinja2')
+@view_config(route_name='home', renderer='service_catalog:templates/home.jinja2')
 def home_view(request):
     return {'project': 'service_catalog'}
 
-@view_config(route_name='new_app', renderer='templates/new_app.jinja2')
+@view_config(route_name='new_app', renderer='service_catalog:templates/new_app.jinja2')
 def new_app_view(request):
     # This page will allow a post method for which will create
     #  a new environment.  We use 'deform', a technology for form
@@ -96,17 +96,19 @@ def new_app_view(request):
             utils.get_namespace(
                 cmd='init',
                 env_name=inputs['env_name'],
-                extra_vars=['{"deployment_model": "%s",'+
-                ' "region": "%s",' % inputs['region'] +
-                ' "zone": "%s",' % (inputs['region'] + 'b') +
-                ' "image_id": "%s"}' % inputs['container_id'] ] 
+                extra_vars=[
+                    ('{"deployment_model": "%s",' % inputs['deployment_model']) +
+                    (' "region": "%s",' % inputs['region']) +
+                    (' "zone": "%s",' % (inputs['region'] + 'b')) +
+                    (' "image_id": "%s"}' % inputs['container_id'])
+                ] 
             ))
             result = em.init()
             if (result['playbook_results'] and
                 result['playbook_results'].statuscode == 0):
                 
                 # redirect on success
-                return HTTPFound(location='/my_apps')
+                return HTTPFound(location='/myapps')
 
         except ValidationFailure as e:
             # re-render the form with an exception
@@ -135,7 +137,7 @@ def new_app_view(request):
             'form': form.render(),
             'tags': tags}
 
-@view_config(route_name='my_apps', renderer='templates/my_apps.jinja2')
+@view_config(route_name='my_apps', renderer='service_catalog:templates/my_apps.jinja2')
 def my_apps_view(request):
     # get a list of the environments
     envs = []
@@ -153,8 +155,8 @@ def my_apps_view(request):
             if v != 'deployed':
                 provisioning_status = 'not deployed/error'
 
-        if provisioning_status != 'deployed':
-            f5_aws.worker.get_job_status(name)
+        #if provisioning_status != 'deployed':
+        #    f5_aws.worker.get_job_status(name)
 
         envs.append({
             'name': name,

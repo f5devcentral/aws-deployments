@@ -5,14 +5,11 @@ import sys
 import json
 import yaml
 
-sys.path.append('./src')
-
 from f5_aws.config import Config
 from f5_aws import image_finder, utils
 from test_helpers import Region
 
 config = Config().config
-
 regions = config['regions']
 #regions = ['us-west-1']
 

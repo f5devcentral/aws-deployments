@@ -17,6 +17,4 @@ def main(global_config, **settings):
     # find the views defined in views.py
     config.scan()
 
-    
-
     return config.make_wsgi_app()

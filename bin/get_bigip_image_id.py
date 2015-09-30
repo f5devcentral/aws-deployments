@@ -1,12 +1,7 @@
 #get_bigip_image_id.py
 import os
 import sys
-local_module_path = os.path.abspath(
-  os.path.join(os.path.dirname(__file__), '..', 'src')
-)
-sys.path.append(local_module_path)
-
-from f5_aws import image_finder
+import argparse
 
 """
 Script to look up the ami-id of big-ip in the Amazon EC2 marketplace. 
@@ -22,9 +17,6 @@ python get_bigip_image_id.py --region us-west-1 --license hourly --package best 
 BYOL images do not have defined throughput:
 python get_bigip_image_id.py --region us-west-1 --license byol --package best  --version 11.6
 """
-
-import sys
-import argparse
 
 REGIONS = [
 	'ap-northeast-1',

@@ -1,0 +1,11 @@
+#!/bin/bash 
+
+# make sure redis is running
+
+
+# start the rqworker who will read and execute
+#  provisioning jobs from redis
+
+
+# start the web server 
+/aws-deployments/venv/bin/pserve /aws-deployments/src/development.ini

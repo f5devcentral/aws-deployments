@@ -2,7 +2,6 @@ import sys
 import json
 import pytest
 
-sys.path.append('./src')
 from f5_aws.config import Config
 from f5_aws.utils import get_namespace
 from f5_aws.runner import EnvironmentManager
