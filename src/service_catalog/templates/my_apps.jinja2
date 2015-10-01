@@ -4,7 +4,7 @@
   {% if envs %}
   {% for e in envs %}
     <h4> Name: {{ e.name }} </h4>
-    <h5> Status: </h5>
+    <h5> Status: {{ e.last_msg }} </h5>
     <h5> Info: </h5>
     {% for k1, v1 in e.env_info.iteritems() %}
       <p style="text-indent: 2em;">{{ k1 }} : {{ v1 }}</p>

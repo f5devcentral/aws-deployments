@@ -14,7 +14,10 @@
         <h4><span class="font-semi-bold">Request submitted with deployment_name "{{ app_struct['app_deployment']['env_name'] }}"</h4>
         {% endif %}
         {% if errors %}
-        <h4><span class="font-semi-bold">The following errors were encountered: "{{ errors }}"</h4>
+          <h4><span class="font-semi-bold">The following errors were encountered:</h4>
+          {% for e in errors %}
+            <h5>{{ e }}</h5>
+          {% endfor %}
         {% endif %}
         </div>
       </div>

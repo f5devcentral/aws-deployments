@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+from f5_aws import image_finder
 
 """
 Script to look up the ami-id of big-ip in the Amazon EC2 marketplace. 
