@@ -9,13 +9,22 @@ For more information on usage see README.md
 
 """
 
+import os
 import sys
 import ansible.utils
 import ansible.errors
 from ansible.callbacks import display
 
-from f5_aws.cli import CLI
+import f5_aws.cli as f5_aws_cli
 from f5_aws.exceptions import ValidationError, ExecutionError, LifecycleError
+
+# some path mudgery to allow us to use local files installed 
+#  of installing using setuptools
+# why doesn't this work...?
+local_module_path = os.path.abspath(
+  os.path.join(os.path.dirname(__file__), '..', 'src')
+)
+sys.path = [local_module_path] + sys.path
 
 
 if __name__ == "__main__":
@@ -24,7 +33,7 @@ if __name__ == "__main__":
   display(" ", log_only=True)
 
   try:
-    cli = CLI()
+    cli = f5_aws_cli.CLI()
     handlers = {
       'init': cli.init,
       'list': cli.list,
@@ -38,7 +47,7 @@ if __name__ == "__main__":
       'teardown': cli.teardown,
     }
 
-    parser = cli.get_parser()
+    parser = f5_aws_cli.get_parser()
     args = parser.parse_args()
 
     # leverage ansible debugging and logging

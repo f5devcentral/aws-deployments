@@ -1,0 +1,27 @@
+{% extends "layout.jinja2" %}
+{% block content %}
+<div id="content">
+  {% if not table_rows %}
+    <p> No application deployments currently exist.  </p>
+  {% else %}
+    <table border="1" style="width:100%">
+      <tr>
+      {% for col in table_header %}
+        <th> {{ col }}</th>
+      {% endfor %}
+      </tr>
+      {% for row in table_rows %}
+        <tr>
+        {% for col in row %}
+          {% if loop.index == 1 %}
+            <td><a href="/app/{{ col }}">{{ col }}</a></td>
+          {% else %}
+            <td>{{ col }}</td>
+          {% endif %}
+        {% endfor %}
+        </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -65,17 +65,3 @@ imageId={}, keyName={}, instanceType={}\r\n\
         raise e
         return False
   return True
-
-def ntp_update():
-  """
-  somtimes the vagrant VM system time is incorrect, which 
-  causes errors when using the AWS CFT API
-  """
-  try:
-    subprocess.check_call(["sudo", "ntpdate", "ntp.ubuntu.com"])
-  except:
-    print "WARN: Clock update failed"
-    pass
-
-def region_to_azs(region):
-  pass

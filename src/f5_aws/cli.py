@@ -5,7 +5,7 @@ import ansible.utils
 from ansible.callbacks import display
 
 from f5_aws.config import Config
-from f5_aws.runner import EnvironmentManager
+from f5_aws.runner import EnvironmentManager, EnvironmentManagerFactory
 from f5_aws.exceptions import ExecutionError
 
 # make our config global
@@ -173,11 +173,11 @@ class CLI(object):
       display("(none)", color="red", stderr=False)
     else:
       for env in envs:
-        EnvironmentManager(get_namespace(env_name=env)).display_basic_info()
+        EnvironmentManagerFactory(env_name=env, cmd='info').display_basic_info()
 
   @staticmethod
   def inventory(args):
-    pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).inventory())
+    pretty_print(EnvironmentManagerFactory(env_name=args.env_name, cmd='info').inventory())
 
   @staticmethod
   def resources(args):
@@ -186,14 +186,14 @@ class CLI(object):
       resources associated with a particular deployment.
       This includes vpc, subnets, bigip, app hosts, etc...
     """
-    resources, statuses = EnvironmentManager(get_namespace(env_name=args.env_name)).resources()
+    resources, statuses = EnvironmentManagerFactory(env_name=args.env_name, cmd='info').resources()
     for r in resources:
       print r
       pretty_print(statuses[r])
       
   @staticmethod
   def login(args):
-    pretty_print(EnvironmentManager(get_namespace(env_name=args.env_name)).login_info())
+    pretty_print(EnvironmentManagerFactory(env_name=args.env_name).login_info())
 
   @staticmethod
   def start_traffic(args):

@@ -66,7 +66,6 @@ class PlaybookExecution(object):
   def run(self):
     """
       This is a modified version of the function used within ansible-playbook.
-      playbooks. See top of file. 
     """
 
     tstart = time.time()
@@ -198,7 +197,7 @@ class PlaybookExecution(object):
       except errors.AnsibleError, e:
         self.jm.update_request(self.options.env_name,
           msg="Failed while running %s" % playbook,
-          errors="%s" % e)
+          err="%s" % e)
         display("ERROR: %s" % e, color="red")
         self.statuscode = 1
         return
@@ -333,7 +332,10 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
     return {"playbook_results": playbook_context, "env": self}
 
   def deploy(self):
-
+    """
+    Run ansible playbooks for deployment, given the ansible
+    inventory created via 'init'
+    """
     # make sure the environment has been initialized
     envs = EnvironmentManager.get_envs()
     if not self.options.env_name in envs:
@@ -359,7 +361,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
     playbook_context = PlaybookExecution(
       playbooks, config, self.env_inventory_path,
       self.options, self.extra_vars)
-    playbook_context.run()  
+    playbook_context.run()
 
     return {"playbook_results": playbook_context, "env": self}
 

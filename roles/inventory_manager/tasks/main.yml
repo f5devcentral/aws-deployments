@@ -7,7 +7,7 @@
       bigip_modules: 
        - avr
        - asm
-  when: deploy_waf is defined and deploy_waf == "true"
+  when: deployment_type == "lb_and_waf"
 
 - include: provision_inventory.yml
-  when: deploy_waf is undefined or deploy_waf == "false"
+  when: deployment_type == "lb_only"

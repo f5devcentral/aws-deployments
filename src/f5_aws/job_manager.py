@@ -43,15 +43,15 @@ class JobManager(object):
 			self.redis.delete(JobManager.get_hash(env_name))
 			self.redis.hmset(JobManager.get_hash(env_name), {"cmd": cmd})
 
-	def update_request(self, env_name, msg='', errors=''):
+	def update_request(self, env_name, msg='', err=''):
 		"""
 			Update the most recent msg for this environment
 		"""
 		if self.has_redis:
 			status = {
-				"last_update": time.strftime('%H:%m:%S'),
-				"errors": errors,
-				"message": msg
+				"last_update": time.strftime('%Y-%m-%d %H:%M:%S'),
+				"err": err,
+				"msg": msg
 			}
 			
 			# make sure the hash for this env exists

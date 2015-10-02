@@ -7,7 +7,7 @@ import yaml
 
 from f5_aws.config import Config
 from f5_aws import image_finder, utils
-from test_helpers import Region
+from utils import Region
 
 config = Config().config
 regions = config['regions']

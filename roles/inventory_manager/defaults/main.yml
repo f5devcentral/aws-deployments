@@ -1,9 +1,22 @@
 ---
-# networking defaults
+# This file contains default variables for nearly 
+#  everything that can be configured by a user.
+# We expect that many of these will be used as is. 
+# The resolution priority of anisible variables is
+#  such that the vars in this file are the last to 
+#  be used.  Thus, any configuration provided 
+#  via the command line overrides the below. 
+
+# deployment 
+deployment_model: "single-standalone"
+region: us-east-1
+
+# networking 
 vpc_cidr_prefix: "172.16"
 containers_per_host: 2
 apphosts_per_zone: 1
 
+#licensing 
 bigip_version: "11.6"
 bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
@@ -20,14 +33,11 @@ gtm_modules:
  - avr
  - gtm
 
+# app deployment 
 image_id: "mutzel/all-in-one-hackazon"
 containers_per_app_host: 1
 client_instance_type: "t1.micro"
 apphost_instance_type: "t2.micro"
-
-# default ami is ECS-Optimized AMI
-# https://aws.amazon.com/marketplace/pp/B00U6QTYI2
-# Using 2015.03.f
 
 # some variables for our more complex deployment models
 
