@@ -53,7 +53,7 @@ def home_view(request):
 def new_app_view(request):
     """
     View provides a form method to create a new environment.
-    We use 'deform', a technology for form rendering and validation. 
+    We use 'deform', a technology for form  rendering and validation. 
     """
     
     #build the form

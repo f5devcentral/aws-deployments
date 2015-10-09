@@ -2,25 +2,21 @@
 {% block content %}
 <div class="container">
   <div class="row">
-    <div class="col-md-10">
-      <div class="content">
-        <div>
-        {% if form %}
-          <h4><span class="font-semi-bold">Request a new application</h4>
-          <p>The following form can be used to provision a new application deployment. The deployment may include a security profile for protecting your application.</span><p/>
-          {{ form|safe }}
-        {% endif %}
-        {% if not form and not errors %}
-        <h4><span class="font-semi-bold">Request submitted with deployment_name "{{ app_struct['app_deployment']['env_name'] }}"</h4>
-        {% endif %}
-        {% if errors %}
-          <h4><span class="font-semi-bold">The following errors were encountered:</h4>
-          {% for e in errors %}
-            <h5>{{ e }}</h5>
-          {% endfor %}
-        {% endif %}
-        </div>
-      </div>
+    <div class="content">
+      {% if form %}
+        <h4><span class="font-semi-bold">Request a new application</h4>
+        <p>The following form can be used to provision a new application deployment. The deployment may include a security profile for protecting your application.</span><p/>
+        {{ form|safe }}
+      {% endif %}
+      {% if not form and not errors %}
+      <h4><span class="font-semi-bold">Request submitted with deployment_name "{{ app_struct['app_deployment']['env_name'] }}"</h4>
+      {% endif %}
+      {% if errors %}
+        <h4><span class="font-semi-bold">The following errors were encountered:</h4>
+        {% for e in errors %}
+          <h5>{{ e }}</h5>
+        {% endfor %}
+      {% endif %}
     </div>
   </div>
 </div>
