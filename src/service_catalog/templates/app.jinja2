@@ -1,6 +1,12 @@
 {% extends "layout.jinja2" %}
 {% block content %}
 <div id="content">
+	{% if submission_msgs %}
+	  <h3> {{ submission_msgs|safe }}.  Refresh this page for status or view logs. </h3>
+	{% endif %}
+	{% if submission_errors %}
+	  <h3><font color="red"> Error while submitting request:<br> {{ submission_errors|safe }} </font></h3>
+	{% endif %}
   	<h4> Name:</h4><p> {{ name }}</p> 
 	<h5> Status:</h5> <p> {{ status }}</p>
 	<h5> Latest message:</h5><p> {{ msg }}</p>

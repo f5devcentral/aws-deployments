@@ -14,9 +14,9 @@ pip install -r requirements.txt
 
 # install redis
 cd $INSTALL_LOC/library
-mkdir redis
 wget http://download.redis.io/releases/redis-3.0.4.tar.gz
-tar -xzvf redis-3.0.4.tar.gz redis
+tar -xzvf redis-3.0.4.tar.gz 
+mv redis-3.0.4 redis
 cd ./redis
 make
 

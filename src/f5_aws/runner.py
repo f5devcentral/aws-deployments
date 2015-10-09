@@ -455,9 +455,9 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       return {"playbook_results": playbook_context, "env": self}
     else:
       raise LifecycleError("""Cannot remove environment '%s' until all resources have been de-provisioned.
-The following resources still exist: %s\n. 
-Hint: try './bin/f5aws teardown %s'""" % (
-  self.options.env_name, stillExists, self.options.env_name))
+The following resources still exist: %s\n
+Hint: Try tearing down the environment first.""" % (
+  self.options.env_name, stillExists))
 
   @classmethod
   def get_envs(self):

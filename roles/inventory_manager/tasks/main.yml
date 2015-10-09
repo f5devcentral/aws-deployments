@@ -3,7 +3,7 @@
 #  we need the BEST license and asm to be provisioned after boot
 - include: provision_inventory.yml
   vars:
-      bigip_license_type: best
+      bigip_license_package: best
       bigip_modules: 
        - avr
        - asm

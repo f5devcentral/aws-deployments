@@ -11,7 +11,7 @@ import f5_aws
 import f5_aws.runner as runner
 from f5_aws.config import Config
 from f5_aws.job_manager import JobManager
-
+from f5_aws.exceptions import ValidationError, LifecycleError
 
 def check_env_name(value):
     if not value or not re.match("^[a-zA-z]{1}[a-zA-Z0-9-]*", value):
@@ -40,10 +40,30 @@ def compose_form_tags(form):
 def compute_provisioning_status(statuses):
     provisioning_status = "Deployed"
     for k, v in statuses.iteritems():
-        if v != "deployed":
+        if v["state"] != "deployed":
             provisioning_status = "Not deployed/error"
     return provisioning_status
 
+def submit_task(env_name, cmd, extra_vars=None):
+    """
+        Make a synchronous to our f5_aws code to run the given
+        cmd.  Need to handle exceptions here.
+    """
+    em = runner.EnvironmentManagerFactory(
+        cmd=cmd,
+        env_name=env_name,
+        extra_vars=extra_vars
+    )
+    result = getattr(em, cmd)()
+
+    return result
+
+def submit_async_task(env_name, cmd):
+    em = runner.EnvironmentManagerFactory(
+        cmd=cmd,
+        env_name=env_name
+    )
+    JobManager().submit_request(getattr(em, cmd))
 
 @view_config(route_name="home", renderer="service_catalog:templates/home.jinja2")
 def home_view(request):
@@ -103,42 +123,41 @@ def new_app_view(request):
     if "submit" in request.POST:
         controls = request.POST.items()
         try:
+            # validate the form inputs and initialize
+            #  a new deployment with these inputs
             appstruct = form.validate(controls) 
             inputs = appstruct["app_deployment"]
-            
-            # initialize this environment and redirect
-            # to the deployemnts page if successful
-            em = runner.EnvironmentManagerFactory(
-                cmd="init",
-                env_name=inputs["env_name"],
-                extra_vars = {
+            init_vars = {
                     "deployment_model": inputs['deployment_model'],
                     "deployment_type": inputs['deployment_type'],
                     "region": inputs['region'],
                     "zone": (inputs['region'] + 'b'),
                     "image_id": inputs['container_id']
-                }
-            )
-            result = em.init()
+            }
+            
+            result = submit_task(inputs["env_name"], "init",
+                extra_vars=init_vars)
+
             if (result["playbook_results"] and
                 result["playbook_results"].statuscode == 0):
 
                 # submit a job to provision this environment
-                jm = JobManager()
-                em = runner.EnvironmentManagerFactory(
-                    cmd="deploy",
-                    env_name=inputs["env_name"] 
-                )
-                jm.submit_request(em.deploy)
-                
+                submit_async_task(inputs["env_name"], "deploy")
                 # redirect
                 return HTTPFound(location="/apps")
+
+        except ValidationError as e:
+            # show errors we know of in a pretty way
+            return {
+                "submission_errors": str(e).replace('\n', '<br>'),
+                "form": form.render(),
+                "tags": tags
+            }
 
         except ValidationFailure as e:
             # form validation failed
             # re-render the form with an exception
             return {
-                "project": "service_catalog",
                 "form": e.render(),
                 "tags": tags
             } 
@@ -149,7 +168,6 @@ def new_app_view(request):
             
             # show detailed errors
             return {
-                "project": "service_catalog",
                 "errors": [str(e), traceback.format_exc(), sys.exc_info()[0]],
                 "tags": tags
             }
@@ -165,7 +183,7 @@ def all_apps_view(request):
     View that displays all environments on a single page within a table. 
     Provide link to more details for each. 
     """
-    jm = JobManager()
+    
 
     # list of strings for the table header
     table_header = [] 
@@ -179,7 +197,7 @@ def all_apps_view(request):
             inventory, resources, statuses = em.get_environment_info()
             env_info = em.get_env_info(inventory)
             provisioning_status = compute_provisioning_status(statuses)
-            last_status = jm.get_request_status(name)
+            last_status = JobManager().get_request_status(name)
 
             #build the table header
             if i == 0:
@@ -205,7 +223,17 @@ def all_apps_view(request):
 def single_app_view(request):
     """
     View showing detailed information about a single deployment.  
-    Allows the ability to re-deploy, teardown, or remove.
+    This page allows three buttons which the user may use to control
+    the environment they have deployed: re-deploy, teardown, and remove
+
+    The deploy and teardown steps are launched as asynchronous jobs, and return
+    the user to the same page with a message like "Teardown in progress"
+
+    The remove step should be launched sychronously similar to the 
+    init command on the new_app page.
+
+    Any errors during all three tasks should be shown at the the top of the page. 
+
     """
 
     # pyramid route matching gives access to uri vars
@@ -217,9 +245,7 @@ def single_app_view(request):
     env_info = em.get_env_info(inventory)
     login_info = em.login_info()
     provisioning_status = compute_provisioning_status(statuses)
-    
-    jm = JobManager()
-    status = jm.get_request_status(name)
+    status = jm = JobManager().get_request_status(name)
         
     # just use deform to provide the buttons
     class Schema(colander.MappingSchema):
@@ -232,7 +258,7 @@ def single_app_view(request):
         {"name": "Teardown", "value": "teardown"},
         {"name": "Remove", "value": "remove"}
     )
-    # createt the buttons
+    # create the buttons
     for b in buttons:
         b['button'] = deform.Button(
             name=b["name"],
@@ -246,21 +272,28 @@ def single_app_view(request):
     form = form.render()
 
     # if there was a post to the page, react to the button
+    submission_errors = []
     for b in buttons:
         if b["name"] in request.POST:        
-            print "Triggering action '{}' of for environment {}".format(
+            msg = "Starting '{}' of deployment {}".format(
                 b["value"], name)
-            em = runner.EnvironmentManagerFactory(
-                cmd=b["value"],
-                env_name=name
-            )
-            jm.submit_request(getattr(em, b["value"]))
+
+            if "Remove" in request.POST:
+                # teardown is short-lived api call
+                try:
+                    result = submit_task(name, b["value"])
+                except LifecycleError as e:
+                    submission_errors.append(str(e).replace('\n', '<br>'))
+            else:
+                # submit asynch tasks
+                submit_async_task(name, b["value"])
+                return HTTPFound(location="/apps")
 
     return {
-        "project": "service_catalog",
         "tags": tags,
         "form": form,
         "name": name,
+        "submission_errors": submission_errors,
         "status": provisioning_status,
         "msg": status["msg"],
         "error": status["err"], 

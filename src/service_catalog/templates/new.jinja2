@@ -3,6 +3,9 @@
 <div class="container">
   <div class="row">
     <div class="content">
+      {% if submission_errors %}
+        <h3><font color="red"> Error while submitting request:<br> {{ submission_errors|safe }} </font></h3>
+      {% endif %}
       {% if form %}
         <h4><span class="font-semi-bold">Request a new application</h4>
         <p>The following form can be used to provision a new application deployment. The deployment may include a security profile for protecting your application.</span><p/>

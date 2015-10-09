@@ -204,7 +204,7 @@ class CLI(object):
     """
       Implements command line method to pass traffic through BIG-IP
     """
-    exec_results = EnvironmentManager(args).start_traffic()
+    exec_results = EnvironmentManager(args, cmd='info').start_traffic()
     print_playbook_results(exec_results)
 
   @staticmethod
