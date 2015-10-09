@@ -27,69 +27,73 @@ def get_parser():
     """
     parser = argparse.ArgumentParser(prog=config['prog'])
     parser.add_argument("-v", "--verbose", action="count", default=0,
-              help="verbose mode (-vvv for more, -vvvv to enable connection debugging")
+      help="verbose mode (-vvv for more, -vvvv to enable connection debugging")
     subparsers = parser.add_subparsers(dest="cmd", help="sub-command help")
 
     parser_init = subparsers.add_parser("init",
-                      help="Create a new AWS deployment with F5 services.")
+      help="Create a new AWS deployment with F5 services.")
     parser_init.set_defaults(cmd="init")
     parser_init.add_argument("env_name",
-                 help="Name of the new environment to be created")
+      help="Name of the new environment to be created")
     parser_init.add_argument("-f", "--force", required=False,
-                 action="store_true", default=False,
-                 help="Use to update inventory variables for an existing environment")
+      action="store_true", default=False,
+      help="Use to update inventory variables for an existing environment")
     parser_init.add_argument("-e", "--extra-vars", required=True,
-                 dest="extra_vars", action="append",
-                 help="set additional variables as key=value or YAML/JSON", default=[])
+      dest="extra_vars", action="append",
+      help="set additional variables as key=value or YAML/JSON", default=[])
+    
     parser_deploy = subparsers.add_parser("deploy",
-                        help="Deploy EC2 resource and application services based on inventory files created using `init`.")
+      help="Deploy EC2 resource and application services based on inventory files created using `init`.")
     parser_deploy.add_argument("env_name", metavar="ENVIRONMENT",
-                   type=str, help="Name of environment to be deployed/updated")
+     type=str, help="Name of environment to be deployed/updated")
+    parser_deploy.add_argument("-e", "--extra-vars", required=False,
+     dest="extra_vars", action="append",
+     help="set additional variables as key=value or YAML/JSON", default=[])
 
     parser_teardown = subparsers.add_parser("teardown",
-                        help="De-provision all resources in AWS EC2 for an environment created using `init`.")
+      help="De-provision all resources in AWS EC2 for an environment created using `init`.")
     parser_teardown.add_argument("env_name", metavar="ENVIRONMENT",
-                   type=str, help="Name of environment to be de-provisioned. ")
+      type=str, help="Name of environment to be de-provisioned. ")
 
     parser_list = subparsers.add_parser("list",
-                      help="List all deployments and corrosponding resource statuses.")
+      help="List all deployments and corrosponding resource statuses.")
 
     parser_remove = subparsers.add_parser("remove",
-                        help="Remove all inventory files for an environment created using `init`.")
+      help="Remove all inventory files for an environment created using `init`.")
     parser_remove.add_argument("env_name", metavar="ENVIRONMENT",
-                   type=str, help="Name of environment to be deleted")
+      type=str, help="Name of environment to be deleted")
 
     parser_start_traffic = subparsers.add_parser("start_traffic",
-                           help="Begins jmeter client on client in a single availability zone")
+      help="Begins jmeter client on client in a single availability zone")
     parser_start_traffic.add_argument("env_name", metavar="ENVIRONMENT",
-                      type=str, help="Name of environment to which jmeter client should run traffic")
+      type=str, help="Name of environment to which jmeter client should run traffic")
 
     parser_stop_traffic = subparsers.add_parser("stop_traffic",
-                          help="Stops jmeter client ")
+      help="Stops jmeter client ")
     parser_stop_traffic.add_argument("env_name", metavar="ENVIRONMENT",
-                     type=str, help="Name of environment")
+      type=str, help="Name of environment")
 
     parser_info = subparsers.add_parser("info",
-                      help="Show resource variables along with environment information.")
+      help="Show resource variables along with environment information.")
 
     # multiple subparsers for the info command
     info_subparsers = parser_info.add_subparsers(
       dest="cmd", help="sub-command help")
 
     parser_inventory = info_subparsers.add_parser("inventory",
-                            help="Displays the ansible inventory associated with this environment. Dynamic inventory groups are not shown")
+      help="Displays the ansible inventory associated with this environment. Dynamic inventory groups are not shown")
     parser_inventory.add_argument("env_name", metavar="ENVIRONMENT",
-                    type=str, help="Name of environment")
+      type=str, help="Name of environment")
 
     parser_resources = info_subparsers.add_parser("resources",
-                            help="Shows hosts, associated resources and variables that are deployed via CloudFormation")
+      help="Shows hosts, associated resources and variables that are deployed via CloudFormation")
     parser_resources.add_argument("env_name", metavar="ENVIRONMENT",
-                    type=str, help="Name of environment")
+      type=str, help="Name of environment")
 
     parser_login = info_subparsers.add_parser("login",
-                          help="Displays login information for deployed hosts (bigips, gtms, client, etc")
+      help="Displays login information for deployed hosts (bigips, gtms, client, etc")
     parser_login.add_argument("env_name", metavar="ENVIRONMENT",
-                  type=str, help="Name of environment")
+      type=str, help="Name of environment")
 
     return parser
 
@@ -193,7 +197,7 @@ class CLI(object):
       
   @staticmethod
   def login(args):
-    pretty_print(EnvironmentManagerFactory(env_name=args.env_name).login_info())
+    pretty_print(EnvironmentManagerFactory(env_name=args.env_name, cmd='info').login_info())
 
   @staticmethod
   def start_traffic(args):

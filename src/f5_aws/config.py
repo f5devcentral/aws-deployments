@@ -11,12 +11,7 @@ class Config(object):
     self.config = ConfigObj('./conf/config.ini')
     
     # get user supplied variables
-    try: 
-      self.config.merge(ConfigObj(os.path.expanduser(self.config['global_vars'])))
-    except: 
-      # tests should pass when executed from ./test
-      self.config = ConfigObj('../conf/config.ini')
-      self.config.merge(ConfigObj(os.path.expanduser(self.config['global_vars'])))
+    self.config.merge(ConfigObj(os.path.expanduser(self.config['global_vars'])))
 
     # check that we got everything we need
     for v in self.config['required_vars']:

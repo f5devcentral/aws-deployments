@@ -156,7 +156,7 @@
     vip_id:  "Vip2"
   tasks:
     - name: Create a json payload for the pool members
-      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers_test.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
+      local_action: template src=../roles/bigip_app1/templates/bigip_pool_members_from_containers.cfg.j2 dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json
     - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
       delegate_to: localhost
 

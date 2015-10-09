@@ -1,9 +1,11 @@
 import time
 from redis import Redis
 from redis import ResponseError
+from redis.exceptions import ConnectionError
 import rq
 
 REQUEST_PREFIX = 'f5demo.req-'
+JOB_TIMEOUT = 600 #seconds
 
 class JobManager(object):
 	"""
@@ -13,15 +15,20 @@ class JobManager(object):
 		To provide status updates to the app, details are logged to 
 		a seperate datastructure in Redis as provisioning continues.
 
-		This module provides interface for redis use cases above.
+		This module provides interfaces for redis use cases above.
 		Connections to redis should not be made anywhere else. 
 	"""
 	def __init__(self):
 		self.has_redis = True
 		try:
 			self.redis = Redis()
+
+			# simple test that we can connect
+			self.redis.keys()
+
+			# connection okay, setup rq
 			self.job_queue = rq.Queue(connection=self.redis)
-		except:
+		except ConnectionError:
 			# redis isn't running 
 			self.has_redis = False
 			print 'WARNING: Redis connection failed.  Status not available for service catalog. '
@@ -32,7 +39,7 @@ class JobManager(object):
 		
 	def submit_request(self, fn):
 		""" Submit a job using the rq module"""
-		self.job_queue.enqueue(fn)
+		self.job_queue.enqueue_call(func=fn, timeout=JOB_TIMEOUT)
 
 	def configure_request(self, env_name, cmd):
 		"""

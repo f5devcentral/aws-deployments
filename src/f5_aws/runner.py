@@ -24,6 +24,22 @@ from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
 
+def get_matching_playbooks(playbooks, match_exprs):
+  matching_playbooks = []
+  for pb in playbooks:
+    for expr in match_exprs:
+      if expr in pb:
+        matching_playbooks.append(pb)
+
+  # remove the duplicates
+  output = []
+  seen = set()
+  for pb in matching_playbooks:
+    if pb not in seen:
+      output.append(pb)
+      seen.add(pb)
+  return output
+
 
 def hostcolor(host, stats, color=True):
   if ANSIBLE_COLOR and color:
@@ -245,11 +261,31 @@ def EnvironmentManagerFactory(env_name="", cmd="", extra_vars=""):
 class EnvironmentManager(object):
   config=config
   def __init__(self, args):
-    self.options=args
+    """
+      When the playbooks are run, there are two sets of variables
+      passed to ansible:
+        
+        #1
+        options - The set of variables that tell ansible 
+        how to behave (e.g. self.options.forks below).  We use 
+        default values for most of these, stolen mostly from
+        the out-of-the-box `ansible-playbook` executable.
+        
+        #2
+        extra_vars - These are variables made available
+        in the global scope during a play or task.
+        Any variables passed to our command line using the --extra-vars
+        parameter are passed are added to the extra_vars dict.
+
+        In addition to variables passed on the command line by the user, 
+        below we set additional variables in the global scope during 
+        certain execution contexts.
+
+    """
+
+    self.options = args
     self.extra_vars = {}
 
-    # pass along our project variables to ansible
-    # some playbooks will need access keys and passwords during runtime
     for v in config["required_vars"]:
       self.extra_vars[v] = config[v]
 
@@ -258,14 +294,13 @@ class EnvironmentManager(object):
     self.extra_vars["ssh_key_name"] = config[
       "ssh_key"].split("/")[-1].split(".")[0]
 
-    if getattr(self.options, "env_name", None) is not None:
-      self.extra_vars["env_name"] = self.options.env_name
+    if getattr(self.options, "env_name", None):
+      self.extra_vars["env_name"] = getattr(self.options, "env_name")
 
-    # Since we have forked and modified ansible-playbook 
-    #  we have copied over many of these default variables.
-    #  some of the options have been disabled due to unknown
-    #  dependency changes we may have introduced.
-    
+    for extra_vars_opt in getattr(self.options, "extra_vars", []):
+      self.extra_vars = utils.combine_vars(self.extra_vars,
+                        utils.parse_yaml(extra_vars_opt))
+
     self.options.forks = ansible.constants.DEFAULT_FORKS
     self.options.module_path = ansible.constants.DEFAULT_MODULE_PATH
     self.options.remote_user = ansible.constants.DEFAULT_REMOTE_USER
@@ -296,11 +331,6 @@ class EnvironmentManager(object):
 
     See individual playbooks for more info. 
     """
-    print self.options.extra_vars
-    # additional options which need to be processed with the init command
-    for extra_vars_opt in self.options.extra_vars:
-      self.extra_vars = utils.combine_vars(self.extra_vars,
-                        utils.parse_yaml(extra_vars_opt))
 
     # basic string checking to prevent failures later in playbook
     if not re.match("^[a-zA-z]{1}[a-zA-Z0-9-]*", self.options.env_name):
@@ -322,7 +352,7 @@ class EnvironmentManager(object):
 availability of the ECS-optimized images used to run the Docker app: {}'.format(
           config['regions']))
 
-    # TODO: validate images, eip and cloudformation limits?
+    # TODO: validate images, eip and cloudformation limits, EULA acceptance?
 
     playbooks = ["init.yml"]
     playbook_context = PlaybookExecution(
@@ -358,8 +388,17 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       "deploy_client.yml",
     ]
 
+    if self.extra_vars["run_only"]:
+      print 'User specified subset of playbooks to run specified by {}'.format(
+        self.extra_vars["run_only"])
+      matching_playbooks = get_matching_playbooks(playbooks, self.extra_vars["run_only"])
+    else:
+      matching_playbooks = []
+
+    print 'Running playbooks {}'.format(matching_playbooks)
+
     playbook_context = PlaybookExecution(
-      playbooks, config, self.env_inventory_path,
+      matching_playbooks, config, self.env_inventory_path,
       self.options, self.extra_vars)
     playbook_context.run()
 
@@ -427,7 +466,9 @@ Hint: try './bin/f5aws teardown %s'""" % (
     """
     return os.listdir(config['env_path'])
 
-  #### all over the below needs to get refactored....very ugly
+#################################################################  
+#### all over the below needs to get refactored....very ugly ####
+#################################################################
 
   def get_environment_info(self):
     inventory = self.get_inventory()
