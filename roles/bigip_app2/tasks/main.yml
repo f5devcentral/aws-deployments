@@ -10,7 +10,7 @@
       collection_path='mgmt/tm/ltm/pool'
       resource_key="name"
 
-- name: Uploading iRules ... snat_random_rule
+- name: Uploading iRules ... irule_random_snat
   delegate_to: localhost
   bigip_config:
       state=present
@@ -19,7 +19,7 @@
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/ltm/rule'
       resource_key="name"
-      payload='{"name":"__snat_random_rule","apiAnonymous":"{{snat_random_rule|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
+      payload='{"name":"irule_random_snat","apiAnonymous":"{{irule_random_snat|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
 
 - name: Setup the HTTP virtual server
   delegate_to: localhost

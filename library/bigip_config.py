@@ -47,6 +47,8 @@ class BigipConfig(object):
     if 'application/service' in self.collection_path:
       return ('%s/~Common~%s.app~%s' % (self.collection_path,
          self._get_full_resource_id(), self._get_full_resource_id()))
+    elif self.resource_selfLink:
+      return self.resource_selfLink[self.resource_selfLink.find('mgmt'):]
     else:
       return '%s/%s' % (self.collection_path, self._get_full_resource_id())
 
@@ -97,9 +99,14 @@ class BigipConfig(object):
       for i in items:
         if i[self.resource_key] == self.payload[self.resource_key]:
           exists = True
+          self.set_selfLink(i)
           print 'fullPath = {}'.format(i['fullPath'])
           break
     return exists
+
+  def set_selfLink(self, config_item):
+    # self link looks like https://localhost/mgmt/tm/asm/policies/vsyrM5HMMpOHlSwDfs8mLA"
+    self.resource_selfLink = config_item['selfLink']
 
   def create_or_update_resource(self):
     # if it is a collection, we can just patch 
@@ -121,11 +128,8 @@ class BigipConfig(object):
     return self.http("post", self.collection_path, self.payload)
 
   def update_resource(self):
-    #if self.resource_key is None:
-    #  return self.http("patch", self.collection_path, self.payload)
-    #else:
-    return self.http("patch", self._get_full_resource_path(),
-      self._get_safe_patch_payload())
+      return self.http("patch", self._get_full_resource_path(),
+        self._get_safe_patch_payload())
 
   def delete_resource(self):
     return self.http("delete", self._get_full_resource_path())

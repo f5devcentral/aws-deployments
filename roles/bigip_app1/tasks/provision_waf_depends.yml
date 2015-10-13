@@ -1,0 +1,29 @@
+---
+- name: Create the ASM policy
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/asm/policies'
+      resource_key="name"
+      payload='{"name":"asm-linux-high","applicationLanguage":"utf-8","caseInsensitive":true}'
+  register: result
+
+- set_fact: policySelfLink="{{ result['out']['selfLink'] }}"
+
+- debug: var="{{ policySelfLink }}"
+
+- name: Import our policy over the one existing above 
+  delegate_to: localhost
+  bigip_config:
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/asm/tasks/import-policy'
+      payload='{"file":"{{ asm_policy_linux_high_base64 }}","isBase64":true,"policyReference":{"link":"{{ policySelfLink }}" } }'
+  register: result
+
+- debug: var={{ result }}

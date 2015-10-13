@@ -104,7 +104,7 @@
     app_name: "Vip1_demo_iApp"
   tasks: 
      - name: Modify iApp to use VipAddress
-       template: src='{{ install_path }}/roles/bigip_app1/templates/demo_iApp.cfg.j2' dest='~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-{{vip_id}}-iApp.yml'
+       template: src='{{ install_path }}/roles/bigip_app1/templates/iapp_f5_http_backport_service.yml.j2' dest='~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-{{vip_id}}-iApp.yml'
        delegate_to: localhost
 
 # Deploy virtual server and related resources to BIG-IP 
@@ -112,11 +112,15 @@
   gather_facts: no
   vars:
     vip_id: "Vip1"
-    background_image: "{{ lookup('file', install_path + '/roles/bigip_app1/files/background_image_base_64') }}"
-    sorry_image: "{{ lookup('file', install_path + '/roles/bigip_app1/files/sorry_image_base_64') }}"
-    sorry_page_rule: "{{ lookup('file', install_path + '/roles/bigip_app1/files/__sorry_page_rule.tcl') }}"
-    demo_analytics_rule: "{{ lookup('file', install_path + '/roles/bigip_app1/files/__demo_analytics_rule.tcl') }}"
+    # lookup static content our iapp will reference, pass as variables to the role
+    image_background: "{{ lookup('file', install_path + '/roles/bigip_app1/files/image_background_base_64') }}"
+    image_sorry: "{{ lookup('file', install_path + '/roles/bigip_app1/files/image_sorry_base_64') }}"
+    irule_sorry_page: "{{ lookup('file', install_path + '/roles/bigip_app1/files/irule_sorry_page.tcl') }}"
+    irule_demo_analytics: "{{ lookup('file', install_path + '/roles/bigip_app1/files/irule_demo_analytics.tcl') }}"
   vars_files:
+    # we pass pass along the json payload for the iCR call to deploy
+    # the iapp as a variable to the role
+    - [ '{{ install_path }}/roles/bigip_app1/files/iapp_f5_http_backport_template.yml' ]
     - [ "~/vars/f5aws/env/{{env_name}}/{{inventory_hostname}}-{{vip_id}}-iApp.yml" ]
   roles:
     - bigip_app1
@@ -165,7 +169,7 @@
   gather_facts: no
   vars:
     vip_id: "Vip2"
-    snat_random_rule: "{{ lookup('file', install_path + '/roles/bigip_app2/files/__snat_random_rule.tcl') }}"
+    irule_random_snat: "{{ lookup('file', install_path + '/roles/bigip_app2/files/irule_random_snat.tcl') }}"
   roles:
     - bigip_app2
 
