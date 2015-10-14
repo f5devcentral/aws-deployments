@@ -102,6 +102,9 @@
   vars:
     vip_id: "Vip1"
     # lookup static content our iapp will reference, pass as variables to the role
+    iapp_service_name: "Vip1-iApp"
+    iapp_vs_pool_name: "Vip1-pool"
+    analytics_profile_name: "Vip1-demo_analytics"
     image_background: "{{ lookup('file', install_path + '/roles/bigip_app1/files/image_background_base_64') }}"
     image_sorry: "{{ lookup('file', install_path + '/roles/bigip_app1/files/image_sorry_base_64') }}"
     irule_sorry_page: "{{ lookup('file', install_path + '/roles/bigip_app1/files/irule_sorry_page.tcl') }}"

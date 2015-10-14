@@ -38,7 +38,9 @@ class JobManager(object):
 		return REQUEST_PREFIX+env_name
 		
 	def submit_request(self, fn):
-		""" Submit a job using the rq module"""
+		"""
+			Submit a job using the rq module
+		"""
 		self.job_queue.enqueue_call(func=fn, timeout=JOB_TIMEOUT)
 
 	def configure_request(self, env_name, cmd):
@@ -75,10 +77,14 @@ class JobManager(object):
 
 	def get_request_status(self, env_name):
 		"""
-		Try to look for updates for this env.
-		  If one does not exist, return a dummy status.
+			Try to look for updates for this env.
 		"""
-		request = {"cmd": "Unknown", "msg": "No requests found"}
+		request = {
+			"cmd": "Unknown",
+			"msg": "No requests found",
+			"last_update": "No timestamps available",
+			"err": ""
+		}
 		if self.has_redis and self.redis.exists(JobManager.get_hash(env_name)):
 			request = self.redis.hgetall(JobManager.get_hash(env_name))
 

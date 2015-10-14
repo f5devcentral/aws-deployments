@@ -183,7 +183,6 @@ def all_apps_view(request):
     View that displays all environments on a single page within a table. 
     Provide link to more details for each. 
     """
-    
 
     # list of strings for the table header
     table_header = [] 
@@ -245,7 +244,7 @@ def single_app_view(request):
     env_info = em.get_env_info(inventory)
     login_info = em.login_info()
     provisioning_status = compute_provisioning_status(statuses)
-    status = jm = JobManager().get_request_status(name)
+    status = JobManager().get_request_status(name)
         
     # just use deform to provide the buttons
     class Schema(colander.MappingSchema):
@@ -297,7 +296,7 @@ def single_app_view(request):
         "status": provisioning_status,
         "msg": status["msg"],
         "error": status["err"], 
-        "last_update": status["last_update"], 
+        "last_update_time": status["last_update_time"], 
         "env_info": env_info,
         "login_info": login_info,
         "statuses": statuses

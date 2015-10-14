@@ -561,12 +561,17 @@ Hint: Try tearing down the environment first.""" % (
                   ip = status["resource_vars"][ip_map[host_type]]
                   resources["ssh"] = "ssh -i {} {}@{}".format(
                     key, user, ip)
-                  resources["https"] = "https://{}".format(ip)
 
+                  if "app" in resource_name:
+                    resources["http"] = "http://{}".format(ip)
+                  else:
+                    resources["https"] = "https://{}".format(ip)
+
+                  #get specific information about our application
+                  # deployments for these specific hosts
                   if "bigip" in resource_name:
                     resources["virtual_servers"] = self.collect_virtual_servers(resource_name)
                     resources["elastic_ips"] = self.collect_elastic_ips(resource_name)
-
                   if "gtm" in resource_name:
                     resources["wideips"] = self.collect_wideips(resource_name)
                     resources["elastic_ips"] = self.collect_elastic_ips(resource_name)

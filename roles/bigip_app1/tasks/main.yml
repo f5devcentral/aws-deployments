@@ -5,7 +5,7 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      payload='{{lookup('file', '~/vars/f5aws/env/' + env_name + '/' + vip_id + '_pool_from_containers.json')}}'
+      payload_file='~/vars/f5aws/env/{{ env_name }}/{{ vip_id }}_pool_from_containers.json'
       collection_path='mgmt/tm/ltm/pool'
       resource_key="name"
 
@@ -34,7 +34,7 @@
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/ltm/profile/analytics'
       resource_key="name"
-      payload='{"name":"demo_analytics_profile","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
+      payload='{"name":"{{ analytics_profile_name }}","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
 
 - name: Uploading Datagroup ... background for sorry page
   delegate_to: localhost
@@ -80,10 +80,10 @@
       resource_key="name"
       payload='{"name":"irule_demo_analytics","apiAnonymous":"{{irule_demo_analytics|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
 
-# - include: provision_waf_depends.yml
-#   when: deployment_type == "lb_and_waf"
-
-- debug: var=ltm_policy_name
+# If deploying WAF with f5_http_backport_iapp, we need
+# to upload the LTM and ASM policies 
+- include: provision_waf_depends.yml
+  when: deployment_type == "lb_and_waf"
 
 # Generate the iApp we will deploy from a template 
 - name: Modify iApp to use VipAddress

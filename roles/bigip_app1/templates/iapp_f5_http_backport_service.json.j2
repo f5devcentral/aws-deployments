@@ -1,5 +1,5 @@
 {
-  "name": "http_asm",
+  "name": "{{ iapp_service_name }}",
   "partition": "Common",
   "inheritedDevicegroup": "true",
   "inheritedTrafficGroup": "true",
@@ -132,7 +132,7 @@
     {
       "name": "pool__pool_to_use",
       "encrypted": "no",
-      "value": "/Common/Vip1_pool"
+      "value": "/Common/{{ iapp_vs_pool_name }}"
     },
     {
       "name": "pool__port",
@@ -212,7 +212,7 @@
     {
       "name": "stats__analytics",
       "encrypted": "no",
-      "value": "/Common/demo_analytics_profile"
+      "value": "/Common/{{ analytics_profile_name }}"
     },
     {
       "name": "stats__request_logging",
