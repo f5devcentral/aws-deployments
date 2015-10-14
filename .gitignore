@@ -1,5 +1,6 @@
 # build products...
 *.py[co]
+*.egg-info
 build
 # Emacs backup files...
 *~

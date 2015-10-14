@@ -1,0 +1,13 @@
+#!/bin/bash 
+
+INSTALL_LOC=/aws-deployments
+
+# make sure redis is running
+$INSTALL_LOC/library/redis/src/redis-server &
+
+# start the rqworker who will read and execute
+#  provisioning jobs from redis queue
+rqworker & 
+
+# start the web server 
+$INSTALL_LOC/venv/bin/pserve $INSTALL_LOC/src/development.ini

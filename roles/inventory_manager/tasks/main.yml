@@ -19,3 +19,16 @@
 
 # Adding hosts file from template
 - template: src="hosts-{{ deployment_model }}.j2" dest="~/vars/f5aws/env/{{ env_name }}/inventory/hosts"
+
+# if we are deploying a WAF as part of our BIG-IP config, 
+#  we need the BEST license and asm to be provisioned after boot
+- include: provision_inventory.yml
+  vars:
+      bigip_license_package: best
+      bigip_modules: 
+       - avr
+       - asm
+  when: deployment_type == "lb_and_waf"
+
+- include: provision_inventory.yml
+  when: deployment_type == "lb_only"

@@ -1,0 +1,2 @@
+recursive-include service_catalog *.jinja2
+recursive-include service_catalog/static *.css *.js

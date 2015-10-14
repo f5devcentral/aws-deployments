@@ -1,0 +1,38 @@
+{% extends "layout.jinja2" %}
+{% block content %}
+<div id="content">
+	{% if submission_msgs %}
+	  <h3> {{ submission_msgs|safe }}.  Refresh this page for status or view logs. </h3>
+	{% endif %}
+	{% if submission_errors %}
+	  <h3><font color="red"> Error while submitting request:<br> {{ submission_errors|safe }} </font></h3>
+	{% endif %}
+  	<h4> Name:</h4><p> {{ name }}</p> 
+	<h5> Status:</h5> <p> {{ status }}</p>
+	<h5> Latest message:</h5><p> {{ msg }}</p>
+	<h5> Latest error:</h5><p> {{ err }}</p>
+	<h5> Last update tiem:</h5><p> {{ last_update_time }}</p>
+	<h5> Info: </h5>
+	{% for k1, v1 in env_info.iteritems() %}
+	  <p style="text-indent: 2em;">{{ k1 }} : {{ v1 }}</p>
+	{% endfor %}
+	<h5> Login and virtual server info: </h5>
+	{% for k1, v1 in login_info.iteritems() %}
+	  <p style="text-indent: 2em;">{{ k1 }}s:</p>
+	  {% for k2, v2 in v1.iteritems() %}
+	    <p style="text-indent: 4em;">{{ k2 }}:</p>
+	    {% for k3, v3 in v2.iteritems() %}
+	      <p style="text-indent: 6em;">{{ k3 }}: {{ v3 }}</p>
+	    {% endfor %}
+	  {% endfor %}
+	{% endfor %}
+	<h5> Resource statuses: </h5>
+	{% for k, v in statuses.iteritems() %}
+	  <p style="text-indent: 2em;">{{ k }}: {{ v.state }} </p>
+	{% endfor %}
+	<hr>
+	{% if form %}
+	  {{ form|safe }}
+	{% endif %}
+</div>
+{% endblock %}

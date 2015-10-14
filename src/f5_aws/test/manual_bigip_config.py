@@ -29,11 +29,15 @@ class BigipConfig(object):
     self.user = module.params["user"]
     self.password = module.params["password"]
     self.state = module.params["state"]
-    self.payload = json.loads(module.params["payload"])
-    self.collection_path = module.params["collection_path"]
-    self.resource_id = module.params["resource_id"]
-    self.resource_key = module.params["resource_key"]
 
+    try: 
+    	self.payload = json.loads(module.params.get("payload"))
+    except TypeError:
+    	self.payload = ''
+    self.resource_id = module.params.get("resource_id")
+    self.resource_key = module.params.get("resource_key")
+
+    self.collection_path = module.params["collection_path"]
     self.hosturl = "https://%s" % self.host
     self.auth = (self.user, self.password)
 
@@ -49,6 +53,8 @@ class BigipConfig(object):
     if 'application/service' in self.collection_path:
       return ('%s/~Common~%s.app~%s' % (self.collection_path,
          self._get_full_resource_id(), self._get_full_resource_id()))
+    elif self.resource_selfLink:
+      return self.resource_selfLink[self.resource_selfLink.find('mgmt'):]
     else:
       return '%s/%s' % (self.collection_path, self._get_full_resource_id())
 
@@ -73,12 +79,12 @@ class BigipConfig(object):
       del safe_payload["type"]
 
     del safe_payload[self.resource_key]
-    if len(safe_payload) == 0:
-    	raise NoChangeError('Payload is empty')
+    if len(safe_payload) < 1:
+      raise NoChangeError('Payload is empty')
 
     # handle the application service resources (i.e. iApps)
     # if 'application/service' in self.collection_path:
-    # 	print 'collection_path = {}'.format(self.collection_path)
+    #   print 'collection_path = {}'.format(self.collection_path)
 
     return safe_payload
 
@@ -99,22 +105,30 @@ class BigipConfig(object):
       for i in items:
         if i[self.resource_key] == self.payload[self.resource_key]:
           exists = True
+          self.set_selfLink(i)
           print 'fullPath = {}'.format(i['fullPath'])
           break
     return exists
+
+  def set_selfLink(self, config_item):
+    # self link looks like https://localhost/mgmt/tm/asm/policies/vsyrM5HMMpOHlSwDfs8mLA"
+    self.resource_selfLink = config_item['selfLink']
 
   def create_or_update_resource(self):
     # if it is a collection, we can just patch 
     if self.resource_key is None:
       return self.http("patch", self.collection_path, self.payload)
+    elif "mgmt/tm/asm/tasks/" in self.collection_path:
+      return self.create_resource()
     else:
       if self.resource_exists():
-      	try: 
-        	return self.update_resource()
+        try: 
+          return self.update_resource()
         except NoChangeError, e:
-        	rc = 0
-      		out = 'No configuration changes necessary. {}'.format(e)
-      		err = ''
+          rc = 0
+          out = 'No configuration changes necessary. {}'.format(e)
+          err = ''
+          return (rc, out, err)
       else:
         return self.create_resource()
 
@@ -122,11 +136,8 @@ class BigipConfig(object):
     return self.http("post", self.collection_path, self.payload)
 
   def update_resource(self):
-    #if self.resource_key is None:
-    #  return self.http("patch", self.collection_path, self.payload)
-    #else:
-    return self.http("patch", self._get_full_resource_path(),
-      self._get_safe_patch_payload())
+      return self.http("patch", self._get_full_resource_path(),
+        self._get_safe_patch_payload())
 
   def delete_resource(self):
     return self.http("delete", self._get_full_resource_path())
@@ -168,8 +179,8 @@ def get_namespace(**kwargs):
 # uncomment the below and run as necessary as 
 # bash$ python ./manual_bigip_config.py
 
-hostname="52.21.202.19"
-user="restadmin"
+hostname="52.0.182.115"
+user="rest_admin"
 password="GoF5!"
 
 # test problems with data-group patch, specifically
@@ -444,16 +455,45 @@ iapp_payload = {
 #   "resource_id": None  
 # } 
 
+# module = get_namespace()
+# module.params = {
+#   "host": hostname,
+#   "user": user,
+#   "password": password,
+#   "state": "present",
+#   "payload": '{"name":"us-east-1"}',
+#   "collection_path": "mgmt/tm/gtm/datacenter",
+#   "resource_key": "name",
+#   "resource_id": None
+# } 
+
+# with open('/aws-deployments/roles/bigip_app1/files/asm_policy_linux_high_base64', 'r') as f:
+# 	asm_policy_linux_high_base64 = f.read()[0:-1]
+
+# print asm_policy_linux_high_base64[0:10]
+
+# module = get_namespace()
+# module.params = {
+#   "host": hostname,
+#   "user": user,
+#   "password": password,
+#   "state": "present",
+#   "payload": r'{"file":"'+asm_policy_linux_high_base64+'","isBase64":true,"policyReference":{"link":"https://localhost/mgmt/tm/asm/policies/v2VUm_ocG5oFz7CSGWq-xw" } }',
+#   "collection_path": "mgmt/tm/asm/tasks/import-policy",
+#   "resource_key": "name",
+# } 
+
 module = get_namespace()
 module.params = {
   "host": hostname,
   "user": user,
   "password": password,
-  "state": "present",
-  "payload": '{"name":"us-east-1"}',
-  "collection_path": "mgmt/tm/gtm/datacenter",
-  "resource_key": "name",
-  "resource_id": None
+  "state": "inspect",
+  "collection_path": "mgmt/tm/asm/tasks/import-policy/elICMlpQ3bLiT1ocb3Ckgg"
 } 
 
-bigip_config = BigipConfig(module).create_or_update_resource()
+print BigipConfig(module).inspect()
+
+
+
+#bigip_config = BigipConfig(module).create_or_update_resource()

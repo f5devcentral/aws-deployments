@@ -6,7 +6,7 @@ when HTTP_REQUEST {
       HTTP::respond 200 content [b64decode [class element -name 0 sorry_images]] "Content-Type" "image/png"
     } else {
       if { [HTTP::uri] ends_with "background.png" } {
-        HTTP::respond 200 content [b64decode [class element -name 0 background_image]] "Content-Type" "image/png"
+        HTTP::respond 200 content [b64decode [class element -name 0 background_images]] "Content-Type" "image/png"
       } else {
         HTTP::respond 200 content "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
 <html xml:lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\"><head>
