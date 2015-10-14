@@ -8,6 +8,7 @@ provisioning objects using iControlRest, and aims to provide some level of idemp
 Some of the gotchas when using the "patch" method are documented in _get_safe_patch_payload()
 """
 
+import os
 import sys
 import json
 import requests
@@ -24,14 +25,22 @@ class BigipConfig(object):
     self.user = module.params["user"]
     self.password = module.params["password"]
     self.state = module.params["state"]
-    try:
-      self.payload = json.loads(module.params["payload"])
-    except TypeError:
-      self.payload = ''
-    self.collection_path = module.params["collection_path"]
-    self.resource_id = module.params["resource_id"]
-    self.resource_key = module.params["resource_key"]
 
+    # use a file which includes the payload contents if 
+    #  one was provided
+    if module.params["payload_file"]:
+      with open(os.path.expanduser(module.params["payload_file"]), 'r') as f:
+        self.payload = (json.load(f))
+    else:
+      try: 
+        self.payload = json.loads(module.params.get("payload"))
+      except TypeError:
+        self.payload = ''
+
+    self.resource_id = module.params.get("resource_id")
+    self.resource_key = module.params.get("resource_key")
+
+    self.collection_path = module.params["collection_path"]
     self.hosturl = "https://%s" % self.host
     self.auth = (self.user, self.password)
 
@@ -110,7 +119,9 @@ class BigipConfig(object):
 
   def create_or_update_resource(self):
     # if it is a collection, we can just patch 
-    if self.resource_key is None:
+    if "mgmt/tm/asm/tasks/" in self.collection_path:
+      return self.create_resource()
+    elif self.resource_key is None:
       return self.http("patch", self.collection_path, self.payload)
     else:
       if self.resource_exists():
@@ -172,6 +183,7 @@ def main():
       collection_path=dict(required=False, default=None, type='str'),
       # specific to state=present
       payload=dict(required=False, default=None, type='str'),
+      payload_file=dict(required=False, defualt=None, type='str'),
       resource_id=dict(required=False, default=None, type='str'),
       resource_key=dict(required=False, default=None, type='str'),
     ),

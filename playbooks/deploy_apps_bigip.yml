@@ -96,17 +96,6 @@
     - replace: dest=~/vars/f5aws/env/{{ env_name }}/{{vip_id}}_pool_from_containers.json regexp=',]}' replace=']}'
       delegate_to: localhost
 
-# Generate the iApp we will deploy from a template 
-- hosts: bigip-cluster-seeds
-  gather_facts: no
-  vars:
-    vip_id: "Vip1"
-    app_name: "Vip1_demo_iApp"
-  tasks: 
-     - name: Modify iApp to use VipAddress
-       template: src='{{ install_path }}/roles/bigip_app1/templates/iapp_f5_http_backport_service.yml.j2' dest='~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-{{vip_id}}-iApp.yml'
-       delegate_to: localhost
-
 # Deploy virtual server and related resources to BIG-IP 
 - hosts: bigip-cluster-seeds
   gather_facts: no
@@ -117,11 +106,9 @@
     image_sorry: "{{ lookup('file', install_path + '/roles/bigip_app1/files/image_sorry_base_64') }}"
     irule_sorry_page: "{{ lookup('file', install_path + '/roles/bigip_app1/files/irule_sorry_page.tcl') }}"
     irule_demo_analytics: "{{ lookup('file', install_path + '/roles/bigip_app1/files/irule_demo_analytics.tcl') }}"
-  vars_files:
-    # we pass pass along the json payload for the iCR call to deploy
-    # the iapp as a variable to the role
-    - [ '{{ install_path }}/roles/bigip_app1/files/iapp_f5_http_backport_template.yml' ]
-    - [ "~/vars/f5aws/env/{{env_name}}/{{inventory_hostname}}-{{vip_id}}-iApp.yml" ]
+    asm_policy_linux_high_base64: "{{ lookup('file', install_path + '/roles/bigip_app1/files/asm_policy_linux_high_base64') }}"
+    asm_policy_name: "linux_high-{{ vip_id }}"
+    ltm_policy_name: "ltm_policy_w_asm_linux_high-{{ vip_id }}"
   roles:
     - bigip_app1
 

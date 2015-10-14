@@ -45,7 +45,7 @@
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/ltm/data-group/internal'
       resource_key="name"
-      payload='{"name":"images_background","type":"string","records":[{"name":"{{image_background}}"}]}'
+      payload='{"name":"background_images","type":"string","records":[{"name":"{{image_background}}"}]}'
 
 - name: Uploading Datagroup ... image for sorry page
   delegate_to: localhost
@@ -56,7 +56,7 @@
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/ltm/data-group/internal'
       resource_key="name"
-      payload='{"name":"images_sorry","type":"string","records":[{"name":"{{image_sorry}}"}]}'
+      payload='{"name":"sorry_images","type":"string","records":[{"name":"{{image_sorry}}"}]}'
 
 - name: Uploading iRules ... sorry_page_rule
   delegate_to: localhost
@@ -80,9 +80,15 @@
       resource_key="name"
       payload='{"name":"irule_demo_analytics","apiAnonymous":"{{irule_demo_analytics|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
 
-- include: provision_waf_depends.yml
-  vars:
-    asm_policy_linux_high_base64: "{{ lookup('file', install_path + '/roles/bigip_app1/files/asm_policy_linux_high_base64') }}"
+# - include: provision_waf_depends.yml
+#   when: deployment_type == "lb_and_waf"
+
+- debug: var=ltm_policy_name
+
+# Generate the iApp we will deploy from a template 
+- name: Modify iApp to use VipAddress
+  template: src='{{ install_path }}/roles/bigip_app1/templates/iapp_f5_http_backport_service.json.j2' dest='~/vars/f5aws/env/{{ env_name }}/iapp_f5_http_backport_service-{{ vip_id }}.json'
+  delegate_to: localhost
 
 - name: Deploy the iApp template, since we are not using a default iApp on box
   delegate_to: localhost
@@ -92,10 +98,10 @@
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/sys/application/template'
-      payload='{{f5_http_backport_template|to_nice_json}}'
+      payload_file="{{ install_path }}/roles/bigip_app1/files/iapp_f5_http_backport_template.json"
       resource_key="name"
 
-- name: Deploy the iApp service,
+- name: Deploy the iApp service
   delegate_to: localhost
   bigip_config:
       state=present
@@ -103,6 +109,5 @@
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/sys/application/service'
-      payload='{{f5_http_backport_service|to_nice_json}}'
+      payload_file="~/vars/f5aws/env/{{ env_name }}/iapp_f5_http_backport_service-{{ vip_id }}.json"
       resource_key="name"
-  ignore_errors: true

@@ -1,11 +1,10 @@
----
-f5_http_backport_service: {
+{
   "name": "http_asm",
   "partition": "Common",
   "inheritedDevicegroup": "true",
   "inheritedTrafficGroup": "true",
   "strictUpdates": "enabled",
-  "template": "/Common/f5.http_backport.v1.0.4",
+  "template": "/Common/f5.http_backport",
   "lists": [
     {
       "name": "irules__irules",
@@ -56,7 +55,7 @@ f5_http_backport_service: {
     {
       "name": "asm__use_asm",
       "encrypted": "no",
-      "value": "/Common/ltm_w_asm"
+      "value": "/Common/{{ ltm_policy_name }}"
     },
     {% else %}
     {
@@ -123,7 +122,7 @@ f5_http_backport_service: {
     {
       "name": "pool__mask",
       "encrypted": "no",
-      "value": "none"
+      "value": ""
     },
     {
       "name": "pool__persist",
