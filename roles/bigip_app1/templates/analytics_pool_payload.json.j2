@@ -1,0 +1,13 @@
+{
+	"name":"syslog_pool",
+	"members":
+		[
+			{
+				{% for host in hostvars[groups["analyticshosts"]] %}
+				"name": "{{ host['AnalyticsServerInstancePrivateIp'] }}:514",
+				"address": "{{ host['AnalyticsServerInstancePrivateIp'] }}"
+				{% endfor %}
+			}
+		],
+	"monitor":"tcp"
+}

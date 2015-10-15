@@ -288,6 +288,7 @@ class EnvironmentManager(object):
 
     for v in config["required_vars"]:
       self.extra_vars[v] = config[v]
+    self.extra_vars["env_path"] = config["env_path"]
 
     # cloudformation templates will need just the key name, without any
     # extension
@@ -390,12 +391,12 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_analytics.yml'
     ]
 
-    if self.extra_vars["run_only"]:
+    if self.extra_vars.get("run_only"):
       print 'User specified subset of playbooks to run specified by {}'.format(
         self.extra_vars["run_only"])
       matching_playbooks = get_matching_playbooks(playbooks, self.extra_vars["run_only"])
     else:
-      matching_playbooks = []
+      matching_playbooks = playbooks
 
     print 'Running playbooks {}'.format(matching_playbooks)
 

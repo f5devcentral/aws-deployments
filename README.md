@@ -86,6 +86,9 @@ or also contains an Analytics Server (ex. Splunk):
  
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone-w-analytics", "region": "us-east-1", "zones": ["us-east-1b"] }'```
 
+Finally, to deploy an ASM profile to protect your application (i.e. web application FW), set the deployment_type to "lb_and_waf".  This deploys a generic linux, mysql, pache, FW policy for basic injections and vulnerabilities. 
+
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "deployment_type": "lb_and_waf", "region": "us-east-1", "zones": ["us-east-1b"] }'```
 
 NOTE: These have larger resource requirements (EIPs + CFTs) so you may need to increase your limits ahead of time.
 

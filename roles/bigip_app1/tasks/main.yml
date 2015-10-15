@@ -5,9 +5,14 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      payload_file='~/vars/f5aws/env/{{ env_name }}/{{ vip_id }}_pool_from_containers.json'
-      collection_path='mgmt/tm/ltm/pool'
+      payload_file="~/vars/f5aws/env/{{ env_name }}/{{ vip_id }}_pool_from_containers.json"
+      collection_path="mgmt/tm/ltm/pool"
       resource_key="name"
+
+- name: Build REST payload for the analytics server pool
+  template: src="{{ install_path }}/roles/bigip_app1/templates/analytics_pool_payload.json.j2" dest="{{ env_path }}/{{ env_name }}/analytics_pool_payload-{{ vip_id }}.json"
+  delegate_to: localhost
+  when: deploy_analytics is defined and deploy_analytics == "true"
 
 - name: Deploying/updating High Speed Logging pool to send to Analytics Server
   delegate_to: localhost
@@ -16,9 +21,10 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      collection_path='mgmt/tm/ltm/pool'
+      collection_path="mgmt/tm/ltm/pool"
+      payload_file="{{ env_path }}/{{ env_name }}/analytics_pool_payload-{{ vip_id }}.json"
       resource_key="name"
-      payload='{"name":"syslog_pool","members":[{"name":"{{hostvars[groups['analyticshosts'][0]]["AnalyticsServerInstancePrivateIp"]}}:514","address":"{{hostvars[groups['analyticshosts'][0]]["AnalyticsServerInstancePrivateIp"]}}"}],"monitor":"tcp"}' 
+  when: deploy_analytics is defined and deploy_analytics == "true"
 
 ##### UPLOAD DATAGROUP #####
 # TODO:
@@ -32,7 +38,7 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      collection_path='mgmt/tm/ltm/profile/analytics'
+      collection_path="mgmt/tm/ltm/profile/analytics"
       resource_key="name"
       payload='{"name":"{{ analytics_profile_name }}","capturedTrafficExternalLogging":"disabled","capturedTrafficInternalLogging":"disabled","collectGeo":"enabled","collectIp":"enabled","collectMaxTpsAndThroughput":"enabled","collectMethods":"enabled","collectPageLoadTime":"enabled","collectResponseCodes":"enabled","collectSubnets":"enabled","collectUrl":"enabled","collectUserAgent":"enabled","collectUserSessions":"enabled","collectedStatsExternalLogging":"disabled","collectedStatsInternalLogging":"enabled","defaultsFrom":"/Common/analytics","notificationByEmail":"disabled","notificationBySnmp":"disabled","notificationBySyslog":"disabled","partition":"Common","publishIruleStatistics":"disabled","sampling":"enabled","sessionCookieSecurity":"ssl-only","sessionTimeoutMinutes":"5"}'
 
@@ -43,7 +49,7 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      collection_path='mgmt/tm/ltm/data-group/internal'
+      collection_path="mgmt/tm/ltm/data-group/internal"
       resource_key="name"
       payload='{"name":"background_images","type":"string","records":[{"name":"{{image_background}}"}]}'
 
@@ -54,7 +60,7 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      collection_path='mgmt/tm/ltm/data-group/internal'
+      collection_path="mgmt/tm/ltm/data-group/internal"
       resource_key="name"
       payload='{"name":"sorry_images","type":"string","records":[{"name":"{{image_sorry}}"}]}'
 
@@ -76,7 +82,7 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      collection_path='mgmt/tm/ltm/rule'
+      collection_path="mgmt/tm/ltm/rule"
       resource_key="name"
       payload='{"name":"irule_demo_analytics","apiAnonymous":"{{irule_demo_analytics|replace("\\","\\\\")|replace("\"","\\\"")|replace("\n","\\n")}}"}'
 
@@ -87,7 +93,7 @@
 
 # Generate the iApp we will deploy from a template 
 - name: Modify iApp to use VipAddress
-  template: src='{{ install_path }}/roles/bigip_app1/templates/iapp_f5_http_backport_service.json.j2' dest='~/vars/f5aws/env/{{ env_name }}/iapp_f5_http_backport_service-{{ vip_id }}.json'
+  template: src="{{ install_path }}/roles/bigip_app1/templates/iapp_f5_http_backport_service.json.j2" dest="{{ env_path }}/{{ env_name }}/iapp_f5_http_backport_service-{{ vip_id }}.json"
   delegate_to: localhost
 
 - name: Deploy the iApp template, since we are not using a default iApp on box
@@ -97,7 +103,7 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      collection_path='mgmt/tm/sys/application/template'
+      collection_path="mgmt/tm/sys/application/template"
       payload_file="{{ install_path }}/roles/bigip_app1/files/iapp_f5_http_backport_template.json"
       resource_key="name"
 
@@ -108,6 +114,6 @@
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
-      collection_path='mgmt/tm/sys/application/service'
-      payload_file="~/vars/f5aws/env/{{ env_name }}/iapp_f5_http_backport_service-{{ vip_id }}.json"
+      collection_path="mgmt/tm/sys/application/service"
+      payload_file="{{ env_path }}/{{ env_name }}/iapp_f5_http_backport_service-{{ vip_id }}.json"
       resource_key="name"

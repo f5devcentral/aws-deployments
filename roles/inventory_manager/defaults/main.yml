@@ -10,6 +10,7 @@
 # deployment 
 deployment_model: "single-standalone"
 deployment_type: "lb_only"
+deploy_analytics: false
 region: us-east-1
 
 # networking 
