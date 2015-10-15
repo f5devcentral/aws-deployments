@@ -12,7 +12,9 @@ zone{{ loop.index }}-client1
 zone{{ loop.index }}-apphost1
 zone{{ loop.index }}-bigip1
 zone{{ loop.index }}-gtm1
-
+{% if deploy_analytics %}
+zone{{ loop.index }}-analyticshost1
+{% endif %}
 {% endfor %}
 
 [vpc]
@@ -54,6 +56,13 @@ zone{{ outer_loop.index }}-gtm{{ loop.index }}
 [clients]
 zone1-client1
 
+{% if deploy_analytics %}
+[analyticshosts]
+{% for zone in zones %}
+zone{{ loop.index }}-analyticshost1
+{% endfor %}
+{% endif %}
+
 {% for zone in zones %}
 {% set outer_loop = loop %}
 [zone{{ outer_loop.index }}-bigip-cluster]
@@ -84,6 +93,7 @@ image_id={{ image_id }}
 container_cnt={{ containers_per_app_host }}
 deployment_model={{ deployment_model }}
 deployment_type={{ deployment_type }}
+deploy_analytics={{ deploy_analytics }}
 region={{ region }}
 vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
 key_name={{ ssh_key_name }}

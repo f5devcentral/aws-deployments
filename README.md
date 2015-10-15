@@ -82,9 +82,9 @@ or using clusters:
 
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "cluster-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c"]}' ```
 
-or also contains an Analytics Server (ex. Splunk):
- 
- ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone-w-analytics", "region": "us-east-1", "zones": ["us-east-1b"] }'```
+You can add splunk to any deployment model by using the "deploy_analytics" flag:
+
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "deploy_analytics": "true", "region": "us-east-1", "zones": ["us-east-1b"] }'```
 
 Finally, to deploy an ASM profile to protect your application (i.e. web application FW), set the deployment_type to "lb_and_waf".  This deploys a generic linux, mysql, pache, FW policy for basic injections and vulnerabilities. 
 

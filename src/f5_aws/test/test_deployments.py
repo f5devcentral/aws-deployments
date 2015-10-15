@@ -145,17 +145,12 @@ def test_model_lifecycle(model):
       outputs["playbook_results"].statuscode == 0)
 
 
-
-# run through all the steps for a deployment
-# do this specifically with deploy_waf = true flag
-# TODO: check somehow that asm is actually slotted 
-# to be provisioned?
 def test_model_lifecycle_w_waf(model):
   for s in model_stages[model]:
     inputs = s["inputs"]
     inputs["cmd"] = s["stage"]
 
-    # add the deploy_waf=true flag
+    # add the deployment_type=lb_and_waf
     if inputs["cmd"] == "init":
       inputs["extra_vars"]["deployment_type"] = "lb_and_waf"
 
@@ -174,6 +169,25 @@ def test_model_lifecycle_w_waf(model):
       outputs["playbook_results"].statuscode == 0)
 
 
+def test_model_lifecycle_w_analytics(model):
+  for s in model_stages[model]:
+    inputs = s["inputs"]
+    inputs["cmd"] = s["stage"]
 
+    # add the deploy_analytics=true flag
+    if inputs["cmd"] == "init":
+      inputs["extra_vars"]["deploy_analytics"] = "true"
 
+    # reinstantiate EM each time as we are doing in ./bin/f5aws
+    #  all playbooks contexts should run successfully (exit code 0)
+    em = EnvironmentManagerFactory(**inputs)
+    outputs = getattr(em, inputs["cmd"])()
+    
+    # the stage has custom outputs, check these
+    if "outputs" in s["stage"]:
+      pass
 
+    # otherwise assume that we just ran some playbooks
+    #  check that playbooks executed properly
+    assert (len(outputs["playbook_results"].playbooks) > 0 and
+      outputs["playbook_results"].statuscode == 0)
