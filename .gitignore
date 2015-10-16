@@ -1,7 +1,6 @@
 # build products...
 *.py[co]
 *.egg-info
-build
 # Emacs backup files...
 *~
 .\#*
@@ -35,3 +34,7 @@ debian/
 **/venv
 #ssh directories
 **/.ssh
+#Packer Builds
+*.box
+#Packer Cache
+*.iso

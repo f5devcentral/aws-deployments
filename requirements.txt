@@ -7,7 +7,6 @@ colander==1.0
 configobj==5.0.6
 deform==0.9.9
 ecdsa==0.13
-f5-aws==1.0.1
 html==1.16
 iso8601==0.1.10
 Jinja2==2.8

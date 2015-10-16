@@ -1,0 +1,50 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": ""
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "us-west-2",
+    "source_ami": "ami-17471c27",
+    "instance_type": "t1.micro",
+    "ssh_username": "ubuntu",
+    "ami_name": "packer-example {{timestamp}}"
+  }],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [ "sleep 10" ]
+    },
+    {
+     "type": "file",
+     "source": "files/motd",
+     "destination": "~/motd"
+    },
+    {
+      "type": "shell",
+      "inline": [ 
+          "sudo cp motd /etc/motd",
+          "rm -f ~/motd"
+      ]
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/base_ubuntu_bootstrap.sh",
+        "scripts/setup_venv.sh"
+      ]
+    },
+    {
+     "type": "file",
+     "source": "files/setup.py",
+     "destination": "~/setup.sh"
+    }
+  ],
+  "post-processors": [{
+        "type": "vagrant",
+        "output": "build/aws/f5demo_{{.Provider}}.box"
+  }]
+}

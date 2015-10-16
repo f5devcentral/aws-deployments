@@ -7,7 +7,7 @@ with open(os.path.join(here, 'README.txt')) as f:
     README = f.read()
 
 setup(name='f5_aws',
-      version='1.0.1',
+      version='1.0.5',
       description='A basic service catalog for demonstrating the deployment of F5 in AWS',
       long_description=README,
       classifiers=[

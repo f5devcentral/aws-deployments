@@ -19,27 +19,13 @@ Vagrant.configure(2) do |config|
   # Uncomment and set below value to false
   # config.ssh.insert_key=false
 
-
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
   # your network.
   config.vm.network "public_network"
   config.vm.network :forwarded_port, guest: 8080, host: 8080
   config.vm.network :forwarded_port, guest: 6379, host: 6379
-
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
+  
   config.vm.synced_folder "../", "/aws-deployments"
-
-  # some bootstrapping to get python 2.7.9 installed
-  #  config.vm.provision "shell", privileged: true, path: "install_python.sh"
-
-  # basic ssh and python environment setup
-  config.vm.provision "shell", privileged: false, path: "bootstrap.sh"
-
-  config.vm.provision "file", source: ".f5aws", destination: "~/.f5aws"
-  config.vm.provision "file", source: ".aws/credentials", destination: "~/.aws/credentials"
 
 end

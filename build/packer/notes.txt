@@ -1,0 +1,186 @@
+TEST BUILD AMI:
+
+(virt1)user1@desktop:packer $packer build -var "aws_access_key=${AWS_ACCESS_KEY}" -var "aws_secret_key=${AWS_SECRET_KEY}" -var "vpc_id=vpc-abdb58ce" -var "subnet_id=vpc-abdb58ce" aws-ami-template.json
+amazon-ebs output will be in this color.
+
+==> amazon-ebs: Prevalidating AMI Name...
+==> amazon-ebs: Inspecting the source AMI...
+==> amazon-ebs: Creating temporary keypair: packer 560f0595-2c1b-bd49-a935-acf7b8a79866
+==> amazon-ebs: Creating temporary security group for this instance...
+==> amazon-ebs: Authorizing access to port 22 the temporary security group...
+==> amazon-ebs: Launching a source AWS instance...
+    amazon-ebs: Instance ID: i-255171e3
+==> amazon-ebs: Waiting for instance (i-255171e3) to become ready...
+==> amazon-ebs: Waiting for SSH to become available...
+==> amazon-ebs: Connected to SSH!
+==> amazon-ebs: Stopping the source instance...
+==> amazon-ebs: Waiting for the instance to stop...
+==> amazon-ebs: Creating the AMI: packer-example 1443825045
+    amazon-ebs: AMI: ami-30896c03
+==> amazon-ebs: Waiting for AMI to become ready...
+==> amazon-ebs: Terminating the source AWS instance...
+==> amazon-ebs: Cleaning up any extra volumes...
+==> amazon-ebs: No volumes to clean up, skipping
+==> amazon-ebs: Deleting temporary security group...
+==> amazon-ebs: Deleting temporary keypair...
+Build 'amazon-ebs' finished.
+
+==> Builds finished. The artifacts of successful builds are:
+--> amazon-ebs: AMIs were created:
+
+us-west-2: ami-30896c03
+
+TEST BUILD VIRTUAL BOX:
+
+(virt1)user1@desktop:packer $packer build virtual-box-template.json
+virtualbox-iso output will be in this color.
+
+==> virtualbox-iso: Downloading or copying Guest additions
+    virtualbox-iso: Downloading or copying: file:///Applications/VirtualBox.app/Contents/MacOS/VBoxGuestAdditions.iso
+==> virtualbox-iso: Downloading or copying ISO
+    virtualbox-iso: Downloading or copying: http://releases.ubuntu.com/14.04/ubuntu-14.04.3-server-amd64.iso
+    virtualbox-iso: Download progress: 0%
+    virtualbox-iso: Download progress: 1%
+    virtualbox-iso: Download progress: 2%
+    virtualbox-iso: Download progress: 2%
+    virtualbox-iso: Download progress: 4%
+    virtualbox-iso: Download progress: 7%
+    virtualbox-iso: Download progress: 9%
+    virtualbox-iso: Download progress: 11%
+    virtualbox-iso: Download progress: 12%
+    virtualbox-iso: Download progress: 13%
+    virtualbox-iso: Download progress: 14%
+    virtualbox-iso: Download progress: 16%
+    virtualbox-iso: Download progress: 18%
+    virtualbox-iso: Download progress: 20%
+    virtualbox-iso: Download progress: 21%
+    virtualbox-iso: Download progress: 23%
+    virtualbox-iso: Download progress: 24%
+    virtualbox-iso: Download progress: 25%
+    virtualbox-iso: Download progress: 27%
+    virtualbox-iso: Download progress: 28%
+    virtualbox-iso: Download progress: 29%
+    virtualbox-iso: Download progress: 30%
+    virtualbox-iso: Download progress: 32%
+    virtualbox-iso: Download progress: 34%
+    virtualbox-iso: Download progress: 36%
+    virtualbox-iso: Download progress: 38%
+    virtualbox-iso: Download progress: 39%
+    virtualbox-iso: Download progress: 40%
+    virtualbox-iso: Download progress: 41%
+    virtualbox-iso: Download progress: 42%
+    virtualbox-iso: Download progress: 43%
+    virtualbox-iso: Download progress: 44%
+    virtualbox-iso: Download progress: 45%
+    virtualbox-iso: Download progress: 47%
+    virtualbox-iso: Download progress: 49%
+    virtualbox-iso: Download progress: 50%
+    virtualbox-iso: Download progress: 52%
+    virtualbox-iso: Download progress: 53%
+    virtualbox-iso: Download progress: 55%
+    virtualbox-iso: Download progress: 57%
+    virtualbox-iso: Download progress: 58%
+    virtualbox-iso: Download progress: 60%
+    virtualbox-iso: Download progress: 61%
+    virtualbox-iso: Download progress: 64%
+    virtualbox-iso: Download progress: 67%
+    virtualbox-iso: Download progress: 69%
+    virtualbox-iso: Download progress: 72%
+    virtualbox-iso: Download progress: 74%
+    virtualbox-iso: Download progress: 76%
+    virtualbox-iso: Download progress: 77%
+    virtualbox-iso: Download progress: 79%
+    virtualbox-iso: Download progress: 81%
+    virtualbox-iso: Download progress: 83%
+    virtualbox-iso: Download progress: 84%
+    virtualbox-iso: Download progress: 85%
+    virtualbox-iso: Download progress: 86%
+    virtualbox-iso: Download progress: 87%
+    virtualbox-iso: Download progress: 89%
+    virtualbox-iso: Download progress: 92%
+    virtualbox-iso: Download progress: 95%
+    virtualbox-iso: Download progress: 97%
+    virtualbox-iso: Download progress: 99%
+==> virtualbox-iso: Starting HTTP server on port 8337
+==> virtualbox-iso: Creating virtual machine...
+==> virtualbox-iso: Creating hard drive...
+==> virtualbox-iso: Creating forwarded port mapping for SSH (host port 3803)
+==> virtualbox-iso: Executing custom VBoxManage commands...
+    virtualbox-iso: Executing: modifyvm packer-virtualbox-iso-1444076571 --memory 512
+    virtualbox-iso: Executing: modifyvm packer-virtualbox-iso-1444076571 --cpus 1
+==> virtualbox-iso: Starting the virtual machine...
+==> virtualbox-iso: Waiting 12s for boot...
+==> virtualbox-iso: Typing the boot command...
+==> virtualbox-iso: Waiting for SSH to become available...
+==> virtualbox-iso: Connected to SSH!
+==> virtualbox-iso: Uploading VirtualBox version info (5.0.0)
+==> virtualbox-iso: Uploading VirtualBox guest additions ISO...
+==> virtualbox-iso: Provisioning with shell script: scripts/vagrant.sh
+    virtualbox-iso: [sudo] password for vagrant: --2015-10-05 13:35:00--  https://github.com/mitchellh/vagrant/raw/master/keys/vagrant.pub
+    virtualbox-iso: Resolving github.com (github.com)... 192.30.252.130
+    virtualbox-iso: Connecting to github.com (github.com)|192.30.252.130|:443... connected.
+    virtualbox-iso: HTTP request sent, awaiting response... 302 Found
+    virtualbox-iso: Location: https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant.pub [following]
+    virtualbox-iso: --2015-10-05 13:35:01--  https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant.pub
+    virtualbox-iso: Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 23.235.47.133
+    virtualbox-iso: Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|23.235.47.133|:443... connected.
+    virtualbox-iso: HTTP request sent, awaiting response... 200 OK
+    virtualbox-iso: Length: 409 [text/plain]
+    virtualbox-iso: Saving to: ‘authorized_keys’
+    virtualbox-iso:
+    virtualbox-iso: 0K                                                       100% 53.4M=0s
+    virtualbox-iso:
+    virtualbox-iso: 2015-10-05 13:35:01 (53.4 MB/s) - ‘authorized_keys’ saved [409/409]
+    virtualbox-iso:
+==> virtualbox-iso: Provisioning with shell script: scripts/vboxguest.sh
+    virtualbox-iso: [sudo] password for vagrant: mount: block device /home/vagrant/VBoxGuestAdditions_5.0.0.iso is write-protected, mounting read-only
+    virtualbox-iso: Verifying archive integrity... All good.
+    virtualbox-iso: Uncompressing VirtualBox 5.0.0 Guest Additions for Linux............
+    virtualbox-iso: VirtualBox Guest Additions installer
+    virtualbox-iso: Copying additional installer modules ...
+    virtualbox-iso: Installing additional modules ...
+    virtualbox-iso: Removing existing VirtualBox DKMS kernel modules ...done.
+    virtualbox-iso: Removing existing VirtualBox non-DKMS kernel modules ...done.
+    virtualbox-iso: Building the VirtualBox Guest Additions kernel modules ...done.
+    virtualbox-iso: Doing non-kernel setup of the Guest Additions ...done.
+    virtualbox-iso: You should restart your guest to make sure the new modules are actually used
+    virtualbox-iso:
+    virtualbox-iso: Installing the Window System drivers
+    virtualbox-iso: Could not find the X.Org or XFree86 Window System, skipping.
+==> virtualbox-iso: Gracefully halting virtual machine...
+    virtualbox-iso: [sudo] password for vagrant:
+==> virtualbox-iso: Preparing to export machine...
+    virtualbox-iso: Deleting forwarded port mapping for SSH (host port 3803)
+==> virtualbox-iso: Exporting virtual machine...
+    virtualbox-iso: Executing: export packer-virtualbox-iso-1444076571 --output output-virtualbox-iso/packer-virtualbox-iso-1444076571.ovf
+==> virtualbox-iso: Unregistering and deleting virtual machine...
+==> virtualbox-iso: Running post-processor: vagrant
+==> virtualbox-iso (vagrant): Creating Vagrant box for 'virtualbox' provider
+    virtualbox-iso (vagrant): Copying from artifact: output-virtualbox-iso/packer-virtualbox-iso-1444076571-disk1.vmdk
+    virtualbox-iso (vagrant): Copying from artifact: output-virtualbox-iso/packer-virtualbox-iso-1444076571.ovf
+    virtualbox-iso (vagrant): Renaming the OVF to box.ovf...
+    virtualbox-iso (vagrant): Compressing: Vagrantfile
+    virtualbox-iso (vagrant): Compressing: box.ovf
+    virtualbox-iso (vagrant): Compressing: metadata.json
+    virtualbox-iso (vagrant): Compressing: packer-virtualbox-iso-1444076571-disk1.vmdk
+Build 'virtualbox-iso' finished.
+
+==> Builds finished. The artifacts of successful builds are:
+--> virtualbox-iso: 'virtualbox' provider box: build/f5demo_virtualbox.box
+
+
+F5DEMO Base Image = 20 minutes to build:
+
+    virtualbox-iso (vagrant): Compressing: box.ovf
+    virtualbox-iso (vagrant): Compressing: metadata.json
+    virtualbox-iso (vagrant): Compressing: packer-virtualbox-iso-1444083897-disk1.vmdk
+Build 'virtualbox-iso' finished.
+
+==> Builds finished. The artifacts of successful builds are:
+--> virtualbox-iso: 'virtualbox' provider box: build/virtualbox/f5demo_virtualbox.box
+
+real	19m33.645s
+user	1m46.165s
+sys	0m47.450s
+
+.....
