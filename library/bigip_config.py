@@ -56,6 +56,9 @@ class BigipConfig(object):
     if 'application/service' in self.collection_path:
       return ('%s/~Common~%s.app~%s' % (self.collection_path,
          self._get_full_resource_id(), self._get_full_resource_id()))
+    elif 'application/template' in self.collection_path:
+      return ('%s/~Common~%s' % (self.collection_path,
+         self._get_full_resource_id()))
     elif self.resource_selfLink:
       return self.resource_selfLink[self.resource_selfLink.find('mgmt'):]
     else:

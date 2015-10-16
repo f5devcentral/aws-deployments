@@ -48,6 +48,19 @@
         WebServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePublicIp }}
         WebServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.WebServerInstancePrivateIp }}
 
+# Pick up Analytics Server Address so can add to syslog_pool
+- hosts: analyticshosts
+  gather_facts: False
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks:
+    - name: Add CFT output variables to host from persisted results from previous playbooks
+      set_fact:
+        ansible_ssh_host={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePublicIp }}
+        AnalyticsServerInstancePublicIp={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePublicIp }}
+        AnalyticsServerInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstancePrivateIp }}
+        AnalyticsServerInstanceId={{ hostvars[inventory_hostname].stack_outputs.AnalyticsServerInstance }}
+
 ############################## End boilerplate #########################
 ########################################################################
 # At this point we have dynamically populated the ansible host groups,
