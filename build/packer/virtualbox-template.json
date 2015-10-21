@@ -1,4 +1,7 @@
 {
+  "variables": {
+    "atlas_token": ""
+  },
   "builders": [{
     "type": "virtualbox-iso",
     "virtualbox_version_file": ".vbox_version",
@@ -39,8 +42,13 @@
   }],
   "provisioners": [{
      "type": "file",
-     "source": "files/",
-     "destination": "~/"
+     "source": "files/motd",
+     "destination": "~/motd"
+   },
+   {
+     "type": "file",
+     "source": "files/requirements.txt",
+     "destination": "~/requirements.txt"
    },
    {
     "type": "shell",
@@ -49,19 +57,43 @@
       "scripts/vagrant.sh",
       "scripts/vboxguest.sh",
       "scripts/base_ubuntu_bootstrap.sh",
-      "setup_venv.sh"
+      "scripts/setup_venv.sh"
     ]
-  },
-  {
+    },
+    {
       "type": "shell",
       "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
       "inline": [
-          "cp motd /etc/motd"
+          "cp motd /etc/motd",
+          "rm -f ~/motd",
+          "rm -f ~/requirements.txt",
+          "sed -i.bak 's/UsePAM yes/UsePAM yes\\nUseDNS no\\n/' /etc/ssh/sshd_config",
+          "service ssh restart"
       ]
-  }
+    }
   ],
-  "post-processors": [{
-    "output": "build/virtualbox/f5demo_{{.Provider}}.box",
-    "type": "vagrant"
-  }]
+  "push": {
+    "name": "f5networks/f5-aws-deployments",
+    "vcs": false,
+    "include": [
+      "scripts/*",
+      "http/ubuntu-14.04-amd64/*",
+      "files/*"
+    ]
+  },
+  "post-processors": [
+    [{
+      "type": "vagrant",
+      "keep_input_artifact": false
+     },
+     {
+        "type": "atlas",
+        "token": "{{user `atlas_token`}}",
+        "artifact": "f5networks/f5-aws-deployments",
+        "artifact_type": "vagrant.box",
+        "metadata": {
+           "provider": "virtualbox"
+        }
+     }]
+  ]
 }

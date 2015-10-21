@@ -4,6 +4,7 @@
 sudo add-apt-repository ppa:chris-lea/redis-server
 
 sudo apt-get update
+sudo apt-get install -y ntp
 sudo apt-get install -y aptitude
 sudo apt-get install -y git
 sudo apt-get install -y wget
@@ -31,7 +32,7 @@ sudo sh -c "wget https://bootstrap.pypa.io/ez_setup.py -O - | /usr/local/lib/pyt
 sudo /usr/local/lib/python2.7.9/bin/easy_install pip
 sudo /usr/local/lib/python2.7.9/bin/pip install virtualenv
 cd ../
-rm -rf Python-2.7.9/
+sudo rm -rf Python-2.7.9/
 
 #Install Docker
 sudo apt-get -y install docker.io

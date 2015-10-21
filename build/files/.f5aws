@@ -1,4 +1,7 @@
-install_path = '/aws-deployments'
+#Absolute path to aws-deployments directory
+# ex. 
+# install_path = '/home/vagrant/aws-deployments'
+install_path = '/home/ubuntu/aws-deployments'
 
 ### Credentials ###
 # This SSH key is used to login to all the deployed hosts in EC2
@@ -24,4 +27,4 @@ f5_aws_secret_key ='your_bigip_user_secret_key_here'
 
 # WARNING: If populating the f5_aws_XXXX_keys above, please ensure you use 
 # disposable keys and use a STRONG password for bigip_rest_password 
-# as these systems will be publicly available and you don't want to risk compromising these keys   
+# as these systems will be publicly available and you don't want to risk compromising 
