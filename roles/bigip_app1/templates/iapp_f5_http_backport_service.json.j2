@@ -4,14 +4,15 @@
   "inheritedDevicegroup": "true",
   "inheritedTrafficGroup": "true",
   "strictUpdates": "enabled",
-  "template": "/Common/f5.http_backport",
+  "template": "/Common/f5.http.backport.1.1.2",
+  "templateModified": "no",
   "lists": [
     {
       "name": "irules__irules",
       "encrypted": "no",
       "value": [
-        "/Common/irule_sorry_page",
-        "/Common/irule_demo_analytics"
+        "/Common/irule_demo_analytics",
+        "/Common/irule_sorry_page"
       ]
     }
   ],
@@ -53,21 +54,21 @@
     },
     {% if deployment_type == "lb_and_waf" %}
     {
-      "name": "asm__use_asm",
-      "encrypted": "no",
-      "value": "/Common/{{ ltm_policy_name }}"
+        "name": "asm__use_asm",
+        "encrypted": "no",
+        "value": "/Common/{{ ltm_policy_name }}"
     },
     {% else %}
     {
-      "name": "asm__use_asm",
-      "encrypted": "no",
-      "value": "/#do_not_use#"
+        "name": "asm__use_asm",
+        "encrypted": "no",
+        "value": "/#do_not_use#"
     },
     {% endif %}
     {
       "name": "client__http_compression",
       "encrypted": "no",
-      "value": "/Common/wan-optimized-compression"
+      "value": "/#do_not_use#"
     },
     {
       "name": "client__standard_caching_without_wa",
@@ -110,8 +111,8 @@
       "value": "all"
     },
     {
-      "encrypted": "no",
       "name": "pool__addr",
+      "encrypted": "no",
       "value": "{{VipAddress1}}"
     },
     {
@@ -133,11 +134,6 @@
       "name": "pool__pool_to_use",
       "encrypted": "no",
       "value": "/Common/{{ iapp_vs_pool_name }}"
-    },
-    {
-      "name": "pool__port",
-      "encrypted": "no",
-      "value": "80"
     },
     {
       "name": "pool__port_secure",
@@ -167,7 +163,7 @@
     {
       "name": "server__tcp_lan_opt",
       "encrypted": "no",
-      "value": "/Common/tcp-ssl-wan-optimized"
+      "value": "/Common/tcp-wan-optimized"
     },
     {
       "name": "server__tcp_req_queueing",
@@ -217,7 +213,7 @@
     {
       "name": "stats__request_logging",
       "encrypted": "no",
-      "value": "/Common/request-log"
+      "value": "/#do_not_use#"
     }
   ]
 }

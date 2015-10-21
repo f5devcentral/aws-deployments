@@ -111,7 +111,7 @@ class CLI(object):
     if ("playbook_results" in exec_results and 
       getattr(exec_results["playbook_results"], "statuscode", -1)) == 0:
       print ""
-      print "The Ansible inventory for your environment has not been initialized. \
+      print "The Ansible inventory for your environment has now been initialized.\
   Deploy the environment with the `deploy` command.\n"
       print "You can view the inventory for this environment in {}".format(
         exec_results['env'].env_inventory_path)
@@ -204,7 +204,7 @@ class CLI(object):
     """
       Implements command line method to pass traffic through BIG-IP
     """
-    exec_results = EnvironmentManager(args, cmd='info').start_traffic()
+    exec_results = EnvironmentManagerFactory(env_name=args.env_name, cmd='info').start_traffic()
     print_playbook_results(exec_results)
 
   @staticmethod
@@ -212,5 +212,5 @@ class CLI(object):
     """
       Implements command line method to stop traffic through BIG-IP
     """
-    exec_results = EnvironmentManager(args).stop_traffic()
+    exec_results = EnvironmentManagerFactory(env_name=args.env_name, cmd='info').stop_traffic()
     print_playbook_results(exec_results)

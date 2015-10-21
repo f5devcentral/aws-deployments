@@ -1,6 +1,6 @@
 when RULE_INIT {
     expr srand("[clock clicks]")
-    set static::TARGET_VIP "/Common/Vip1_demo_iApp.app/Vip1_demo_iApp_vs"
+    set static::TARGET_VIP "/Common/Vip1_iApp.app/Vip1_iApp_vs"
 }
 when CLIENT_ACCEPTED {
 

@@ -1,4 +1,7 @@
 ---
+# We need to retry this tasks until it succeeds, ASM takes longer to boot
+#  than some of the other LTM functionality we have been provisioning against
+#  so far. 
 - name: Create the ASM policy
   delegate_to: localhost
   bigip_config:
@@ -10,6 +13,9 @@
       resource_key="name"
       payload='{"name":"{{ asm_policy_name }}","applicationLanguage":"utf-8","caseInsensitive":true}'
   register: result
+  until: result|changed
+  retries: 20
+  delay: 5
 
 - name: Save the policy self link
   set_fact: policySelfLink="{{ result['out']['selfLink'] }}"
@@ -54,7 +60,8 @@
       collection_path='mgmt/tm/asm/tasks/apply-policy'
       payload='{"policyReference":{"link":"{{ policySelfLink }}"} }'
   register: result
-- set_fact: taskId="{{ result['out']['id'] }}"
+- name: Save the async task ID
+  set_fact: taskId="{{ result['out']['id'] }}"
 
 - name: Wait for the apply task to complete
   delegate_to: localhost

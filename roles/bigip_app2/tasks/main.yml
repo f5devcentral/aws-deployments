@@ -30,7 +30,7 @@
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/ltm/virtual'
       resource_key="name"
-      payload='{"name":"{{vip_id}}_http","destination":"/Common/{{VipAddress2}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'
+      payload='{"name":"{{vip_id}}_http","destination":"/Common/{{VipAddress2}}:80","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/irule_random_snat"], "profiles":[{"name":"http"},{"name":"tcp-wan-optimized","context":"clientside"},{"name":"tcp-lan-optimized","context":"serverside"}]}'
 
 - name: Setup the HTTPS virtual server
   delegate_to: localhost
@@ -41,4 +41,4 @@
       password={{ bigip_rest_password }}
       collection_path='mgmt/tm/ltm/virtual'
       resource_key="name"
-      payload='{"name":"{{vip_id}}_https","destination":"/Common/{{VipAddress2}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/__snat_random_rule"], "profiles":[{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"}]}'
+      payload='{"name":"{{vip_id}}_https","destination":"/Common/{{VipAddress2}}:443","mask":"255.255.255.255","ipProtocol":"tcp","pool":"/Common/{{vip_id}}_pool","translateAddress":"enabled","translatePort":"enabled","sourceAddressTranslation":{"type":"automap"},"rules":["/Common/irule_random_snat"], "profiles":[{"name":"tcp-ssl-wan-optimized","context":"clientside"},{"name":"tcp-ssl-lan-optimized","context":"serverside"}]}'

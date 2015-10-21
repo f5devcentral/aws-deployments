@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+"""
+Quick and dirty approach to clustering BIG-IP
+  BIG-IP offers no API based approach to clustering that
+  can be performed over REST/SOAP.  Instead we use expect scripts.
+  a.applebaum@f5.com
+"""
+
 import sys
 import time
 import pexpect
