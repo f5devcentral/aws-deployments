@@ -49,7 +49,7 @@ client_instance_type: "t1.micro"
 # default AMI is ECS-Optimized AMI (2015.03.g)
 # To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00U6QTYI2
-apphost_instance_type: "t2.micro"
+apphost_instance_type: "t2.medium"
 
 standalone_per_zone:
   clustering: none
