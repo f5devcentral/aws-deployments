@@ -1,5 +1,5 @@
 ansible==1.8.2
-bigsuds==1.0.1
+bigsuds==1.0.2
 boto==2.38.0
 Chameleon==2.22
 click==5.1
