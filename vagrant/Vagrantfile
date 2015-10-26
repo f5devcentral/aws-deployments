@@ -26,7 +26,7 @@ Vagrant.configure(2) do |config|
   config.vm.network :forwarded_port, guest: 8080, host: 8080
   config.vm.network :forwarded_port, guest: 6379, host: 6379
   
-  config.vm.synced_folder "../", "aws-deployments"
+  config.vm.synced_folder "../", "/aws-deployments"
 
   # basic ssh and python environment setup
   config.vm.provision "shell", privileged: false, path: "../build/scripts/setup_env_vbox.sh"
