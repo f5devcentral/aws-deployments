@@ -2,6 +2,10 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Allocates and EIP and assigns it to a Private IP Secondary",
   "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Used to tag all resources created within this CFT"
+    },
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within the supplied region."

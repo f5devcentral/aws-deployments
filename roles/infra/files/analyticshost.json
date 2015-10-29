@@ -4,7 +4,7 @@
   "Parameters": {
     "envName": {
       "Type": "String",
-      "Description": "Environment name from f5Aws tool deployment."
+      "Description": "Used to tag all resources created within this CFT"
     },
   	"vpc": {
       "Type": "AWS::EC2::VPC::Id",

@@ -26,6 +26,7 @@
       Host: "{{ inventory_hostname }}"
       InstanceType: "ApplicationHost"
     template_parameters:
+      envName: "{{ env_name }}"
       vpc: "{{ vpc_id }}"
       applicationSubnet: "{{ application_subnet }}"
       instanceType: "{{ apphost_instance_type }}"

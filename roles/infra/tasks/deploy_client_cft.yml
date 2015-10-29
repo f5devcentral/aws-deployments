@@ -26,6 +26,7 @@
       Host: "{{ inventory_hostname }}"
       InstanceType: "Client"
     template_parameters:
+      envName: "{{ env_name }}"
       vpc: "{{ vpc_id }}"
       clientSubnet: "{{ public_subnet }}"
       instanceType: "{{ client_instance_type }}"

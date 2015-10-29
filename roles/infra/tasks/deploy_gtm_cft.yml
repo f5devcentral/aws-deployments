@@ -30,6 +30,7 @@
       instanceType: "GTM"
       Name: "{{ inventory_hostname }}"
     template_parameters:
+      envName: "{{ env_name }}"
       region: "{{ region }}"
       vpc: "{{ vpc_id }}"
       availabilityZone: "{{ availability_zone }}"

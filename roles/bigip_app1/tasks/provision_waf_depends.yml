@@ -14,7 +14,7 @@
       payload='{"name":"{{ asm_policy_name }}","applicationLanguage":"utf-8","caseInsensitive":true}'
   register: result
   until: result|changed
-  retries: 20
+  retries: 40
   delay: 5
 
 - name: Save the policy self link
@@ -47,7 +47,7 @@
       collection_path='mgmt/tm/asm/tasks/import-policy/{{ taskId }}'
   register: importResult
   until: importResult.out.status.find("COMPLETED") != -1
-  retries: 10
+  retries: 40
   delay: 2
 
 - name: Apply the ASM policy
@@ -73,7 +73,7 @@
       collection_path='mgmt/tm/asm/tasks/apply-policy/{{ taskId }}'
   register: applyResult
   until: applyResult.out.status.find("COMPLETED") != -1
-  retries: 10
+  retries: 40
   delay: 2
 
 - name: Create an LTM policy for use with our iApp which associates the ASM policy
