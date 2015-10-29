@@ -15,7 +15,6 @@ region: us-east-1
 
 # networking 
 vpc_cidr_prefix: "172.16"
-containers_per_host: 2
 apphosts_per_zone: 1
 
 # default AMI is F5 BIG-IP Virtual Edition 25 Mbps - Better
@@ -42,14 +41,14 @@ gtm_modules:
 # To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00JV9JBDS
 # app deployment 
-image_id: "mutzel/all-in-one-hackazon"
-containers_per_app_host: 1
 client_instance_type: "t1.micro"
 
 # default AMI is ECS-Optimized AMI (2015.03.g)
 # To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00U6QTYI2
 apphost_instance_type: "t2.medium"
+containers_per_app_host: 1
+image_id: "mutzel/all-in-one-hackazon"
 
 standalone_per_zone:
   clustering: none
