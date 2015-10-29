@@ -14,7 +14,7 @@
 # We could have used the ec2 module here from ansible. It works well when 
 #  deploying "generic" compute resources but we'll use cloudformation
 #  instead for consistency. 
-- name: Launch App hosts
+- name: Launch Analytics hosts
   action: cloudformation
     stack_name="{{ env_name }}-{{ inventory_hostname }}"
     state=present

@@ -11,3 +11,6 @@
 
 - include: provision_inventory.yml
   when: deployment_type == "lb_only"
+
+- include: provision_analytics.yml
+  when: deploy_analytics == "true"
