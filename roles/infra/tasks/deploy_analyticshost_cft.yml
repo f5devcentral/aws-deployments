@@ -25,6 +25,7 @@
       envName: "{{ env_name }}"
       host: "{{ inventory_hostname }}"
       instanceType: "Analytics"
+      Name: "{{ inventory_hostname }}-{{env_name}}"
     template_parameters:
       vpc: "{{ vpc_id }}"
       envName: "{{ env_name }}"
