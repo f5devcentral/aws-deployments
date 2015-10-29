@@ -199,7 +199,7 @@
   - name: Persist virtual server data
     delegate_to: localhost
     copy:
-      content: "{{ result['out'] | to_json }}"
+      content: "{{ result['out'] }}"
       dest: "~/vars/f5aws/env/{{ env_name }}/facts_{{ inventory_hostname }}.json"
     #command: "echo hello > ~/vars/f5aws/env/{{ env_name }}/facts_{{ inventory_hostname }}.json"
 
