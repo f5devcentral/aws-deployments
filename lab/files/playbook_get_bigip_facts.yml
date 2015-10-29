@@ -1,0 +1,18 @@
+---
+- hosts: bigips
+  gather_facts: no
+  tasks:
+   - name: Get BIGIP Facts
+     local_action: >
+        bigip_facts
+        server={{ inventory_hostname }}
+        user=restadmin
+        password={{ restadmin_password }}
+        include=pool,system_info
+     register: bigip_facts
+
+   - name: Print BIGIP Facts
+     debug: var=bigip_facts
+
+   - name: Extract Variable from bigip_facts output
+     debug: msg="Action on Service Down = {{bigip_facts['ansible_facts']['pool']['/Common/vs1_pool']['action_on_service_down']}}"

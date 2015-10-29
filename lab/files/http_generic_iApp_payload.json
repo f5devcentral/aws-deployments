@@ -1,0 +1,87 @@
+{
+    "name": "iApp_Demo",
+    "inheritedDevicegroup": "true",
+    "inheritedTrafficGroup": "true",
+    "partition": "Common",
+    "strictUpdates": "enabled",
+    "tables": [
+        {
+            "name": "basic__snatpool_members"
+        },
+        {
+            "name": "net__snatpool_members"
+        },
+        {
+            "name": "optimizations__hosts"
+        },
+        {
+            "columnNames": [
+                "name"
+            ],
+            "name": "pool__hosts",
+            "rows": [
+                {
+                    "row": [
+                        "demo.example.com"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "pool__members"
+        },
+        {
+            "name": "server_pools__servers"
+        }
+    ],
+    "template": "/Common/f5.http",
+    "templateModified": "no",
+    "trafficGroup": "/Common/traffic-group-1",
+    "variables": [
+        {
+            "encrypted": "no",
+            "name": "client__http_compression",
+            "value": "/#do_not_use#"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__client_mode",
+            "value": "wan"
+        },
+        {
+            "encrypted": "no",
+            "name": "net__server_mode",
+            "value": "lan"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__addr",
+            "value": "172.16.13.93"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__pool_to_use",
+            "value": "/Common/vs1_pool"
+        },
+        {
+            "encrypted": "no",
+            "name": "pool__port",
+            "value": "80"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl__mode",
+            "value": "no_ssl"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl_encryption_questions__advanced",
+            "value": "no"
+        },
+        {
+            "encrypted": "no",
+            "name": "ssl_encryption_questions__help",
+            "value": "hide"
+        }
+    ]
+}
