@@ -133,15 +133,18 @@
 # Provision the modules associated with this BIG-IP host
 #  see variables configured in ./roles/inventory_manager/defaults
 #  the 'modules' variable is unique to the ansible host group, i.e. bigips or gtms
-- name: Provisioning modules 
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ ansible_ssh_host }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_password }}
-    payload='{"level":"nominal"}'
-    collection_path='mgmt/tm/sys/provision/{{item}}'
-  with_items: modules
+#  why the wait: avoid race conditions that can occur between module provisioning
+#  why this ansible formatting: we do this instead of a with_items + include statement do to an ansible limitation
+#  https://groups.google.com/forum/#!topic/ansible-project/WAuemHF9DwM
 
+- include: provision_module.yml module="ltm"
+  when: "'ltm' in {{ modules }}"
 
+- include: provision_module.yml module="gtm"
+  when: "'gtm' in {{ modules }}"
+
+- include: provision_module.yml module="asm"
+  when: "'asm' in {{ modules }}"
+
+- include: provision_module.yml module="avr"
+  when: "'avr' in {{ modules }}"
