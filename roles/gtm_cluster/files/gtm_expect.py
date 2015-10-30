@@ -7,50 +7,53 @@ Quick and dirty approach to clustering BIG-IP
   a.applebaum@f5.com
 """
 
+def debug_conn ( conn ):
+   print "Before Match:"
+   print conn.before
+   print "After Match:"
+   print conn.after
+   print ""
+
+
 import sys
 import time
 import pexpect
 #import pexpect.pxssh as pxssh
 
+#TODO: use optparse instead
 user = sys.argv[1]
 host = sys.argv[2]
 command = sys.argv[3]
 peer_user = sys.argv[4]
 peer_host = sys.argv[5]
 password = sys.argv[6]
-#
-# print "user: " + user
-# print "host: " + host
-# print "command: " + command
-# print "peer_user: " + peer_user
-# print "peer_host: " + peer_host
-# print "password: " + password
-#
+print_debug = 0
+
+if print_debug == 1:
+   print "user: " + user
+   print "host: " + host
+   print "command: " + command
+   print "peer_user: " + peer_user
+   print "peer_host: " + peer_host
+   print "password: " + password
+
 
 if host == peer_host:
-  print "Exiting. Not running as target and destination are the same"
-  sys.exit()
+   print "Exiting. Not running as target and destination are the same"
+   sys.exit()
 
 
-MY_TIMEOUT=30
+MY_TIMEOUT = 30
 SSH_NEWKEY = 'Are you sure you want to continue connecting'
 
 print "SSH'ing to : " + user + "@" + host
 conn = pexpect.spawn("ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null " +  user + "@" + host)
-#
-# conn = pxssh.pxssh( options={
-#                     "StrictHostKeyChecking": "no",
-#                     "UserKnownHostsFile": "/dev/null"
-#                     }
-#                   )
-#conn.login(host, user, password)
 
 match_value = conn.expect([SSH_NEWKEY, '[Pp]assword:', pexpect.EOF, pexpect.TIMEOUT], timeout=MY_TIMEOUT);
 #print "match_value = " + str(match_value)
-print "Before"
-print conn.before
-print "After"
-print conn.after
+if print_debug == 1:
+   debug_conn(conn)
+
 time.sleep(1)
 if match_value == 0:
     print "Matched new key warning"
@@ -62,10 +65,10 @@ time.sleep(1)
 
 #Hopefully eventually get here
 match_value = conn.expect('\(tmos\)#', timeout=MY_TIMEOUT)
-print "Before"
-print conn.before
-print "After"
-print conn.after
+
+if print_debug == 1:
+   debug_conn(conn)
+
 if match_value == 0:
     #bash prompt
     #conn.expect('~ #', timeout=MY_TIMEOUT)
@@ -81,32 +84,32 @@ time.sleep(3);
 
 #Otherwise will get a insecure key warning for the first attempt for either command
 match_value = conn.expect([SSH_NEWKEY, pexpect.EOF, pexpect.TIMEOUT], timeout = MY_TIMEOUT)
-print "Before"
-print conn.before
-print "After"
-print conn.after
+
+if print_debug == 1:
+   debug_conn(conn)
+
 if match_value == 0:
     print "Matched new key warning"
     conn.sendline ( "yes" )
 
 #Subsequent attempts will just get a password prompt
 match_value = conn.expect([ '[Pp]assword:', pexpect.EOF, pexpect.TIMEOUT], timeout = MY_TIMEOUT)
-print "Before"
-print conn.before
-print "After"
-print conn.after
+
+if print_debug == 1:
+   debug_conn(conn)
+
 if match_value == 0:
     print "Matched Password prompt. Sending Password"
     conn.sendline ( password )
 
+# Expect "==> Done <==" as sign of success
 match_value = conn.expect(['==> Done <==', '\(tmos\)#', pexpect.EOF, pexpect.TIMEOUT], timeout=MY_TIMEOUT);
-print "Before"
-print conn.before
-print "After"
-print conn.after
+
+if print_debug == 1:
+   debug_conn(conn)
+
 if match_value == 0:
    print "Received \"==> Done <==\" : " +  "command " + command + " successful"
-   conn.sendline ('exit')
    print "exiting cleanly"
    sys.exit(0)
 elif match_value == 1:
