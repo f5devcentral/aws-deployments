@@ -15,13 +15,7 @@
   script: ../roles/gtm_cluster/files/gtm_expect.py admin {{ ansible_ssh_host }} bigip_add admin {{hostvars[item]["ansible_ssh_host"]}} \'{{ bigip_rest_password }}\'
   with_items: groups['bigips']
   delegate_to: localhost
-
-# This needs a fix later but for now, we need to run this script twice
-#  to deterministically make sure the GTM clustering works
-- name: Run bigip_add on all bigips with expect script
-  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{ ansible_ssh_host }} bigip_add admin {{hostvars[item]["ansible_ssh_host"]}} \'{{ bigip_rest_password }}\'
-  with_items: groups['bigips']
-  delegate_to: localhost
+  register: expect_output
 
 
 # Need to only run when > 1 GTM deployed
@@ -32,4 +26,11 @@
   when: item.0 > 0 
   run_once: true
   ignore_errors: true
+
+# Script not working on first time. Attempt to run again but need to fix soon  
+- name: Run bigip_add on all bigips with expect script
+  script: ../roles/gtm_cluster/files/gtm_expect.py admin {{ ansible_ssh_host }} bigip_add admin {{hostvars[item]["ansible_ssh_host"]}} \'{{ bigip_rest_password }}\'
+  with_items: groups['bigips']
+  delegate_to: localhost
+
 
