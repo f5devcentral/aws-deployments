@@ -48,7 +48,7 @@ client_instance_type: "t1.micro"
 # https://aws.amazon.com/marketplace/pp/B00U6QTYI2
 apphost_instance_type: "t2.medium"
 containers_per_app_host: 1
-image_id: "mutzel/all-in-one-hackazon"
+image_id: "mutzel/all-in-one-hackazon:postinstall"
 
 standalone_per_zone:
   clustering: none
