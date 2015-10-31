@@ -26,28 +26,49 @@
 - name: Copy over inputs.conf
   copy: src=inputs.conf dest=/opt/splunk/etc/system/local/inputs.conf
 
-# Upload F5 Apps
+# UPLOAD F5 APPS
 - name: Copy over Splunk for F5 Networks App 
-  copy: src=splunk-for-f5-networks_11.tgz dest=/opt/splunk/etc/apps/
+  copy: src=SplunkforF5Networks.tgz dest=/opt/splunk/etc/apps/
 
-# Add-On NOT implemented yet
+# Below NOT implemented yet
+- name: Copy over Splunk for F5 Security App 
+  copy: src=SplunkforF5Security.tgz dest=/opt/splunk/etc/apps/
+
+- name: Copy over Splunk for F5 Access App 
+  copy: src=F5AccessApp.tgz dest=/opt/splunk/etc/apps/
+
 - name: Copy over Splunk Add-On. NOTE-> Add-On Not Implemented  yet
   copy: src=splunk-add-on-for-f5-big-ip_230.tgz dest=/opt/splunk/etc/apps/
 
+# UNZIP FILES
 - name: unzip F5 Networks app
-  unarchive: src=/opt/splunk/etc/apps/splunk-for-f5-networks_11.tgz dest=/opt/splunk/etc/apps/ copy=no
+  unarchive: src=/opt/splunk/etc/apps/SplunkforF5Networks.tgz dest=/opt/splunk/etc/apps/ copy=no
 
-# Add-On NOT implemented yet
+# Below NOT implemented yet
+- name: unzip F5 Networks Security app
+  unarchive: src=/opt/splunk/etc/apps/SplunkforF5Security.tgz dest=/opt/splunk/etc/apps/ copy=no
+
+- name: unzip F5 Networks Access app
+  unarchive: src=/opt/splunk/etc/apps/F5AccessApp.tgz dest=/opt/splunk/etc/apps/ copy=no
+
 - name: unzip Splunk Add-On for F5 Networks 
   unarchive: src=/opt/splunk/etc/apps/splunk-add-on-for-f5-big-ip_230.tgz dest=/opt/splunk/etc/apps/ copy=no
 
+# CHANGE OWNERSHIP
 - name: change ownership to splunk
   file: path=/opt/splunk/etc/apps/SplunkforF5Networks owner=splunk group=splunk
 
-# Add-On NOT implemented yet
+# Below NOT implemented yet
+- name: change ownership to splunk
+  file: path=/opt/splunk/etc/apps/SplunkforF5Security owner=splunk group=splunk
+
+- name: change ownership to splunk
+  file: path=/opt/splunk/etc/apps/F5AccessApp owner=splunk group=splunk
+
 - name: change ownership to splunk
   file: path=/opt/splunk/etc/apps/Splunk_TA_f5-bigip owner=splunk group=splunk
 
+# RESTART SPLUNK
 - name: restart Splunk
   command: /opt/splunk/bin/splunk restart
 
