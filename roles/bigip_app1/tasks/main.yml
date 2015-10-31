@@ -14,6 +14,11 @@
   delegate_to: localhost
   when: deploy_analytics is defined and deploy_analytics == "true"
 
+- name: Build REST payload for the asm loggging profile to remote analytics server
+  template: src="{{ install_path }}/roles/bigip_app1/templates/asm_logging_profile_payload.json.j2" dest="{{ env_path }}/{{ env_name }}/asm_logging_profile_payload-{{ vip_id }}.json"
+  delegate_to: localhost
+  when: deploy_analytics is defined and deploy_analytics == "true"
+
 - name: Deploying/updating High Speed Logging pool to send to Analytics Server
   delegate_to: localhost
   bigip_config:
@@ -37,6 +42,31 @@
       payload_file="{{ env_path }}/{{ env_name }}/analytics_pool_payload-{{ vip_id }}.json"
       resource_key="name"
   when: deploy_analytics is defined and deploy_analytics == "true"
+
+# - name: Deploying/updating ASM Logging Profile to send to Remote Analytics Server
+#   delegate_to: localhost
+#   bigip_config:
+#       state=present
+#       host={{ ansible_ssh_host }}
+#       user={{ bigip_rest_user }}
+#       password={{ bigip_rest_password }}
+#       collection_path="mgmt/tm/security/log/profile"
+#       payload_file="{{ env_path }}/{{ env_name }}/asm_logging_profile_payload-{{ vip_id }}.json"
+#       resource_key="name"
+#   when: deploy_analytics is not defined or deploy_analytics == "false"
+# 
+# - name: Deploying/updating ASM Logging Profile to send to Remote Analytics Server
+#   delegate_to: localhost
+#   bigip_config:
+#       state=present
+#       host={{ ansible_ssh_host }}
+#       user={{ bigip_rest_user }}
+#       password={{ bigip_rest_password }}
+#       collection_path="mgmt/tm/security/log/profile"
+#       payload_file="{{ env_path }}/{{ env_name }}/asm_logging_profile_payload-{{ vip_id }}.json"
+#       resource_key="name"
+#   when: deploy_analytics is defined and deploy_analytics == "true"
+# 
 
 ##### UPLOAD DATAGROUP #####
 # TODO:

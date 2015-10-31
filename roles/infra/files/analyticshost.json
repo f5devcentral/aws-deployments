@@ -101,14 +101,14 @@
           {
             "IpProtocol": "tcp",
             "FromPort": "514",
-            "ToPort": "514",
-            "CidrIp": "0.0.0.0/0"
+            "ToPort": "520",
+            "CidrIp": "172.16.0.0/16"
           },
           {
             "IpProtocol": "udp",
             "FromPort": "514",
-            "ToPort": "514",
-            "CidrIp": "0.0.0.0/0"
+            "ToPort": "520",
+            "CidrIp": "172.16.0.0/16"
           },
           {
             "IpProtocol": "tcp",
