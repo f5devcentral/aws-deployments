@@ -47,24 +47,32 @@
     }
   ],
   "variables": [
+{% if deploy_analytics == "true" and deployment_type == "lb_and_waf" %}
+    {
+      "name": "asm__security_logging",
+      "encrypted": "no",
+      "value": "asm_log_to_splunk"
+    },
+{% else %}
     {
       "name": "asm__security_logging",
       "encrypted": "no",
       "value": "Log all requests"
     },
-    {% if deployment_type == "lb_and_waf" %}
+{% endif %}
+{% if deployment_type == "lb_and_waf" %}
     {
         "name": "asm__use_asm",
         "encrypted": "no",
         "value": "/Common/{{ ltm_policy_name }}"
     },
-    {% else %}
+{% else %}
     {
         "name": "asm__use_asm",
         "encrypted": "no",
         "value": "/#do_not_use#"
     },
-    {% endif %}
+{% endif %}
     {
       "name": "client__http_compression",
       "encrypted": "no",
