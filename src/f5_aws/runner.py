@@ -581,8 +581,8 @@ Hint: Try tearing down the environment first.""" % (
                     resources["elastic_ips"] = self.collect_elastic_ips(resource_name)
 
                   if 'analyticshost' in resource_name:
-                    resources['https_username'] = 'admin' 
-                    resources['https'] = 'http://{}:8000'.format(ip) 
+                    resources['http_username'] = 'admin' 
+                    resources['http'] = 'http://{}:8000'.format(ip) 
 
                   login_info[host_type][self.host_to_az(
                   resource_name, ansible_inventory)] = resources
