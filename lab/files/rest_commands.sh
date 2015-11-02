@@ -2,8 +2,8 @@
 
 # Edit these variables
 MgmtIP=52.23.93.16
-PublicSelfIP=172.16.13.186
-PrivateSelfIP=172.16.12.39
+ExternalSelfIP=172.16.13.186
+InternalSelfIP=172.16.12.39
 RESTPassword="XXXXXXXXXX"
 # and run 
 # bash ./rest_commands.sh
