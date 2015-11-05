@@ -53,12 +53,19 @@ class BigipConfig(object):
 
   def _get_full_resource_path(self):
     # https://localhost/mgmt/tm/sys/application/service/~Common~Vip1_demo_iApp.app~Vip1_demo_iApp
+    
+    # update the uri when posting or patching an iapp service (instance of an iApp template)
     if 'application/service' in self.collection_path:
       return ('%s/~Common~%s.app~%s' % (self.collection_path,
          self._get_full_resource_id(), self._get_full_resource_id()))
+    
+    # update the uri when posting or patching an iapp template
     elif 'application/template' in self.collection_path:
       return ('%s/~Common~%s' % (self.collection_path,
          self._get_full_resource_id()))
+    
+    # since we have already done an HTTP GET to check if the resource
+    #  exists, we can use the selfLink returned in that REST payload
     elif self.resource_selfLink:
       return self.resource_selfLink[self.resource_selfLink.find('mgmt'):]
     else:
@@ -70,7 +77,7 @@ class BigipConfig(object):
   def _get_safe_patch_payload(self):
     """
       When using the HTTP patch method, there are certain
-      field which may not be present in the payload 
+      fields which may not be present in the payload 
     """
     safe_payload = deepcopy(self.payload)
     

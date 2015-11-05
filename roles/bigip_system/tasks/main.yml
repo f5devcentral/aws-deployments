@@ -20,7 +20,7 @@
     resource_key="name"
   register: result
   until: result|changed
-  retries: 40
+  retries: 60
   delay: 5
 
 # We need NTP, we do not get this from Amazon
