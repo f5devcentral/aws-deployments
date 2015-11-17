@@ -1,5 +1,5 @@
 ---
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   vars_files:
    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
@@ -11,7 +11,7 @@
         ClientInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePrivateIp }}
 
 # Launch Jmeter test client in background
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   tasks:
     - name: Grab number of jmeter processes lauched to make sure not launching more than 1

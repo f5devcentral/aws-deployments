@@ -41,12 +41,14 @@ gtm_modules:
 # To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00JV9JBDS
 # app deployment 
-client_instance_type: "t1.micro"
+# have to use an m3 instance type, because it works with paravirtualized instances
+client_instance_type: "m3.large"
 
 # default AMI is ECS-Optimized AMI (2015.03.g)
 # To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00U6QTYI2
-apphost_instance_type: "t2.medium"
+# have to use an m3 instance type, because it works with paravirtualized instances
+apphost_instance_type: "m3.large"
 containers_per_app_host: 1
 image_id: "mutzel/all-in-one-hackazon:postinstall"
 

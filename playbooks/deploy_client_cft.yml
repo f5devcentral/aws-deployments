@@ -1,6 +1,6 @@
 ---
 # Deploy the client ami via CFT
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   vars:
      ansible_connection: local
