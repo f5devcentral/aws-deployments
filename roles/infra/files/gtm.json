@@ -2,6 +2,10 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Deploys GTM with interfaces on public and management subnets.",
   "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Used to tag all resources created within this CFT"
+    },
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within working region."
@@ -112,6 +116,14 @@
             "ToPort": "4353",
             "CidrIp": "0.0.0.0/0"
           }
+        ],
+        "Tags": [
+          {
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
+          }
         ]
       }
     },
@@ -140,7 +152,15 @@
         ],
         "SubnetId": {
           "Ref": "managementSubnet"
-        }
+        },
+        "Tags": [
+          {
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
+          }
+        ]
       }
     },
     "ExternalInterface": {
@@ -156,7 +176,15 @@
           "Ref": "publicSubnet"
         },
         "SourceDestCheck": "false",
-        "SecondaryPrivateIpAddressCount": "1"
+        "SecondaryPrivateIpAddressCount": "1",
+        "Tags": [
+          {
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
+          }
+        ]
       }
     },
     "BigipInstance": {
@@ -187,6 +215,14 @@
             "DeviceIndex": "1",
             "NetworkInterfaceId": {
               "Ref": "ExternalInterface"
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
             }
           }
         ]

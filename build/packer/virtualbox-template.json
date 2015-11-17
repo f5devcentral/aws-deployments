@@ -1,0 +1,99 @@
+{
+  "variables": {
+    "atlas_token": ""
+  },
+  "builders": [{
+    "type": "virtualbox-iso",
+    "virtualbox_version_file": ".vbox_version",
+    "headless": false,
+
+    "guest_os_type": "Ubuntu_64",
+    "disk_size": 40960,
+
+    "iso_url": "http://releases.ubuntu.com/14.04/ubuntu-14.04.3-server-amd64.iso",
+    "iso_checksum": "0501c446929f713eb162ae2088d8dc8b6426224a",
+    "iso_checksum_type": "sha1",
+
+    "boot_command": [
+      "<esc><esc><enter><wait>",
+      "/install/vmlinuz noapic preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ubuntu-14.04-amd64/preseed.cfg ",
+      "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
+      "hostname=f5demo ",
+      "fb=false debconf/frontend=noninteractive ",
+      "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA keyboard-configuration/variant=USA console-setup/ask_detect=false ",
+      "initrd=/install/initrd.gz -- <enter>"
+    ],
+    "boot_wait": "12s",
+
+    "http_directory": "http",
+    "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+
+    "ssh_username": "vagrant",
+    "ssh_password": "vagrant",
+    "ssh_port": 22,
+    "ssh_wait_timeout": "10000s",
+
+    "vboxmanage": [
+      ["modifyvm", "{{.Name}}", "--memory", "512"],
+      ["modifyvm", "{{.Name}}", "--cpus", "1"]
+    ],
+
+    "shutdown_command": "echo 'vagrant'|sudo -S /sbin/halt -h -p"
+  }],
+  "provisioners": [{
+     "type": "file",
+     "source": "files/motd",
+     "destination": "~/motd"
+   },
+   {
+     "type": "file",
+     "source": "files/requirements.txt",
+     "destination": "~/requirements.txt"
+   },
+   {
+    "type": "shell",
+    "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+    "scripts": [
+      "scripts/vagrant.sh",
+      "scripts/vboxguest.sh",
+      "scripts/base_ubuntu_bootstrap.sh",
+      "scripts/setup_venv.sh"
+    ]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+      "inline": [
+          "cp motd /etc/motd",
+          "rm -f ~/motd",
+          "rm -f ~/requirements.txt",
+          "sed -i.bak 's/UsePAM yes/UsePAM yes\\nUseDNS no\\n/' /etc/ssh/sshd_config",
+          "service ssh restart"
+      ]
+    }
+  ],
+  "push": {
+    "name": "f5networks/f5-aws-deployments",
+    "vcs": false,
+    "include": [
+      "scripts/*",
+      "http/ubuntu-14.04-amd64/*",
+      "files/*"
+    ]
+  },
+  "post-processors": [
+    [{
+      "type": "vagrant",
+      "keep_input_artifact": false
+     },
+     {
+        "type": "atlas",
+        "token": "{{user `atlas_token`}}",
+        "artifact": "f5networks/f5-aws-deployments",
+        "artifact_type": "vagrant.box",
+        "metadata": {
+           "provider": "virtualbox"
+        }
+     }]
+  ]
+}

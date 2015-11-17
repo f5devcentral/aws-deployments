@@ -1,0 +1,4 @@
+# ansible group vars for all client hosts which are provisioned
+ansible_ssh_user: ubuntu
+ansible_ssh_private_key_file: {{ ssh_key }}
+client_instance_type: {{ client_instance_type }}

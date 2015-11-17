@@ -10,7 +10,8 @@
 #  so we want to be sure the device is ready.
 - name: Disabling Setup Utility in GUI
   delegate_to: localhost
-  bigip_config: 
+  bigip_config:
+    name="Disabling Setup Utility in GUI"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -20,7 +21,7 @@
     resource_key="name"
   register: result
   until: result|changed
-  retries: 20
+  retries: 60
   delay: 5
 
 # We need NTP, we do not get this from Amazon
@@ -29,6 +30,7 @@
 - name: Configuring NTP servers
   delegate_to: localhost
   bigip_config:
+    name="Configuring NTP servers"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -50,9 +52,10 @@
 #   when: target_env != "AWS"
 
 # TODO: define log server ip somewhere (10.0.3.32). Right now, just for pretend...
-- name: Configuring syslog
+- name: Configuring syslog logging destinations
   delegate_to: localhost
   bigip_config:
+    name="Configuring syslog logging destinations"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -65,6 +68,7 @@
 - name: Configuring HTTP mgmt access
   delegate_to: localhost
   bigip_config:
+    name="Configuring HTTP mgmt access"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -75,6 +79,7 @@
 - name: Configuring SSH mgmt access
   delegate_to: localhost
   bigip_config:
+    name="Configuring SSH mgmt access"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -85,6 +90,7 @@
 - name: Configuring SNMP access
   delegate_to: localhost
   bigip_config:
+    name="Configuring SNMP access"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -97,6 +103,7 @@
 - name: Configuring FastL4 profiles ... fastL4-route-friendly
   delegate_to: localhost
   bigip_config:
+    name="Configuring FastL4 profiles ... fastL4-route-friendly"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -111,6 +118,7 @@
 - name: Configuring TCP profiles ... ssl-wan-optimized
   delegate_to: localhost
   bigip_config:
+    name="Configuring TCP profiles ... ssl-wan-optimized"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -122,6 +130,7 @@
 - name: Configuring TCP profiles ... ssl-lan-optimized
   delegate_to: localhost
   bigip_config:
+    name="Configuring TCP profiles ... ssl-lan-optimized"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -133,15 +142,18 @@
 # Provision the modules associated with this BIG-IP host
 #  see variables configured in ./roles/inventory_manager/defaults
 #  the 'modules' variable is unique to the ansible host group, i.e. bigips or gtms
-- name: Provisioning modules 
-  delegate_to: localhost
-  bigip_config:
-    state=present
-    host={{ ansible_ssh_host }}
-    user={{ bigip_rest_user }}
-    password={{ bigip_rest_password }}
-    payload='{"level":"nominal"}'
-    collection_path='mgmt/tm/sys/provision/{{item}}'
-  with_items: modules
+#  why the wait: avoid race conditions that can occur between module provisioning
+#  why this ansible formatting: we do this instead of a with_items + include statement do to an ansible limitation
+#  https://groups.google.com/forum/#!topic/ansible-project/WAuemHF9DwM
 
+- include: provision_module.yml module="ltm"
+  when: "'ltm' in {{ modules }}"
 
+- include: provision_module.yml module="gtm"
+  when: "'gtm' in {{ modules }}"
+
+- include: provision_module.yml module="asm"
+  when: "'asm' in {{ modules }}"
+
+- include: provision_module.yml module="avr"
+  when: "'avr' in {{ modules }}"

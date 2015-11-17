@@ -5,13 +5,6 @@
 
 f5aws is a tool for deploying F5 BIG-IP in various possible architectures within an AWS EC2 Virtual Private Cloud.
 
-This tool is not made for production usage. Rather the goal is to allow users to evaluate the deployment architectures which best fit their application model.
-
-Further, this library shows how BIG-IP can be orchestrated using open-source configuration management and workflow engines like Ansible.  These examples demonstrate the programmable APIs available from TMOS, include TMSH, iControlSoap, and iControlREST.
-
-These examples are provided in order to demonstrate how BIG-IP can be used to manage the availability, performance, and security of applications running in AWS and other public cloud environments.
-
-
 As of now, these deployment models are:<br>
 -single-standalone (single big-ip and application server in one availability zone) <br>
 -single-cluster (cluster of big-ips and application server in one availability zone) <br>
@@ -63,19 +56,15 @@ IMPORTANT: Make sure the ssh key has correct permissions after creation or uploa
 
 7)  Depending on the deployment, you will need to go to the AWS Console and accept the EULAs for each of the AMIs in use. 
 
-BIG-IP: F5 BIG-IP Virtual Edition 25 Mbps - Better: <br>
-https://aws.amazon.com/marketplace/pp/B00JL3Q2VI <br>
-Pool Member/Docker Host: Amazon ECS-Optimized Amazon Linux AMI:<br>
-https://aws.amazon.com/marketplace/pp/B00U6QTYI2<br>
-Client: Ubuntu 14.04 LTS<br>
-https://aws.amazon.com/marketplace/pp/B00JV9JBDS<br>
+- F5 BIG-IP Virtual Edition 25 Mbps - Better: https://aws.amazon.com/marketplace/pp/B00JL3Q2VI <br>
+
+- Client: Ubuntu 14.04 LTS: https://aws.amazon.com/marketplace/pp/B00JV9JBDS<br>
 
 
 ### Usage:
 
 1) To create a new environment, use the 'init' command.
 This will initialize the set of ansible variables necessary for deployment (known as an 'inventory'. After execution of this playbook, inspect '~/vars/f5aws/env/<b>env_name</b>'.
-
 
 ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "single-standalone", "region": "us-east-1", "zone": "us-east-1b"}'```
 
@@ -94,15 +83,13 @@ or using clusters:
 
  ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "cluster-per-zone", "region": "us-east-1", "zones": ["us-east-1b","us-east-1c"]}' ```
 
-NOTE: These have larger resource requirements (EIPs + CFTs) so you may need to increase your limits ahead of time.  For more information, see the PDF in /docs.
- 
-NOTE: Due to AMI availability, currently working regions are:
-* us-east-1 
-* us-west-1
-* us-west-2
-* eu-west-1
-* ap-southeast-2
-* ap-northeast-1
+You can add splunk to any deployment model by using the "deploy_analytics" flag:
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "deploy_analytics": "true", "region": "us-east-1", "zones": ["us-east-1b"] }'```
+
+Finally, to deploy an ASM profile to protect your application (i.e. web application FW), set the deployment_type to "lb_and_waf".  This deploys a generic linux, mysql, pache, FW policy for basic injections and vulnerabilities. 
+
+ ```./bin/f5aws init <your env> --extra-vars '{"deployment_model": "standalone-per-zone", "deployment_type": "lb_and_waf", "region": "us-east-1", "zones": ["us-east-1b"] }'```
+
 
 
 2) Deploy and manage the environment you instantiated in step 1.  This creates all the resources associated with environment, including AWS EC2 hosts, a VPC, configuration objects on BIG-IP and GTM, and docker containers.  
@@ -128,3 +115,11 @@ NOTE: Due to AMI availability, currently working regions are:
 - print the status of deployed infrastructure and output from cloudformation stacks<br>
 ```./bin/f5aws info resources <your env>```
 
+Please be aware of the following conditions:
+
+- The more complex deployment models require additional account resources (EIPs + CFTs) so you may need to increase your limits ahead of time by working with AWS support. For more information, see the PDF in /docs.
+
+- Due to AMI availability, currently working regions are:
+ - us-east-1 , us-west-1, us-west-2, eu-west-1, ap-southeast-2, ap-northeast-1
+
+See PDF in /docs for more details.

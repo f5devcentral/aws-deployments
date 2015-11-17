@@ -1,0 +1,1 @@
+This directory containers scripts and files use to build the AWS AMI and Vagrant images for execution of this demonstration code.  It may not be relevant for the casual user, but we include it for completeness.

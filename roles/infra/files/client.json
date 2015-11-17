@@ -2,6 +2,10 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "AWS CloudFormation Template for Client/Jumpbox Host Instance.  **WARNING** This template creates an Amazon EC2 instance. You will be billed for the AWS resources used if you create a stack from this template.",
   "Parameters": {
+    "envName": {
+      "Type": "String",
+      "Description": "Used to tag all resources created within this CFT"
+    },
     "vpc": {
       "Type": "AWS::EC2::VPC::Id",
       "ConstraintDescription": "Must be an existing VPC within working region."
@@ -34,31 +38,22 @@
   "Mappings": {
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "AMI": "ami-4c7a3924"
+        "AMI": "ami-63efbd06"
       },
       "us-west-1": {
-        "AMI": "ami-84bba3c1"
+        "AMI": "ami-eba86baf"
       },
       "us-west-2": {
-        "AMI": "ami-17471c27"
+        "AMI": "ami-f638dbc5"
       },
       "eu-west-1": {
-        "AMI": "ami-f1810f86"
-      },
-      "sa-east-1": {
-        "AMI": "ami-53f14e4e"
-      },
-      "ap-southeast-1": {
-        "AMI": "ami-bac1ebe8"
+        "AMI": "ami-f3b98584"
       },
       "ap-southeast-2": {
-        "AMI": "ami-e3eb9fd9"
+        "AMI": "ami-098dc733"
       },
       "ap-northeast-1": {
-        "AMI": "ami-bebda6bf"
-      },
-      "eu-central-1": {
-        "AMI": "ami-b2b587af"
+        "AMI": "ami-28bbd928"
       }
     }
   },
@@ -82,6 +77,14 @@
             "FromPort": "-1",
             "ToPort": "-1",
             "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
           }
         ]
       }
@@ -109,7 +112,15 @@
            "DeviceIndex": "0",
            "GroupSet": [{ "Ref" : "ClientSecurityGroup" }],
            "SubnetId": { "Ref" : "clientSubnet" }
-        } ]
+        } ],
+        "Tags": [
+          {
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
+          }
+        ]
       }
     }
   },

@@ -1,0 +1,56 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": ""
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "source_ami": "ami-a83ad99b",
+    "instance_type": "t1.micro",
+    "ssh_username": "ubuntu",
+    "ami_name": "F5 AWS Deployments Environment",
+    "associate_public_ip_address": "true",
+    "region": "us-west-2",
+    "ami_regions": [ "us-west-1", "us-west-1", "us-east-1", "eu-west-1" ,"ap-southeast-2", "ap-northeast-1"],
+    "ami_groups": "all"
+  }],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [ "sleep 10" ]
+    },
+    {
+     "type": "file",
+     "source": "files/motd",
+     "destination": "~/motd"
+    },
+    {
+     "type": "file",
+     "source": "files/requirements.txt",
+     "destination": "~/requirements.txt"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/base_ubuntu_bootstrap.sh",
+        "scripts/setup_venv.sh"
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+          "sudo cp motd /etc/motd",
+          "rm -f ~/motd",
+          "rm -f ~/requirements.txt",
+          "sudo sed -i.bak 's/UsePAM yes/UsePAM yes\\nUseDNS no\\n/' /etc/ssh/sshd_config",
+          "sudo service ssh restart"
+      ]
+    }
+  ],
+  "post-processors": [{
+        "type": "vagrant",
+        "output": "build/aws/f5demo_{{.Provider}}.box"
+  }]
+}

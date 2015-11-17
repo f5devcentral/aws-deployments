@@ -4,6 +4,10 @@
   "Parameters": {
     "envName": {
       "Type": "String",
+      "Description": "Used to tag all resources created within this CFT"
+    },
+    "envName": {
+      "Type": "String",
       "Description": "Environment name from f5Aws tool deployment."
     },
     "cidrBlock": {
@@ -21,8 +25,10 @@
         "InstanceTenancy": "default",
         "Tags": [
           {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
           }
         ]
       }
@@ -32,8 +38,10 @@
       "Properties": {
         "Tags": [
           {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
           }
         ]
       }

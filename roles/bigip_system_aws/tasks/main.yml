@@ -6,6 +6,7 @@
 - name: Adding/updating AWS access and secret keys
   delegate_to: localhost
   bigip_config:
+    name="Adding/updating AWS access and secret keys"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -16,6 +17,7 @@
 - name: Disabling dhcp
   delegate_to: localhost
   bigip_config:
+    name="Disabling dhcp"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}

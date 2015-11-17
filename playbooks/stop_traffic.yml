@@ -1,5 +1,5 @@
 ---
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   vars_files:
    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
@@ -11,12 +11,10 @@
         ClientInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePrivateIp }}
 
 # Kill Jmeter test clients
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   tasks:
 
     - name: Kill Jmeter 
       #shell: kill `ps -ef | egrep jmeter | egrep -v egrep | awk '{print $2}'`
       shell: killall java
-
-   

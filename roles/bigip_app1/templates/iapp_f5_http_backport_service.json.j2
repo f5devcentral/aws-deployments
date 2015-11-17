@@ -1,0 +1,227 @@
+{
+  "name": "{{ iapp_service_name }}",
+  "partition": "Common",
+  "inheritedDevicegroup": "true",
+  "inheritedTrafficGroup": "true",
+  "strictUpdates": "enabled",
+  "template": "/Common/f5.http.backport.1.1.2",
+  "templateModified": "no",
+  "lists": [
+    {
+      "name": "irules__irules",
+      "encrypted": "no",
+      "value": [
+        "/Common/irule_demo_analytics",
+        "/Common/irule_sorry_page"
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "name": "basic__snatpool_members"
+    },
+    {
+      "name": "net__snatpool_members"
+    },
+    {
+      "name": "optimizations__hosts"
+    },
+    {
+      "name": "pool__hosts",
+      "columnNames": [
+        "name"
+      ],
+      "rows": [
+        {
+          "row": [
+            "demo.example.com"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pool__members"
+    },
+    {
+      "name": "server_pools__servers"
+    }
+  ],
+  "variables": [
+{% if deploy_analytics == "true" and deployment_type == "lb_and_waf" %}
+    {
+      "name": "asm__security_logging",
+      "encrypted": "no",
+      "value": "asm_log_to_splunk"
+    },
+{% else %}
+    {
+      "name": "asm__security_logging",
+      "encrypted": "no",
+      "value": "Log all requests"
+    },
+{% endif %}
+{% if deployment_type == "lb_and_waf" %}
+    {
+        "name": "asm__use_asm",
+        "encrypted": "no",
+        "value": "/Common/{{ ltm_policy_name }}"
+    },
+{% else %}
+    {
+        "name": "asm__use_asm",
+        "encrypted": "no",
+        "value": "/#do_not_use#"
+    },
+{% endif %}
+    {
+      "name": "client__http_compression",
+      "encrypted": "no",
+      "value": "/#do_not_use#"
+    },
+    {
+      "name": "client__standard_caching_without_wa",
+      "encrypted": "no",
+      "value": "/#do_not_use#"
+    },
+    {
+      "name": "client__tcp_wan_opt",
+      "encrypted": "no",
+      "value": "/Common/tcp-ssl-wan-optimized"
+    },
+    {
+      "name": "net__client_mode",
+      "encrypted": "no",
+      "value": "wan"
+    },
+    {
+      "name": "net__route_to_bigip",
+      "encrypted": "no",
+      "value": "no"
+    },
+    {
+      "name": "net__same_subnet",
+      "encrypted": "no",
+      "value": "no"
+    },
+    {
+      "name": "net__server_mode",
+      "encrypted": "no",
+      "value": "lan"
+    },
+    {
+      "name": "net__snat_type",
+      "encrypted": "no",
+      "value": "automap"
+    },
+    {
+      "name": "net__vlan_mode",
+      "encrypted": "no",
+      "value": "all"
+    },
+    {
+      "name": "pool__addr",
+      "encrypted": "no",
+      "value": "{{VipAddress1}}"
+    },
+    {
+      "name": "pool__http",
+      "encrypted": "no",
+      "value": "/#create_new#"
+    },
+    {
+      "name": "pool__mask",
+      "encrypted": "no",
+      "value": ""
+    },
+    {
+      "name": "pool__persist",
+      "encrypted": "no",
+      "value": "/#cookie#"
+    },
+    {
+      "name": "pool__pool_to_use",
+      "encrypted": "no",
+      "value": "/Common/{{ iapp_vs_pool_name }}"
+    },
+    {
+      "name": "pool__port_secure",
+      "encrypted": "no",
+      "value": "443"
+    },
+    {
+      "name": "pool__redirect_port",
+      "encrypted": "no",
+      "value": "80"
+    },
+    {
+      "name": "pool__redirect_to_https",
+      "encrypted": "no",
+      "value": "yes"
+    },
+    {
+      "name": "pool__xff",
+      "encrypted": "no",
+      "value": "yes"
+    },
+    {
+      "name": "server__oneconnect",
+      "encrypted": "no",
+      "value": "/#do_not_use#"
+    },
+    {
+      "name": "server__tcp_lan_opt",
+      "encrypted": "no",
+      "value": "/Common/tcp-wan-optimized"
+    },
+    {
+      "name": "server__tcp_req_queueing",
+      "encrypted": "no",
+      "value": "no"
+    },
+    {
+      "name": "ssl__cert",
+      "encrypted": "no",
+      "value": "/Common/default.crt"
+    },
+    {
+      "name": "ssl__client_ssl_profile",
+      "encrypted": "no",
+      "value": "/#create_new#"
+    },
+    {
+      "name": "ssl__key",
+      "encrypted": "no",
+      "value": "/Common/default.key"
+    },
+    {
+      "name": "ssl__mode",
+      "encrypted": "no",
+      "value": "client_ssl"
+    },
+    {
+      "name": "ssl__use_chain_cert",
+      "encrypted": "no",
+      "value": "/#do_not_use#"
+    },
+    {
+      "name": "ssl_encryption_questions__advanced",
+      "encrypted": "no",
+      "value": "yes"
+    },
+    {
+      "name": "ssl_encryption_questions__help",
+      "encrypted": "no",
+      "value": "hide"
+    },
+    {
+      "name": "stats__analytics",
+      "encrypted": "no",
+      "value": "/Common/{{ analytics_profile_name }}"
+    },
+    {
+      "name": "stats__request_logging",
+      "encrypted": "no",
+      "value": "/#do_not_use#"
+    }
+  ]
+}

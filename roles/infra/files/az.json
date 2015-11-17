@@ -60,8 +60,10 @@
         },
         "Tags": [
           {
-            "Key": "EnvName",
-            "Value": {"Ref": "envName"}
+            "Key": "envName",
+            "Value": {
+              "Ref": "envName"
+            }
           }
         ]
       }

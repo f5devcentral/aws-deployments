@@ -1,0 +1,95 @@
+---
+# We need to retry this tasks until it succeeds, ASM takes longer to boot
+#  than some of the other LTM functionality we have been provisioning against
+#  so far. 
+- name: Create the ASM policy
+  delegate_to: localhost
+  bigip_config:
+      name="Create the ASM policy"
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/asm/policies'
+      resource_key="name"
+      payload='{"name":"{{ asm_policy_name }}","applicationLanguage":"utf-8","caseInsensitive":true}'
+  register: result
+  until: result|changed
+  retries: 40
+  delay: 5
+
+- name: Save the policy self link
+  set_fact: policySelfLink="{{ result['out']['selfLink'] }}"
+
+- name: Save the policy ID
+  set_fact: policyID="{{ result['out']['id'] }}"
+
+- name: Import our policy over the one existing above 
+  delegate_to: localhost
+  bigip_config:
+      name="Import our policy over the one existing above "
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/asm/tasks/import-policy'
+      payload='{"file":"{{ asm_policy_linux_high_base64[0:-1] }}","isBase64":true,"policyReference":{"link":"{{ policySelfLink }}" } }'
+  register: result
+
+- name: Save the async task ID
+  set_fact: taskId="{{ result['out']['id'] }}"
+
+- name: Determine whether the asm policy import task is complete
+  delegate_to: localhost
+  bigip_config:
+      name="Determine whether the asm policy import task is complete"
+      state=inspect
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/asm/tasks/import-policy/{{ taskId }}'
+  register: importResult
+  until: importResult.out.status.find("COMPLETED") != -1
+  retries: 40
+  delay: 2
+
+- name: Apply the ASM policy
+  delegate_to: localhost
+  bigip_config:
+      name="Apply the ASM policy"
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/asm/tasks/apply-policy'
+      payload='{"policyReference":{"link":"{{ policySelfLink }}"} }'
+  register: result
+- name: Save the async task ID
+  set_fact: taskId="{{ result['out']['id'] }}"
+
+- name: Determine whether the asm policy apply task is complete
+  delegate_to: localhost
+  bigip_config:
+      name="Determine whether the asm policy apply task is complete"
+      state=inspect
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/asm/tasks/apply-policy/{{ taskId }}'
+  register: applyResult
+  until: applyResult.out.status.find("COMPLETED") != -1
+  retries: 40
+  delay: 2
+
+- name: Create an LTM policy for use with by iApp which associates the ASM policy
+  delegate_to: localhost
+  bigip_config:
+      name="Create an LTM policy for use with by iApp which associates the ASM policy"
+      state=present
+      host={{ ansible_ssh_host }}
+      user={{ bigip_rest_user }}
+      password={{ bigip_rest_password }}
+      collection_path='mgmt/tm/ltm/policy'
+      payload='{"name":"{{ ltm_policy_name }}","partition":"Common","controls":["asm"],"requires":["http"],"strategy":"/Common/first-match","rules":[{"name":"rule-1","ordinal":1,"actions":[{"name":"0","asm":true,"code":0,"enable":true,"policy":"/Common/{{ asm_policy_name }}","port":0,"request":true,"status":0,"vlanId":0}],"conditions":[]}]}'
+      resource_key="name"
+

@@ -1,0 +1,51 @@
+{
+    "name": "asm_log_to_splunk",
+    "application": [
+        {
+            "name": "asm_log_to_splunk",
+            "facility": "local0",
+            "filter": [
+                {
+                    "name": "protocol",
+                    "values": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "request-type",
+                    "values": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "search-all"
+                }
+            ],
+            "format": {
+                "fieldDelimiter": ",",
+                "type": "predefined"
+            },
+            "guaranteeLogging": "enabled",
+            "guaranteeResponseLogging": "disabled",
+            "localStorage": "enabled",
+            "logicOperation": "or",
+            "maximumEntryLength": "2k",
+            "maximumHeaderSize": "any",
+            "maximumQuerySize": "any",
+            "maximumRequestSize": "any",
+            "partition": "Common",
+            "protocol": "tcp",
+            "remoteStorage": "splunk",
+            "reportAnomalies": "disabled",
+            "responseLogging": "none",
+            "servers": [
+{% for host in groups["analyticshosts"] %}
+                   {
+                       "name": "{{ hostvars[host]['AnalyticsServerInstancePrivateIp'] }}:515"
+                   }{% if not loop.last %},{% endif %}
+{% endfor %}
+
+            ]
+        }
+    ]
+}

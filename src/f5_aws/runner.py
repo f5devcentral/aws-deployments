@@ -9,35 +9,46 @@ import datetime
 
 from f5_aws.config import Config
 from f5_aws.utils import convert_str
+from f5_aws.job_manager import JobManager
 from f5_aws.exceptions import ExecutionError, ValidationError, LifecycleError
-
-local_ansible_path = os.path.abspath(
-  os.path.join(os.path.dirname(__file__), '..', 'lib')
-)
-
-sys.path.append(local_ansible_path)
 
 # make our config global
 config = Config().config
 
 # ansible stuff
 import ansible.playbook
-import ansible.constants as constants
+import ansible.constants
 from ansible import errors
 from ansible import callbacks
 from ansible import utils
 from ansible.color import ANSIBLE_COLOR, stringc
 from ansible.callbacks import display
 
+def get_matching_playbooks(playbooks, match_exprs):
+  matching_playbooks = []
+  for pb in playbooks:
+    for expr in match_exprs:
+      if expr in pb:
+        matching_playbooks.append(pb)
+
+  # remove the duplicates
+  output = []
+  seen = set()
+  for pb in matching_playbooks:
+    if pb not in seen:
+      output.append(pb)
+      seen.add(pb)
+  return output
+
 
 def hostcolor(host, stats, color=True):
   if ANSIBLE_COLOR and color:
-    if stats['failures'] != 0 or stats['unreachable'] != 0:
-      return "%-37s" % stringc(host, 'red')
-    elif stats['changed'] != 0:
-      return "%-37s" % stringc(host, 'yellow')
+    if stats["failures"] != 0 or stats["unreachable"] != 0:
+      return "%-37s" % stringc(host, "red")
+    elif stats["changed"] != 0:
+      return "%-37s" % stringc(host, "yellow")
     else:
-      return "%-37s" % stringc(host, 'green')
+      return "%-37s" % stringc(host, "green")
   return "%-26s" % host
 
 def colorize(lead, num, color):
@@ -71,14 +82,13 @@ class PlaybookExecution(object):
   def run(self):
     """
       This is a modified version of the function used within ansible-playbook.
-      playbooks. See top of file. 
     """
 
     tstart = time.time()
 
     # get the absolute path for the playbooks
     self.playbooks = [
-      '{}/playbooks/{}'.format(config['install_path'], pb) for pb in self.playbooks]
+      "{}/playbooks/{}".format(config["install_path"], pb) for pb in self.playbooks]
 
     # Ansible defaults carried over from `ansible-playbook`.  Changes these
     # shouldn't be necessary since all R/W is done within *this* users
@@ -87,6 +97,9 @@ class PlaybookExecution(object):
     sudopass = None
     su_pass = None
     vault_pass = None
+
+    self.jm = JobManager()
+    self.jm.configure_request(self.options.env_name, self.options.cmd)
 
     for playbook in self.playbooks:
       if not os.path.exists(playbook):
@@ -97,8 +110,10 @@ class PlaybookExecution(object):
           "the playbook: %s does not appear to be a file" % playbook)
 
     for playbook in self.playbooks:
+      self.jm.update_request(self.options.env_name, msg="Runing playbook %s" % playbook)
+
       display("Running playbook: %s" %
-          playbook, color='green', stderr=False)
+          playbook, color="green", stderr=False)
 
       stats = callbacks.AggregateStats()
       playbook_cb = callbacks.PlaybookCallbacks(verbose=utils.VERBOSITY)
@@ -147,9 +162,9 @@ class PlaybookExecution(object):
 
         for h in hosts:
           t = pb.stats.summarize(h)
-          if t['failures'] > 0:
+          if t["failures"] > 0:
             failed_hosts.append(h)
-          if t['unreachable'] > 0:
+          if t["unreachable"] > 0:
             unreachable_hosts.append(h)
 
         retries = failed_hosts + unreachable_hosts
@@ -165,19 +180,19 @@ class PlaybookExecution(object):
 
           display("%s : %s %s %s %s" % (
             hostcolor(h, t),
-            colorize('ok', t['ok'], 'green'),
-            colorize('changed', t['changed'], 'yellow'),
-            colorize('unreachable', t['unreachable'], 'red'),
-            colorize('failed', t['failures'], 'red')),
+            colorize("ok", t["ok"], "green"),
+            colorize("changed", t["changed"], "yellow"),
+            colorize("unreachable", t["unreachable"], "red"),
+            colorize("failed", t["failures"], "red")),
             screen_only=True
           )
 
           display("%s : %s %s %s %s" % (
             hostcolor(h, t, False),
-            colorize('ok', t['ok'], None),
-            colorize('changed', t['changed'], None),
-            colorize('unreachable', t['unreachable'], None),
-            colorize('failed', t['failures'], None)),
+            colorize("ok", t["ok"], None),
+            colorize("changed", t["changed"], None),
+            colorize("unreachable", t["unreachable"], None),
+            colorize("failed", t["failures"], None)),
             log_only=True
           )
 
@@ -196,55 +211,106 @@ class PlaybookExecution(object):
         self.statuscode = 0
 
       except errors.AnsibleError, e:
-        display("ERROR: %s" % e, color='red')
+        self.jm.update_request(self.options.env_name,
+          msg="Failed while running %s" % playbook,
+          err="%s" % e)
+        display("ERROR: %s" % e, color="red")
         self.statuscode = 1
         return
 
+    self.jm.update_request(self.options.env_name,
+          msg="All playbooks completed successfully")
     self.statuscode = 0
-
 
   def print_playbook_results(self):
     if self.statuscode == 0:
-      display_color = 'green'
+      display_color = "green"
     else:
-      display_color = 'red'
+      display_color = "red"
     display("Ran playbooks {}. \n Total time was {}".format(self.playbooks,
       datetime.timedelta(seconds=self.runtime)), color=display_color)
     
+def EnvironmentManagerFactory(env_name="", cmd="", extra_vars=""):
+  """
+    This method is an entry point for instantiations of this class 
+    which do not occur through the command line (i.e. tests, and
+      the worker processes for our service catalog app)
+  """
+  from f5_aws import cli
+  
+  arg_list = []
+  arg_list.append(cmd)
+  if cmd == "info":
+    # nasty stuff here because of http://bugs.python.org/issue9253
+    #  optional subparsers are not allowed
+    # we add one of the subparser commands to fit the argparse description
+    arg_list.append("resources")
+  
+  if env_name:
+    arg_list.append(env_name)
+  if extra_vars:
+    arg_list.append("--extra-vars")
+    arg_list.append(json.dumps(extra_vars))
+  
+  parser = cli.get_parser()
+  args = parser.parse_args(arg_list)
+
+  return EnvironmentManager(args)
+
 
 class EnvironmentManager(object):
   config=config
   def __init__(self, args):
-    self.options=args
-    self.extra_vars = {}    
+    """
+      When the playbooks are run, there are two sets of variables
+      passed to ansible:
+        
+        #1
+        options - The set of variables that tell ansible 
+        how to behave (e.g. self.options.forks below).  We use 
+        default values for most of these, stolen mostly from
+        the out-of-the-box `ansible-playbook` executable.
+        
+        #2
+        extra_vars - These are variables made available
+        in the global scope during a play or task.
+        Any variables passed to our command line using the --extra-vars
+        parameter are passed are added to the extra_vars dict.
 
-    # pass along our project variables to ansible
-    # some playbooks will need access keys and passwords during runtime
-    for v in config['required_vars']:
+        In addition to variables passed on the command line by the user, 
+        below we set additional variables in the global scope during 
+        certain execution contexts.
+
+    """
+
+    self.options = args
+    self.extra_vars = {}
+
+    for v in config["required_vars"]:
       self.extra_vars[v] = config[v]
+    self.extra_vars["env_path"] = config["env_path"]
 
     # cloudformation templates will need just the key name, without any
     # extension
-    self.extra_vars['ssh_key_name'] = config[
-      'ssh_key'].split('/')[-1].split('.')[0]
+    self.extra_vars["ssh_key_name"] = config[
+      "ssh_key"].split("/")[-1].split(".")[0]
 
-    if getattr(self.options, 'env_name', None) is not None:
-      self.extra_vars['env_name'] = self.options.env_name
+    if getattr(self.options, "env_name", None):
+      self.extra_vars["env_name"] = getattr(self.options, "env_name")
 
-    # Since we have forked and modified ansible-playbook 
-    #  we have copied over many of these default variables.
-    #  some of the options have been disabled due to unknown
-    #  dependency changes we may have introduced.
-    
-    self.options.forks = constants.DEFAULT_FORKS
-    self.options.module_path = constants.DEFAULT_MODULE_PATH
-    self.options.remote_user = constants.DEFAULT_REMOTE_USER
-    self.options.timeout = constants.DEFAULT_TIMEOUT
-    self.options.connection = constants.DEFAULT_TRANSPORT
-    self.options.sudo = constants.DEFAULT_SUDO
+    for extra_vars_opt in getattr(self.options, "extra_vars", []):
+      self.extra_vars = utils.combine_vars(self.extra_vars,
+                        utils.parse_yaml(extra_vars_opt))
+
+    self.options.forks = ansible.constants.DEFAULT_FORKS
+    self.options.module_path = ansible.constants.DEFAULT_MODULE_PATH
+    self.options.remote_user = ansible.constants.DEFAULT_REMOTE_USER
+    self.options.timeout = ansible.constants.DEFAULT_TIMEOUT
+    self.options.connection = ansible.constants.DEFAULT_TRANSPORT
+    self.options.sudo = ansible.constants.DEFAULT_SUDO
     self.options.sudo_user = None
-    self.options.su = constants.DEFAULT_SU
-    self.options.su_user = constants.DEFAULT_SU_USER
+    self.options.su = ansible.constants.DEFAULT_SU
+    self.options.su_user = ansible.constants.DEFAULT_SU_USER
     self.options.check = False
     self.options.diff = False  
     self.options.force_handlers = False
@@ -254,10 +320,10 @@ class EnvironmentManager(object):
     self.options.syntax = False
 
     # the first inventory just contains a local host to run the init playbook
-    self.proj_inventory_path = config['install_path'] + '/inventory/hosts'
+    self.proj_inventory_path = config["install_path"] + "/inventory/hosts"
     # the second inventory is specific to this deployment
-    self.env_inventory_path = '%s/%s/inventory/hosts' % (
-      config['env_path'], self.options.env_name)
+    self.env_inventory_path = "%s/%s/inventory/hosts" % (
+      config["env_path"], self.options.env_name)
 
   def init(self):
     """
@@ -267,13 +333,8 @@ class EnvironmentManager(object):
     See individual playbooks for more info. 
     """
 
-    # additional options which need to be processed with the init command
-    for extra_vars_opt in self.options.extra_vars:
-      self.extra_vars = utils.combine_vars(self.extra_vars,
-                        utils.parse_yaml(extra_vars_opt))
-
     # basic string checking to prevent failures later in playbook
-    if not re.match('^[a-zA-z]{1}[a-zA-Z0-9-]*', self.options.env_name):
+    if not re.match("^[a-zA-z]{1}[a-zA-Z0-9-]*", self.options.env_name):
       raise ValidationError(
         'The environment name must match the following\
   regexp: "[a-zA-z]{1}[a-zA-Z0-9-]*" ')
@@ -292,21 +353,24 @@ class EnvironmentManager(object):
 availability of the ECS-optimized images used to run the Docker app: {}'.format(
           config['regions']))
 
-    # TODO: validate images, eip and cloudformation limits?
+    # TODO: validate images, eip and cloudformation limits, EULA acceptance?
 
-    playbooks = ['init.yml']
+    playbooks = ["init.yml"]
     playbook_context = PlaybookExecution(
       playbooks, config, self.proj_inventory_path, self.options, self.extra_vars)
     playbook_context.run()  
 
-    return {'playbook_results': playbook_context, 'env': self}
+    return {"playbook_results": playbook_context, "env": self}
 
   def deploy(self):
-
+    """
+    Run ansible playbooks for deployment, given the ansible
+    inventory created via 'init'
+    """
     # make sure the environment has been initialized
     envs = EnvironmentManager.get_envs()
     if not self.options.env_name in envs:
-      raise LifecycleError('Environment "{}" does not exist.  Has it been initialized?'.format(
+      raise LifecycleError("Environment '{}' does not exist.  Has it been initialized?".format(
         self.options.env_name))
 
     playbooks = [
@@ -316,6 +380,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_gtm_cft.yml',
       'deploy_app_cft.yml',
       'deploy_client_cft.yml',
+      'deploy_analytics_cft.yml',
       'deploy_app.yml',
       'deploy_bigip.yml',
       'cluster_bigips.yml',
@@ -323,40 +388,54 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
       'deploy_gtm.yml',
       'deploy_apps_gtm.yml',
       'deploy_client.yml',
+      'deploy_analytics.yml'
     ]
 
-    playbook_context = PlaybookExecution(
-      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
-    playbook_context.run()  
+    if self.extra_vars.get("run_only"):
+      print 'User specified subset of playbooks to run specified by {}'.format(
+        self.extra_vars["run_only"])
+      matching_playbooks = get_matching_playbooks(playbooks, self.extra_vars["run_only"])
+    else:
+      matching_playbooks = playbooks
 
-    return {'playbook_results': playbook_context, 'env': self}
+    print 'Running playbooks {}'.format(matching_playbooks)
+
+    playbook_context = PlaybookExecution(
+      matching_playbooks, config, self.env_inventory_path,
+      self.options, self.extra_vars)
+    playbook_context.run()
+
+    return {"playbook_results": playbook_context, "env": self}
 
   def teardown(self):
-    playbooks = ['teardown_all.yml']
+    playbooks = ["teardown_all.yml"]
 
     playbook_context = PlaybookExecution(
-      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
+      playbooks, config, self.env_inventory_path,
+      self.options, self.extra_vars)
     playbook_context.run()  
 
-    return {'playbook_results': playbook_context, 'env': self}
+    return {"playbook_results": playbook_context, "env": self}
 
   def start_traffic(self):
-    playbooks = ['start_traffic.yml']
+    playbooks = ["start_traffic.yml"]
 
     playbook_context = PlaybookExecution(
-      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
+      playbooks, config, self.env_inventory_path,
+      self.options, self.extra_vars)
     playbook_context.run()  
 
-    return {'playbook_results': playbook_context, 'env': self}
+    return {"playbook_results": playbook_context, "env": self}
 
   def stop_traffic(self):
-    playbooks = ['stop_traffic.yml']
+    playbooks = ["stop_traffic.yml"]
 
     playbook_context = PlaybookExecution(
-      playbooks, config, self.env_inventory_path, self.options, self.extra_vars)
+      playbooks, config, self.env_inventory_path,
+      self.options, self.extra_vars)
     playbook_context.run()  
 
-    return {'playbook_results': playbook_context, 'env': self}
+    return {"playbook_results": playbook_context, "env": self}
 
   def remove(self):
     inventory, resources, statuses = self.get_environment_info()
@@ -364,23 +443,24 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
     okToRemove = True
     stillExists = []
     for r in resources:
-      if statuses[r]['state'] == 'deployed':
+      if statuses[r]["state"] == "deployed":
         okToRemove = False
         stillExists.append(r)
 
     if okToRemove is True:
       # uses the inventory included in this repository
-      playbooks = ['remove.yml']
-      print 'running {}'.format(playbooks)
-      inventory_path = config['install_path'] + '/inventory/hosts'
+      playbooks = ["remove.yml"]
+      print "running {}".format(playbooks)
+      inventory_path = config["install_path"] + "/inventory/hosts"
       playbook_context = PlaybookExecution(
         playbooks, config, inventory_path, self.options, self.extra_vars)
       playbook_context.run()  
-      return {'playbook_results': playbook_context, 'env': self}
+      return {"playbook_results": playbook_context, "env": self}
     else:
       raise LifecycleError("""Cannot remove environment '%s' until all resources have been de-provisioned.
-The following resources still exist: %s\n. 
-Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, self.options.env_name))
+The following resources still exist: %s\n
+Hint: Try tearing down the environment first.""" % (
+  self.options.env_name, stillExists))
 
   @classmethod
   def get_envs(self):
@@ -389,7 +469,9 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
     """
     return os.listdir(config['env_path'])
 
-  #### all over the below needs to get refactored....very ugly
+#################################################################  
+#### all over the below needs to get refactored....very ugly ####
+#################################################################
 
   def get_environment_info(self):
     inventory = self.get_inventory()
@@ -409,16 +491,16 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
   def display_basic_info(self):
     inventory, resources, statuses = self.get_environment_info()
 
-    color = 'green'
-    status = 'deployed'
+    color = "green"
+    status = "deployed"
     for k, v in statuses.items():
       try:
-        if v['state'] != 'deployed':
-          color = 'red'
-          status = 'not deployed/error'
+        if v["state"] != "deployed":
+          color = "red"
+          status = "not deployed/error"
       except KeyError:
-        color = 'red'
-        status = 'not deployed/error'
+        color = "red"
+        status = "not deployed/error"
 
     env_info = self.get_env_info(inventory)
     display(" - %s (%s)" % (self.options.env_name, status), color=color, stderr=False)
@@ -435,7 +517,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
     """
     inventory, resources, statuses = self.get_environment_info()
 
-    return resources, statuses, 
+    return resources, statuses
 
   def login_info(self):
     """
@@ -458,12 +540,13 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
       'gtm': 'ManagementInterfacePublicIp',
       'bigip': 'ManagementInterfacePublicIp',
       'apphost': 'WebServerInstancePublicIp',
-      'client': 'ClientInstancePublicIp'
+      'client': 'ClientInstancePublicIp',
+      'analyticshost': 'AnalyticsServerInstancePublicIp'
     }
 
     for host_type in ip_map.keys():
       try:
-        group_name = host_type+'s'
+        group_name = host_type+"s"
         if inventory[group_name]:
           group_info = inventory[group_name]
           login_info[host_type] = {}
@@ -471,26 +554,35 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
           # not very efficient...
           for resource_name, status in statuses.items():
             match = re.match(
-              '^zone[0-9]+[/-]{}[0-9]+'.format(host_type), resource_name)
+              "^zone[0-9]+[/-]{}[0-9]+".format(host_type), resource_name)
 
             if match:
               try:
                   resources = {}
-                  key = group_info['vars'][
-                      'ansible_ssh_private_key_file']
-                  user = group_info['vars']['ansible_ssh_user']
-                  ip = status['resource_vars'][ip_map[host_type]]
-                  resources['ssh'] = 'ssh -i {} {}@{}'.format(
+                  key = group_info["vars"][
+                      "ansible_ssh_private_key_file"]
+                  user = group_info["vars"]["ansible_ssh_user"]
+                  ip = status["resource_vars"][ip_map[host_type]]
+                  resources["ssh"] = "ssh -i {} {}@{}".format(
                     key, user, ip)
-                  resources['https'] = 'https://{}'.format(ip)
 
-                  if 'bigip' in resource_name:
-                    resources['virtual_servers'] = self.collect_virtual_servers(resource_name)
-                    resources['elastic_ips'] = self.collect_elastic_ips(resource_name)
+                  if "app" in resource_name:
+                    resources["http"] = "http://{}".format(ip)
+                  else:
+                    resources["https"] = "https://{}".format(ip)
 
-                  if 'gtm' in resource_name:
-                    resources['wideips'] = self.collect_wideips(resource_name)
-                    resources['elastic_ips'] = self.collect_elastic_ips(resource_name)
+                  #get specific information about our application
+                  # deployments for these specific hosts
+                  if "bigip" in resource_name:
+                    resources["virtual_servers"] = self.collect_virtual_servers(resource_name)
+                    resources["elastic_ips"] = self.collect_elastic_ips(resource_name)
+                  if "gtm" in resource_name:
+                    resources["wideips"] = self.collect_wideips(resource_name)
+                    resources["elastic_ips"] = self.collect_elastic_ips(resource_name)
+
+                  if 'analyticshost' in resource_name:
+                    resources['http_username'] = 'admin' 
+                    resources['http'] = 'http://{}:8000'.format(ip) 
 
                   login_info[host_type][self.host_to_az(
                   resource_name, ansible_inventory)] = resources
@@ -504,7 +596,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
   def collect_resources(self, resource_name, fregex, fields, nested):
     r = []
     try: 
-      searchDir = '%s/%s/' % (config['env_path'], self.options.env_name)
+      searchDir = "%s/%s/" % (config["env_path"], self.options.env_name)
       files = os.listdir(searchDir)
       for fname in files:
         if re.match(fregex.format(resource_name), fname):
@@ -513,23 +605,23 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
             if nested == False:
               r.append(dict(zip(fields, [content[x] for x in fields])))
             else:
-              for i in content['items']:
+              for i in content["items"]:
                 r.append(dict(zip(fields, [i[x] for x in fields])))
     except KeyError, e:
-      print 'WARN: %s' % e
+      print "WARN: %s" % e
     return r
 
   def collect_elastic_ips(self, resource_name):
-    return self.collect_resources(resource_name, '{}-vip-Vip[0-9]+.json', 
-      ['eipAddress', 'privateIpAddress'], False)
+    return self.collect_resources(resource_name, "{}-vip-Vip[0-9]+.json", 
+      ["eipAddress", "privateIpAddress"], False)
 
   def collect_virtual_servers(self, resource_name):
-    return self.collect_resources(resource_name, 'facts_{}.json', 
-      ['name', 'destination'], True)
+    return self.collect_resources(resource_name, "facts_{}.json", 
+      ["name", "destination"], True)
 
   def collect_wideips(self, resource_name):
-    return self.collect_resources(resource_name, 'facts_{}.json', 
-      ['name'], True)
+    return self.collect_resources(resource_name, "facts_{}.json", 
+      ["name"], True)
 
   def host_to_az(self, resource_name, ansible_inventory):
     # traverse the ansible inventory to get the availability zone
@@ -537,10 +629,10 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
     try:
       hostname = resource_name
       az = ansible_inventory.get_host(
-        hostname).get_variables()['availability_zone']
-      return '{}/{}'.format(az, resource_name)
+        hostname).get_variables()["availability_zone"]
+      return "{}/{}".format(az, resource_name)
     except:
-      return ''
+      return ""
 
   def get_env_info(self, inventory):
     """Read some information about this @env from the inventory/hosts 
@@ -548,10 +640,10 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
     """
 
     env_info = {}
-    env_info = inventory['all']['vars']
+    env_info = inventory["all"]["vars"]
 
     # don't show the password in the output
-    del env_info['env_name']
+    del env_info["env_name"]
 
     return env_info
 
@@ -566,8 +658,8 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
     inventory = {}
     for group, hosts in ansible_inventory.groups_list().items():
       inventory[group] = {
-        'hosts': hosts,
-        'vars': ansible_inventory.get_group(group).vars
+        "hosts": hosts,
+        "vars": ansible_inventory.get_group(group).vars
       }
 
     return inventory
@@ -578,7 +670,7 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
       host. 
     """
 
-    hosts = [h for h in inventory['all']['hosts']]
+    hosts = [h for h in inventory["all"]["hosts"]]
     statuses = {}
     resources = []
     for m in hosts:
@@ -589,18 +681,18 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
 
       resources.append(resource_name)
       try:
-        fname = '{}/{}/{}.yml'.format(
-          config['env_path'], self.options.env_name, m)
+        fname = "{}/{}/{}.yml".format(
+          config["env_path"], self.options.env_name, m)
         with open(fname) as f:
           latest = yaml.load(f)
           statuses[resource_name] = getattr(self,
-                            'state_' +
-                            latest['invocation'][
-                              'module_name'],
+                            "state_" +
+                            latest["invocation"][
+                              "module_name"],
                             self.raise_not_implemented)(latest, True)
 
       except Exception as e:
-        statuses[resource_name] = {'state': 'not deployed/error'}
+        statuses[resource_name] = {"state": "not deployed/error"}
 
     return resources, statuses
 
@@ -610,27 +702,27 @@ Hint: try './bin/f5aws teardown %s'""" % (self.options.env_name, stillExists, se
       from captured output. 
     """
     result = {}
-    cf = convert_str(latest_result['invocation']['module_args'])
+    cf = convert_str(latest_result["invocation"]["module_args"])
     
     # we need to handle 'present' and 'absent' situations differently
-    if cf['state'] == 'present':
-      result['stack_name'] = cf['stack_name']
+    if cf["state"] == "present":
+      result["stack_name"] = cf["stack_name"]
       if show_resource_vars:
-        result['resource_vars'] = latest_result['stack_outputs']
-      if (latest_result['output'] == 'Stack CREATE complete' or
-          latest_result['output'] == 'Stack is already up-to-date.'):
-        result['state'] = 'deployed'
+        result["resource_vars"] = latest_result["stack_outputs"]
+      if (latest_result["output"] == "Stack CREATE complete" or
+          latest_result["output"] == "Stack is already up-to-date."):
+        result["state"] = "deployed"
       else:
-        result['state'] = 'deploy-error'
-    else:  # state == 'absent'...
+        result["state"] = "deploy-error"
+    else:  # state == "absent"...
       # We need to deal with the case where the stack does not exist
       # in a particular fashion for the command line `descibe` and 
       # `list commands.
-      if (latest_result.get('output', '') == 'Stack Deleted' or
-          'does not exist' in latest_result.get('msg', '')):
-        result['state'] = 'absent'
+      if (latest_result.get("output", "") == "Stack Deleted" or
+          "does not exist" in latest_result.get("msg", "")):
+        result["state"] = "absent"
       else:
-        result['state'] = 'teardown-error'
+        result["state"] = "teardown-error"
 
     return result
 

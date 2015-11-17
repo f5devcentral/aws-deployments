@@ -2,6 +2,7 @@
 - name: Configure GTM UDP Listener
   delegate_to: localhost
   bigip_config:
+      name="Configure GTM UDP Listener"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -13,6 +14,7 @@
 - name: Configure GTM TCP Listener
   delegate_to: localhost
   bigip_config:
+      name="Configure GTM TCP Listener"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -21,15 +23,10 @@
       collection_path='mgmt/tm/gtm/listener'
       resource_key="name"
 
-#TODO: REST call not idempotent 
-#ex.
-#failed: [54.68.213.182 -> localhost] => {"failed": true, "name": "mgmt/tm/gtm/datacenter", "rc": 1}
-#msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
-#...ignoring
-
 - name: Setup the Datacenter
   delegate_to: localhost
   bigip_config:
+      name="Setup the Datacenter"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -37,14 +34,12 @@
       payload='{"name":"{{region}}"}'
       collection_path='mgmt/tm/gtm/datacenter'
       resource_key="name"
-  # TODO: Investigate why subsequent calls of above result in: 
-  #   failed: [54.86.187.122 -> localhost] => {"failed": true, "name": "mgmt/tm/gtm/datacenter", "rc": 1}
-  #   msg: 400 Client Error: Bad Request. {u'errorStack': [], u'message': u'one or more properties must be specified', u'code': 400}
 
 # NOTE: Useful Product types = single-bigip, redundant-bigip, generic-host
 - name: Setup the BIGIP-Object for GTMs (as Standalone BIGIP)
   delegate_to: localhost
   bigip_config:
+      name="Setup the BIGIP-Object for GTMs (as Standalone BIGIP)"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -64,6 +59,7 @@
 - name: Setup the BIGIP-Object for BIGIPs (Standalone BIGIP)
   delegate_to: localhost
   bigip_config:
+      name="Setup the BIGIP-Object for BIGIPs (Standalone BIGIP)"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -78,6 +74,7 @@
 - name: Setup the BIGIP-Object for BIGIPs (Clustered BIGIPs)
   delegate_to: localhost
   bigip_config:
+      name="Setup the BIGIP-Object for BIGIPs (Clustered BIGIPs)"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
