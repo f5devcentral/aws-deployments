@@ -5,6 +5,7 @@
 - name: Add external vlan
   delegate_to: localhost
   bigip_config:
+    name="Add external vlan"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -17,6 +18,7 @@
 - name: Add unique external selfip
   delegate_to: localhost
   bigip_config:
+    name="Add unique external selfip"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -34,6 +36,7 @@
 - name: Set default route using the default_gateway or gateway_pool
   delegate_to: localhost
   bigip_config:
+    name="Set default route using the default_gateway or gateway_pool"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}

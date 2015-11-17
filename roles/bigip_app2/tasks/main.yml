@@ -2,6 +2,7 @@
 - name: Deploying/updating webserver pool
   delegate_to: localhost
   bigip_config:
+      name="Deploying/updating webserver pool"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -13,6 +14,7 @@
 - name: Uploading iRules ... irule_random_snat
   delegate_to: localhost
   bigip_config:
+      name="Uploading iRules ... irule_random_snat"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -24,6 +26,7 @@
 - name: Setup the HTTP virtual server
   delegate_to: localhost
   bigip_config:
+      name="Setup the HTTP virtual server"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -35,6 +38,7 @@
 - name: Setup the HTTPS virtual server
   delegate_to: localhost
   bigip_config:
+      name="Setup the HTTPS virtual server"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}

@@ -2,6 +2,7 @@
 - name: Setup the App2 Virtual Server on each BIG-IP object 
   delegate_to: localhost
   bigip_config:
+      name="Setup the App2 Virtual Server on each BIG-IP object "
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -14,6 +15,7 @@
 - name: Setup the AZ pools
   delegate_to: localhost
   bigip_config:
+      name="Setup the AZ pools"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -34,6 +36,7 @@
 - name: Setup the Wideip for Vip2
   delegate_to: localhost
   bigip_config:
+      name="Setup the Wideip for Vip2"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -45,6 +48,7 @@
 - name: Setup the Wideip for demo.example.com
   delegate_to: localhost
   bigip_config:
+      name="Setup the Wideip for demo.example.com"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}

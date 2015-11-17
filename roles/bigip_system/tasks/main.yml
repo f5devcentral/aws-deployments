@@ -10,7 +10,8 @@
 #  so we want to be sure the device is ready.
 - name: Disabling Setup Utility in GUI
   delegate_to: localhost
-  bigip_config: 
+  bigip_config:
+    name="Disabling Setup Utility in GUI"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -29,6 +30,7 @@
 - name: Configuring NTP servers
   delegate_to: localhost
   bigip_config:
+    name="Configuring NTP servers"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -50,9 +52,10 @@
 #   when: target_env != "AWS"
 
 # TODO: define log server ip somewhere (10.0.3.32). Right now, just for pretend...
-- name: Configuring syslog
+- name: Configuring syslog logging destinations
   delegate_to: localhost
   bigip_config:
+    name="Configuring syslog logging destinations"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -65,6 +68,7 @@
 - name: Configuring HTTP mgmt access
   delegate_to: localhost
   bigip_config:
+    name="Configuring HTTP mgmt access"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -75,6 +79,7 @@
 - name: Configuring SSH mgmt access
   delegate_to: localhost
   bigip_config:
+    name="Configuring SSH mgmt access"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -85,6 +90,7 @@
 - name: Configuring SNMP access
   delegate_to: localhost
   bigip_config:
+    name="Configuring SNMP access"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -97,6 +103,7 @@
 - name: Configuring FastL4 profiles ... fastL4-route-friendly
   delegate_to: localhost
   bigip_config:
+    name="Configuring FastL4 profiles ... fastL4-route-friendly"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -111,6 +118,7 @@
 - name: Configuring TCP profiles ... ssl-wan-optimized
   delegate_to: localhost
   bigip_config:
+    name="Configuring TCP profiles ... ssl-wan-optimized"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -122,6 +130,7 @@
 - name: Configuring TCP profiles ... ssl-lan-optimized
   delegate_to: localhost
   bigip_config:
+    name="Configuring TCP profiles ... ssl-lan-optimized"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}

@@ -5,6 +5,7 @@
 - name: Create the ASM policy
   delegate_to: localhost
   bigip_config:
+      name="Create the ASM policy"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -26,6 +27,7 @@
 - name: Import our policy over the one existing above 
   delegate_to: localhost
   bigip_config:
+      name="Import our policy over the one existing above "
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -37,9 +39,10 @@
 - name: Save the async task ID
   set_fact: taskId="{{ result['out']['id'] }}"
 
-- name: Wait for the import task to complete
+- name: Determine whether the asm policy import task is complete
   delegate_to: localhost
   bigip_config:
+      name="Determine whether the asm policy import task is complete"
       state=inspect
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -53,6 +56,7 @@
 - name: Apply the ASM policy
   delegate_to: localhost
   bigip_config:
+      name="Apply the ASM policy"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -63,9 +67,10 @@
 - name: Save the async task ID
   set_fact: taskId="{{ result['out']['id'] }}"
 
-- name: Wait for the apply task to complete
+- name: Determine whether the asm policy apply task is complete
   delegate_to: localhost
   bigip_config:
+      name="Determine whether the asm policy apply task is complete"
       state=inspect
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}
@@ -76,9 +81,10 @@
   retries: 40
   delay: 2
 
-- name: Create an LTM policy for use with our iApp which associates the ASM policy
+- name: Create an LTM policy for use with by iApp which associates the ASM policy
   delegate_to: localhost
   bigip_config:
+      name="Create an LTM policy for use with by iApp which associates the ASM policy"
       state=present
       host={{ ansible_ssh_host }}
       user={{ bigip_rest_user }}

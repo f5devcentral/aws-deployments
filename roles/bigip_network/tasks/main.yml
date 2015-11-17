@@ -6,6 +6,7 @@
 - name: Adding/updating internal vlan
   delegate_to: localhost
   bigip_config:
+    name="Adding/updating internal vlan"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -17,6 +18,7 @@
 - name: Adding/updating external vlan
   delegate_to: localhost
   bigip_config:
+    name="Adding/updating external vlan"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -29,6 +31,7 @@
 - name: Adding/updating internal selfip
   delegate_to: localhost
   bigip_config:
+    name="Adding/updating internal selfip"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -41,6 +44,7 @@
 - name: Adding/updating external selfip
   delegate_to: localhost
   bigip_config:
+    name="Adding/updating external selfip"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
@@ -83,6 +87,7 @@
 - name: Setting default route using default_gateway or gateway_pool
   delegate_to: localhost
   bigip_config:
+    name="Setting default route using default_gateway or gateway_pool"
     state=present
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
