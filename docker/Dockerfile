@@ -4,7 +4,7 @@
 ############################################################
 
 # Set the base image to Ubuntu
-FROM f5networks/demo
+FROM f5networks/demo:latest
 
 # File Author / Maintainer
 MAINTAINER Alex Applebaum a.applebaum@f5.com

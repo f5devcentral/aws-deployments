@@ -6,12 +6,12 @@
 
   #Conditionally create a user if not found
 - name: Creating user for REST
-  raw: create auth user {{ bigip_rest_user }} password '{{ bigip_rest_password }}' partition-access add { all-partitions { role admin } } shell tmsh  
+  raw: create auth user {{ bigip_rest_user }} password '{{ bigip_rest_password }}' partition-access add { all-partitions { role admin } } shell tmsh; save sys config  
   when: list_user.stdout | search("was not found")
 
   #One more time in case of partial runs/saves. 
 - name: Ensuring user has correct permissions
-  raw: modify auth user {{ bigip_rest_user }} partition-access modify { all-partitions { role admin } } shell tmsh
+  raw: modify auth user {{ bigip_rest_user }} partition-access modify { all-partitions { role admin } } shell tmsh; save sys config
 
 - name: Saving tmsh config
   raw: save sys config

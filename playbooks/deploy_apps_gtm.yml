@@ -44,19 +44,34 @@
         InternalInterfacePrivateIp={{ hostvars[inventory_hostname].stack_outputs.InternalInterfacePrivateIp }}
         AvailabilityZone={{ hostvars[inventory_hostname].stack_outputs.AvailabilityZone }}
         DeviceName='ip-{{hostvars[inventory_hostname].stack_outputs.ManagementInterfacePrivateIp|replace(".","-")}}.{{region}}.ec2.internal'
-        Vip2={{ hostvars[inventory_hostname].stack_outputs.Vip2 }}
 
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-Vip1.yml" ]
+  tasks:
+    - name: Gather EIPs for VIP1
+      set_fact:
+        VipPrivateIp={{ hostvars[inventory_hostname].stack_outputs.privateIpAddress }} 
+        VipEip={{ hostvars[inventory_hostname].stack_outputs.eipAddress }}
 
 - hosts: gtms
   gather_facts: no
   vars:
     vip_id: "Vip1"
-    VipPrivateIp: "{{ hostvars[inventory_hostname].stack_outputs.privateIpAddress }}"
-    VipEip: "{{ hostvars[inventory_hostname].stack_outputs.eipAddress }}"
-  vars_files:
-    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}-vip-Vip1.yml" ]
   roles:
     - gtm_app1
+
+# NOTE: To conserve EIPs for demos, we're not adding an EIP for VIP2 anymore.
+# Simply grab local VIP from original BIGIP CFT output vs. EIP CFT output
+- hosts: bigip-cluster-seeds
+  gather_facts: no
+  vars_files:
+   - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
+  tasks:
+    - name: Gather EIPs for VIP2
+      set_fact:
+        VipPrivateIp={{ hostvars[inventory_hostname].stack_outputs.Vip2 }} 
 
 - hosts: gtms
   gather_facts: no
