@@ -5,8 +5,8 @@ import ansible.utils
 from ansible.callbacks import display
 
 from f5_aws.config import Config
-from f5_aws.runner import EnvironmentManager, EnvironmentManagerFactory
 from f5_aws.exceptions import ExecutionError
+from f5_aws.environment_manager import EnvironmentManager, EnvironmentManagerFactory
 
 # make our config global
 config = Config().config

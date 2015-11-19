@@ -10,7 +10,7 @@ vpc-manager
 zone1-az
 zone1-apphost1
 zone1-bigip1
-{% if deploy_analytics %}
+{% if deploy_analytics.lower() == "true" %}
 zone1-analyticshost1
 {% endif %}
 
@@ -28,7 +28,7 @@ zone1-apphost1
 [bigips]
 zone1-bigip1
 
-{% if deploy_analytics %}
+{% if deploy_analytics.lower() == "true" %}
 [analyticshosts]
 zone1-analyticshost1
 {% endif %}
@@ -50,10 +50,10 @@ zone1-bigip1
 env_name={{ env_name }}
 image_id={{ image_id }}
 container_cnt={{ containers_per_app_host }}
-deployment_model={{ deployment_model }}
-deployment_type={{ deployment_type }}
-deploy_analytics={{ deploy_analytics }}
-region={{ region }}
+deployment_model={{ deployment_model.lower() }}
+deployment_type={{ deployment_type.lower() }}
+deploy_analytics={{ deploy_analytics.lower() }}
+region={{ region.lower() }}
 vpc_cidr={{ vpc_cidr_prefix }}.0.0/16
 key_name={{ ssh_key_name }}
 

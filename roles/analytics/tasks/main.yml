@@ -30,7 +30,6 @@
 - name: Copy over Splunk for F5 Networks App 
   copy: src=SplunkforF5Networks.tgz dest=/opt/splunk/etc/apps/
 
-# Below NOT implemented yet
 - name: Copy over Splunk for F5 Security App 
   copy: src=SplunkforF5Security.tgz dest=/opt/splunk/etc/apps/
 
@@ -40,11 +39,9 @@
 - name: Copy over Splunk Add-On. NOTE-> Add-On Not Implemented  yet
   copy: src=splunk-add-on-for-f5-big-ip_230.tgz dest=/opt/splunk/etc/apps/
 
-# UNZIP FILES
 - name: unzip F5 Networks app
   unarchive: src=/opt/splunk/etc/apps/SplunkforF5Networks.tgz dest=/opt/splunk/etc/apps/ copy=no
 
-# Below NOT implemented yet
 - name: unzip F5 Networks Security app
   unarchive: src=/opt/splunk/etc/apps/SplunkforF5Security.tgz dest=/opt/splunk/etc/apps/ copy=no
 
@@ -54,11 +51,9 @@
 - name: unzip Splunk Add-On for F5 Networks 
   unarchive: src=/opt/splunk/etc/apps/splunk-add-on-for-f5-big-ip_230.tgz dest=/opt/splunk/etc/apps/ copy=no
 
-# CHANGE OWNERSHIP
 - name: change ownership to splunk
   file: path=/opt/splunk/etc/apps/SplunkforF5Networks owner=splunk group=splunk
 
-# Below NOT implemented yet
 - name: change ownership to splunk
   file: path=/opt/splunk/etc/apps/SplunkforF5Security owner=splunk group=splunk
 

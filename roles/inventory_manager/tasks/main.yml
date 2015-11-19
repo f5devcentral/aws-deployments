@@ -7,10 +7,11 @@
       bigip_modules: 
        - avr
        - asm
-  when: deployment_type == "lb_and_waf"
+       - ltm 
+  when: deployment_type.lower() == "lb_and_waf"
 
 - include: provision_inventory.yml
-  when: deployment_type == "lb_only"
+  when: deployment_type.lower() == "lb_only"
 
 - include: provision_analytics.yml
-  when: deploy_analytics == "true"
+  when: deploy_analytics.lower() == "true"

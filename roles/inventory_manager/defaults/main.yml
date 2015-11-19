@@ -10,7 +10,7 @@
 # deployment 
 deployment_model: "single-standalone"
 deployment_type: "lb_only"
-deploy_analytics: false
+deploy_analytics: "false"
 region: us-east-1
 
 # networking 
@@ -26,7 +26,9 @@ bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
 bigip_license_package: "better"
 bigip_instance_type: "m3.xlarge"
-bigip_modules: "avr"
+bigip_modules:
+ - ltm 
+ - avr
 
 gtm_version: "11.6"
 gtm_license_throughput: "25mbps"
@@ -42,15 +44,18 @@ gtm_modules:
 # https://aws.amazon.com/marketplace/pp/B00JV9JBDS
 # app deployment 
 # have to use an m3 instance type, because it works with paravirtualized instances
-client_instance_type: "m3.large"
+client_instance_type: "m3.medium"
 
 # default AMI is ECS-Optimized AMI (2015.03.g)
 # To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00U6QTYI2
 # have to use an m3 instance type, because it works with paravirtualized instances
-apphost_instance_type: "m3.large"
+apphost_instance_type: "m3.medium"
 containers_per_app_host: 1
 image_id: "mutzel/all-in-one-hackazon:postinstall"
+
+# splunk
+analytics_instance_type: "c3.large"
 
 standalone_per_zone:
   clustering: none
