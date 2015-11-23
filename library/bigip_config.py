@@ -178,9 +178,9 @@ class BigipConfig(object):
     except (ConnectionError, HTTPError, Timeout, TooManyRedirects) as e:
       rc = 1
       out = ""
-      err = "%s. Error received: %s.\n Sent request: HTTP %s %s: %s" % (method, uri, payload_str)
+      err = "Error sent request: HTTP %s %s: %s\n. Received error: %s" % (method, uri, payload_str,
+        getattr(request, "text", ""))
 
-    print "HTTP %s returned: %s" % (method, request.text)
 
     return (rc, out, err)
 

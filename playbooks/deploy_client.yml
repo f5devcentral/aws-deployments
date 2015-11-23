@@ -1,5 +1,5 @@
 ---
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   vars_files:
    - [ "~/vars/f5aws/env/{{ env_name }}/{{ inventory_hostname }}.yml" ]
@@ -11,7 +11,7 @@
         ClientInstancePrivateIp={{ hostvars[inventory_hostname].stack_outputs.ClientInstancePrivateIp }}
 
 # Need to wait for port 22 to open up
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   tasks:
     - local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
@@ -19,7 +19,7 @@
 
 # Now launch containers inside them
 # Amazon amis we're using already have docker installed so no need for install_docker role
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   vars:
     ansible_sudo: True
@@ -63,7 +63,7 @@
 #
 
 # Modify Nameservers 
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   vars:
     ansible_sudo: True
@@ -84,8 +84,10 @@
     - name: restart resolvconf
       shell: resolvconf -u 
 
+# Install JMeter
+
 # Upload Jmeter scripts
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   tasks:
     - name: Copy over simple load generation jmeter script

@@ -3,6 +3,9 @@
   apt: update_cache=yes
   ignore_errors: True
 
+- name: Make sure apt-get resources are up-to-date
+  apt: update_cache=yes
+
 - name: Install list of packages required for jmeter
   apt: pkg={{item}} state=installed
   with_items:

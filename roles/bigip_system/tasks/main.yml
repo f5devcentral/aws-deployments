@@ -3,7 +3,6 @@
 # Configure basic network services that are the same across all devices.
 # ----------------------------------------------------------------------
 
-
 # Example of setting database variables
 #  Here we use a loop to retry until this first attempt to 
 #  provision using REST completes. This is our first REST call
@@ -21,7 +20,7 @@
     resource_key="name"
   register: result
   until: result|changed
-  retries: 60
+  retries: 100
   delay: 5
 
 # We need NTP, we do not get this from Amazon

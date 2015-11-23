@@ -2,14 +2,14 @@
 	"name":"syslog_pool",
 	"members":
 		[
-{% if groups["analyticshosts"] is defined %}
+{% if deploy_analytics == "true" %}
 {% for host in groups["analyticshosts"] %}
 			{
 				"name": "{{ hostvars[host]['AnalyticsServerInstancePrivateIp'] }}:514",
 				"address": "{{ hostvars[host]['AnalyticsServerInstancePrivateIp'] }}"
 			}{% if not loop.last %},{% endif %}
 {% endfor %}
-{$ endif %}
+{% endif %}
 		],
 	"monitor":"tcp"
 }

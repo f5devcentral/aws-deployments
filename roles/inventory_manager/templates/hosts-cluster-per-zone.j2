@@ -8,7 +8,7 @@ vpc-manager
 {% for zone in zones %}
 [zone{{ loop.index }}]
 zone{{ loop.index }}-az
-zone{{ loop.index }}-client1
+zone{{ loop.index }}-clienthost1
 zone{{ loop.index }}-apphost1
 zone{{ loop.index }}-gtm1
 {% set outer_loop = loop %}
@@ -57,7 +57,7 @@ zone{{ outer_loop.index }}-gtm{{ loop.index }}
 {% endfor %}
 
 [clienthosts]
-zone1-client1
+zone1-clienthost1
 
 {% if deploy_analytics.lower() == "true" %}
 [analyticshosts]

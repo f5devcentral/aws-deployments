@@ -84,20 +84,6 @@ class EnvironmentManager(object):
                 seen.add(pb)
         return output
 
-    @classmethod
-    def collect_elastic_ips(cls, resource_name):
-        return cls.collect_resources(resource_name, "{}-vip-Vip[0-9]+.json",
-                                     ["eipAddress", "privateIpAddress"], False)
-
-    @classmethod
-    def collect_virtual_servers(cls, resource_name):
-        return cls.collect_resources(resource_name, "facts_{}.json",
-                                     ["name", "destination"], True)
-
-    @classmethod
-    def collect_wideips(cls, resource_name):
-        return cls.collect_resources(resource_name, "facts_{}.json",
-                                     ["name"], True)
 
     def __init__(self, args):
         """
@@ -219,7 +205,7 @@ availability of the ECS-optimized images used to run the Docker app: {}'.format(
         if self.extra_vars.get("run_only"):
             print 'User specified subset of playbooks to run specified by {}'.format(
                 self.extra_vars["run_only"])
-            matching_playbooks = get_matching_playbooks(
+            matching_playbooks = self.get_matching_playbooks(
                 playbooks, self.extra_vars["run_only"])
         else:
             matching_playbooks = playbooks
@@ -317,7 +303,7 @@ Hint: Try tearing down the environment first.""" % (
             'gtm': 'ManagementInterfacePublicIp',
             'bigip': 'ManagementInterfacePublicIp',
             'apphost': 'WebServerInstancePublicIp',
-            'client': 'ClientInstancePublicIp',
+            'clienthost': 'ClientInstancePublicIp',
             'analyticshost': 'AnalyticsServerInstancePublicIp'
         }
 
@@ -345,27 +331,24 @@ Hint: Try tearing down the environment first.""" % (
 
                                 if "app" in resource_name:
                                     resources["http"] = "http://{}".format(ip)
-                                else:
-                                    resources[
-                                        "https"] = "https://{}".format(ip)
 
-                                # get specific information about our application
-                                # deployments for these specific hosts
                                 if "bigip" in resource_name:
                                     resources["virtual_servers"] = self.collect_virtual_servers(
                                         resource_name)
                                     resources["elastic_ips"] = self.collect_elastic_ips(
                                         resource_name)
+                                    resources["https"] = "https://{}".format(ip)
+                                
                                 if "gtm" in resource_name:
                                     resources["wideips"] = self.collect_wideips(
                                         resource_name)
                                     resources["elastic_ips"] = self.collect_elastic_ips(
                                         resource_name)
-
+                                    resources["https"] = "https://{}".format(ip)
+                                
                                 if 'analyticshost' in resource_name:
                                     resources['http_username'] = 'admin'
-                                    resources[
-                                        'http'] = 'http://{}:8000'.format(ip)
+                                    resources['http'] = 'http://{}:8000'.format(ip)
 
                                 login_info[host_type][self.host_to_az(
                                     resource_name, ansible_inventory)] = resources
@@ -426,6 +409,17 @@ Hint: Try tearing down the environment first.""" % (
                 del resources[i]
 
         return inventory, resources, statuses
+
+    def collect_elastic_ips(self, resource_name):
+        return self.collect_resources(resource_name, "{}-vip-Vip[0-9]+.json",
+                                     ["eipAddress", "privateIpAddress"], False)
+
+    def collect_virtual_servers(self, resource_name):
+        return self.collect_resources(resource_name, "facts_{}.json",
+                                     ["name", "destination"], True)
+    def collect_wideips(self, resource_name):
+        return self.collect_resources(resource_name, "facts_{}.json",
+                                     ["name"], True)
 
     def collect_resources(self, resource_name, fregex, fields, nested):
         r = []
