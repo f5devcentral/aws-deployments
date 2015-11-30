@@ -9,7 +9,7 @@
     - name: Teardown analyticshosts
       include: "{{ install_path }}/roles/infra/tasks/teardown_analyticshost_cft.yml"
 
-- hosts: clients
+- hosts: clienthosts
   gather_facts: no
   vars:
     ansible_connection: local
