@@ -228,8 +228,8 @@ def main():
           # device_name could be arbitrary/simple like bigip1, bigip2.
           # If not already something unique like a hostname,
           # In the end, best practice is to match hostname but we'll just use the name provided
-          if (existing_device_name != "/Common/bigip1" or
-            "/Common/" + device_names[BIGIP_INDEX]):
+          if (existing_device_name == "/Common/bigip1" or
+              existing_device_name != "/Common/" + device_names[BIGIP_INDEX]):
               bigip_objs[BIGIP_INDEX].Management.Trust.reset_all(
                     device_object_name=device_names[BIGIP_INDEX],
                     keep_current_authority='true',
