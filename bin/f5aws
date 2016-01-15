@@ -15,17 +15,13 @@ import ansible.utils
 import ansible.errors
 from ansible.callbacks import display
 
-import f5_aws.cli as f5_aws_cli
-from f5_aws.exceptions import ValidationError, ExecutionError, LifecycleError
-
-# some path mudgery to allow us to use local files installed 
-#  of installing using setuptools
-# why doesn't this work...?
 local_module_path = os.path.abspath(
   os.path.join(os.path.dirname(__file__), '..', 'src')
 )
 sys.path = [local_module_path] + sys.path
 
+import f5_aws.cli as f5_aws_cli
+from f5_aws.exceptions import ValidationError, ExecutionError, LifecycleError
 
 if __name__ == "__main__":
   display(" ", log_only=True)

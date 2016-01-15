@@ -15,7 +15,6 @@
   gather_facts: False
   sudo: false
   tasks:
-
     - name:  Wait for ssh port to open
       local_action: wait_for host={{ ansible_ssh_host }} search_regex=OpenSSH delay=10 port=22
 

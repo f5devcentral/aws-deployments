@@ -39,12 +39,13 @@
             "reportAnomalies": "disabled",
             "responseLogging": "none",
             "servers": [
+{% if deploy_analytics == "true" %}
 {% for host in groups["analyticshosts"] %}
                    {
                        "name": "{{ hostvars[host]['AnalyticsServerInstancePrivateIp'] }}:515"
                    }{% if not loop.last %},{% endif %}
 {% endfor %}
-
+{% endif %}
             ]
         }
     ]
