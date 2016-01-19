@@ -52,7 +52,7 @@ client_instance_type: "m3.medium"
 # have to use an m3 instance type, because it works with paravirtualized instances
 apphost_instance_type: "m3.medium"
 containers_per_app_host: 1
-image_id: "mutzel/all-in-one-hackazon:postinstall"
+image_id: "mutzel/all-in-one-hackazon:postinstall2"
 
 # splunk
 analytics_instance_type: "c3.large"

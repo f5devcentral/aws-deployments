@@ -2,11 +2,11 @@
 # tasks file for app role
 # ensures the set of containers are running
 - docker:
+      name: "hackazon"
       image: "{{ image_id }}"
       count: 1
       ports: 80:80
-      # count: "{{ container_cnt }}"
-      # publish_all_ports: true
+      command: supervisord -n
       state: running
   tags: 
      - launch_containers
@@ -14,3 +14,4 @@
   until: launched_containers["failed"] == false
   retries: 5
   delay: 10
+
