@@ -84,6 +84,7 @@
 #  So we'll hardcode and just replace the '0' with a '1' from the variable 'public_cidr'. 
 #  This might not be true in other environments, in which case we'll want a more robust solution.
 
+#  BZID 510170 - Must include partition 
 - name: Setting default route using default_gateway or gateway_pool
   delegate_to: localhost
   bigip_config:
@@ -92,8 +93,6 @@
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
-    payload='{"name":"default_route", "network":"default", "gw":"{{ [ExternalInterfacePrivateIp[0:9],1]|join('.') }}" }'
+    payload='{"name":"default_route", "network":"default", "partition":"Common", "gw":"{{ [ExternalInterfacePrivateIp[0:9],1]|join('.') }}" }'
     collection_path='/mgmt/tm/net/route'
     resource_key="name"
-
-
