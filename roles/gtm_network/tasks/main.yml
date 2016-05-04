@@ -41,7 +41,7 @@
     host={{ ansible_ssh_host }}
     user={{ bigip_rest_user }}
     password={{ bigip_rest_password }}
-    payload='{"name":"default_route", "network":"default", "gw":"{{ [ExternalInterfacePrivateIp[0:9],1]|join('.') }}" }'
+    payload='{"name":"default_route", "network":"default", "partition":"Common", "gw":"{{ [ExternalInterfacePrivateIp[0:9],1]|join('.') }}" }'
     collection_path='/mgmt/tm/net/route'
     resource_key="name"
 
