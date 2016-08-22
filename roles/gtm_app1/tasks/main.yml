@@ -25,7 +25,7 @@
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
       payload='{"name":"{{vip_id}}_pool_{{hostvars[item]["AvailabilityZone"]}}","loadBalancingMode":"round-robin","members":[{"name":"{{hostvars[item]["cluster_name"]}}:{{vip_id}}"}]}'
-      collection_path='mgmt/tm/gtm/pool'
+      collection_path='mgmt/tm/gtm/pool/a'
       resource_key="name"
   with_items: groups['bigip-cluster-seeds']
 
