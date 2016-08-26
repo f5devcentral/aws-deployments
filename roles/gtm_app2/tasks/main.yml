@@ -42,7 +42,7 @@
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
       payload='{"name":"{{vip_id}}.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
-      collection_path='mgmt/tm/gtm/wideip'
+      collection_path='mgmt/tm/gtm/wideip/a'
       resource_key="name"
 
 - name: Setup the Wideip for demo.example.com
@@ -54,5 +54,5 @@
       user={{ bigip_rest_user }}
       password={{ bigip_rest_password }}
       payload='{"name":"demo.example.com","poolLbMode":"topology","ipv6NoErrorResponse":"enabled","pools":[{{wideip_pool_string.stdout}}]}'
-      collection_path='mgmt/tm/gtm/wideip'
+      collection_path='mgmt/tm/gtm/wideip/a'
       resource_key="name"

@@ -27,6 +27,8 @@ class BigipConfig(object):
     self.password = module.params["password"]
     self.state = module.params["state"]
     self.name = module.params["name"]
+    #Need to parameterize partition
+    self.partition = "Common"
 
     # use a file which includes the payload contents if 
     #  one was provided
@@ -58,12 +60,12 @@ class BigipConfig(object):
     
     # update the uri when posting or patching an iapp service (instance of an iApp template)
     if "application/service" in self.collection_path:
-      return ("%s/~Common~%s.app~%s" % (self.collection_path,
+      return ("%s/~%s~%s.app~%s" % (self.collection_path, self.partition,
          self._get_full_resource_id(), self._get_full_resource_id()))
     
     # update the uri when posting or patching an iapp template
     elif "application/template" in self.collection_path:
-      return ("%s/~Common~%s" % (self.collection_path,
+      return ("%s/~%s~%s" % (self.collection_path, self.partition,
          self._get_full_resource_id()))
     
     # since we have already done an HTTP GET to check if the resource
@@ -118,16 +120,30 @@ class BigipConfig(object):
     items = out.get("items", None)
     if items is not None:
       for i in items:
-        if i[self.resource_key] == self.payload[self.resource_key]:
-          exists = True
-          self.set_selfLink(i)
-          print 'fullPath = {}'.format(i['fullPath'])
-          break
+        if self.resource_key in i:
+          if i[self.resource_key] == self.payload[self.resource_key]: 
+             exists = True
+             self.set_selfLink(i)
+             self.set_fullPath(i)
+             break
     return exists
 
   def set_selfLink(self, config_item):
     # self link looks like https://localhost/mgmt/tm/asm/policies/vsyrM5HMMpOHlSwDfs8mLA"
     self.resource_selfLink = config_item['selfLink']
+ 
+  def set_fullPath(self, config_item):
+    # self link looks like "fullPath": "/Common/Draft/my-ltm-policy" 
+    if 'fullPath' in config_item:
+    	self.resource_fullPath = config_item['fullPath']
+    else:
+        self.resource_fullPath = "/%s/%s" % ( self.partition, self.resource_key )
+
+  def _get_full_tmos_path(self):
+     if self.resource_fullPath:
+        return self.resource_fullPath
+     else: 
+        return "/%s/%s" % ( self.partition, self.resource_key )
 
   def create_or_update_resource(self):
     # if it is a collection, we can just patch 
@@ -137,7 +153,7 @@ class BigipConfig(object):
       return self.http("patch", self.collection_path, self.payload)
     else:
       if self.resource_exists():
-        try: 
+        try:
           return self.update_resource()
         except NoChangeError, e:
           rc = 0
@@ -151,8 +167,18 @@ class BigipConfig(object):
     return self.http("post", self.collection_path, self.payload)
 
   def update_resource(self):
-      return self.http("patch", self._get_full_resource_path(),
-        self._get_safe_patch_payload())
+      if "mgmt/tm/ltm/policy" in self.collection_path and 'command' in self.payload:
+         self.payload['name'] = self._get_full_tmos_path() 
+         return self.http("post", self.collection_path, self.payload)
+      elif "mgmt/tm/ltm/policy" in self.collection_path:
+         create_draft_resource_path = "%s&options=create-draft" % (self._get_full_resource_path())
+         create_draft_payload = {"partition":self.partition}
+         self.http("patch", create_draft_resource_path, create_draft_payload )
+         draft_resource_path = "%s/~%s~Drafts~%s" % (self.collection_path, self.partition, self._get_full_resource_id())
+         return self.http("patch", draft_resource_path, self.payload ) 
+      else:
+         return self.http("patch", self._get_full_resource_path(),
+                self._get_safe_patch_payload())
 
   def delete_resource(self):
     return self.http("delete", self._get_full_resource_path())
