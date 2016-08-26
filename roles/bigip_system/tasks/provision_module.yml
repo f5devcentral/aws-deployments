@@ -9,4 +9,4 @@
     collection_path='mgmt/tm/sys/provision/{{module}}'
 
 - name: Wait for module completion to avoid any race conditions
-  pause: seconds=60
+  pause: seconds=90
