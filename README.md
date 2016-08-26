@@ -1,4 +1,8 @@
 # aws-deployments
+
+**UPDATE** *(08/26/2016)*: Now that we have cloud-init on BIG-IP starting v12.0.0, this project has been de-emphasized in favor of CloudFormation approach. Please see [https://github.com/F5Networks/f5-aws-cloudformation](https://github.com/F5Networks/f5-aws-cloudformation) instead.
+If interested in Ansible integration, please see [https://github.com/f5networks/f5-ansible](https://github.com/f5networks/f5-ansible)
+
 ## Deployment examples for F5's BIG-IP platform in AWS
 
 #### About

@@ -21,7 +21,7 @@ apphosts_per_zone: 1
 # To accept EULA, go to:
 # https://aws.amazon.com/marketplace/pp/B00JL3Q2VI
 
-bigip_version: "11.6"
+bigip_version: "12.1"
 bigip_license_throughput: "25mbps"
 bigip_license_model: "hourly"
 bigip_license_package: "better"
@@ -30,7 +30,7 @@ bigip_modules:
  - ltm 
  - avr
 
-gtm_version: "11.6"
+gtm_version: "12.1"
 gtm_license_throughput: "25mbps"
 gtm_license_model: "hourly"
 gtm_license_package: "better"

@@ -38,7 +38,7 @@
       raw: "run /util bash -c 'cat /var/prompt/ps1'"
       until: (result.stdout.find("Active") != -1 or result.stdout.find("Standby") != -1)
       register: result
-      retries: 40
+      retries: 60
 
 # Basic device setup using tmsh to enable further provisioning
 - hosts: bigips
